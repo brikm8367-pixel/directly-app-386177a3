@@ -1,6 +1,9 @@
 import { MessageSquare, Twitter, Instagram, Linkedin } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="border-t border-border bg-secondary/30 py-12">
       <div className="container px-4">
@@ -14,24 +17,24 @@ export function Footer() {
               <span className="text-xl font-bold text-foreground">Directly</span>
             </div>
             <p className="text-muted-foreground max-w-sm leading-relaxed">
-              نجعل تواصلك واضحاً ومنظماً. تحكم كامل في رسائلك بدون فوضى.
+              {t.footer.description}
             </p>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">روابط سريعة</h4>
+            <h4 className="font-semibold text-foreground mb-4">{t.footer.quickLinks}</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">الرئيسية</a></li>
-              <li><a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">المميزات</a></li>
-              <li><a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">كيف يعمل</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">الأسعار</a></li>
+              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">{t.footer.home}</a></li>
+              <li><a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">{t.footer.features}</a></li>
+              <li><a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">{t.footer.howItWorks}</a></li>
+              <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">{t.footer.pricing}</a></li>
             </ul>
           </div>
 
           {/* Social */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">تواصل معنا</h4>
+            <h4 className="font-semibold text-foreground mb-4">{t.footer.contactUs}</h4>
             <div className="flex gap-3">
               <a 
                 href="#" 
@@ -56,7 +59,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© 2024 Directly. جميع الحقوق محفوظة.</p>
+          <p>{t.footer.copyright}</p>
         </div>
       </div>
     </footer>

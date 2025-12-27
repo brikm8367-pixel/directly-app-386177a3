@@ -1,25 +1,27 @@
-import { cn } from "@/lib/utils";
-import { ArrowDown, MessageSquarePlus, Filter, CheckCircle } from "lucide-react";
-
-const steps = [
-  {
-    icon: MessageSquarePlus,
-    title: "استقبال الرسائل",
-    description: "تصل جميع رسائلك إلى Directly من مختلف المنصات والقنوات",
-  },
-  {
-    icon: Filter,
-    title: "التصنيف التلقائي",
-    description: "يقوم التطبيق بتصنيف الرسائل تلقائياً إلى الأقسام الثلاثة",
-  },
-  {
-    icon: CheckCircle,
-    title: "تواصل منظم",
-    description: "رد على الرسائل المهمة أولاً واستمتع بتواصل خالٍ من الفوضى",
-  },
-];
+import { MessageSquarePlus, Filter, CheckCircle } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function HowItWorksSection() {
+  const { t } = useLanguage();
+
+  const steps = [
+    {
+      icon: MessageSquarePlus,
+      title: t.howItWorks.step1.title,
+      description: t.howItWorks.step1.description,
+    },
+    {
+      icon: Filter,
+      title: t.howItWorks.step2.title,
+      description: t.howItWorks.step2.description,
+    },
+    {
+      icon: CheckCircle,
+      title: t.howItWorks.step3.title,
+      description: t.howItWorks.step3.description,
+    },
+  ];
+
   return (
     <section id="how-it-works" className="py-24 relative overflow-hidden">
       {/* Background pattern */}
@@ -34,10 +36,10 @@ export function HowItWorksSection() {
         {/* Section header */}
         <div className="mx-auto max-w-2xl text-center mb-20">
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl opacity-0 animate-fade-in-up">
-            كيف يعمل <span className="text-gradient">Directly</span>؟
+            {t.howItWorks.title1} <span className="text-gradient">{t.howItWorks.title2}</span>
           </h2>
           <p className="text-lg text-muted-foreground opacity-0 animate-fade-in-up animation-delay-100">
-            ثلاث خطوات بسيطة للحصول على تجربة تواصل مثالية
+            {t.howItWorks.subtitle}
           </p>
         </div>
 
