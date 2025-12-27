@@ -1,22 +1,38 @@
 import { CategoryCard } from "./CategoryCard";
-import { Briefcase, Users, Heart } from "lucide-react";
+import { Briefcase, Users, Heart, Zap } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export function CategoriesSection() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const sectionTitle = {
+    ar: "ثلاثة أقسام تعني",
+    en: "Three categories mean",
+    fr: "Trois catégories signifient"
+  };
+
+  const sectionHighlight = {
+    ar: "صفر فوضى",
+    en: "Zero chaos",
+    fr: "Zéro chaos"
+  };
 
   return (
     <section id="categories" className="py-24 relative">
-      {/* Background */}
-      <div className="absolute inset-0 bg-secondary/30" />
+      {/* Subtle background */}
+      <div className="absolute inset-0 bg-secondary/40" />
       
       <div className="container relative z-10 px-4">
         {/* Section header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl opacity-0 animate-fade-in-up">
-            {t.categories.title1} <span className="text-gradient">{t.categories.title2}</span>
+          <div className="inline-flex items-center gap-2 mb-4 text-primary text-sm font-medium opacity-0 animate-fade-in-up">
+            <Zap className="h-4 w-4" />
+            <span>{language === 'ar' ? 'نظام ذكي' : language === 'en' ? 'Smart System' : 'Système Intelligent'}</span>
+          </div>
+          <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl opacity-0 animate-fade-in-up animation-delay-100">
+            {sectionTitle[language]} <span className="text-gradient-premium">{sectionHighlight[language]}</span>
           </h2>
-          <p className="text-lg text-muted-foreground opacity-0 animate-fade-in-up animation-delay-100">
+          <p className="text-lg text-muted-foreground opacity-0 animate-fade-in-up animation-delay-200">
             {t.categories.subtitle}
           </p>
         </div>
