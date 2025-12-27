@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, Zap, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Shield, Zap, Users, Star, Rocket } from "lucide-react";
 import { DemoPersonaModal } from "./DemoPersonaModal";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function HeroSection() {
   const [showDemo, setShowDemo] = useState(false);
+  const { t, isRTL } = useLanguage();
+
+  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
@@ -18,50 +22,67 @@ export function HeroSection() {
 
       <div className="container relative z-10 px-4 py-20">
         <div className="mx-auto max-w-4xl text-center">
+          {/* Product Hunt Badge */}
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-sm font-medium text-accent opacity-0 animate-fade-in-up border border-accent/20">
+            <Rocket className="h-4 w-4" />
+            <span>🚀 Launching on Product Hunt!</span>
+          </div>
+
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary opacity-0 animate-fade-in-up">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary opacity-0 animate-fade-in-up animation-delay-100">
             <Zap className="h-4 w-4" />
-            <span>تواصل أذكى. حياة أسهل.</span>
+            <span>{t.hero.badge}</span>
           </div>
 
           {/* Main heading */}
-          <h1 className="mb-6 text-4xl font-bold leading-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl opacity-0 animate-fade-in-up animation-delay-100">
-            رسائلك المهمة
+          <h1 className="mb-6 text-4xl font-bold leading-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl opacity-0 animate-fade-in-up animation-delay-200">
+            {t.hero.title1}
             <br />
-            <span className="text-gradient">لن تضيع بعد الآن</span>
+            <span className="text-gradient">{t.hero.title2}</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto leading-relaxed opacity-0 animate-fade-in-up animation-delay-200">
-            يجعل Directly التواصل الخاص بك واضحاً ومنظماً، ويوفر عليك الوقت والجهد 
-            في إدارة الرسائل سواء كانت من جمهورك، شركاء عملك، أو الأشخاص المهمين.
+          <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto leading-relaxed opacity-0 animate-fade-in-up animation-delay-300">
+            {t.hero.subtitle}
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 opacity-0 animate-fade-in-up animation-delay-300">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 opacity-0 animate-fade-in-up animation-delay-400">
             <Button variant="hero" size="xl" onClick={() => setShowDemo(true)}>
-              ابدأ مجاناً
-              <ArrowLeft className="h-5 w-5 mr-2" />
+              {t.hero.cta1}
+              <ArrowIcon className="h-5 w-5 mx-2" />
             </Button>
             <Button variant="heroOutline" size="xl">
-              شاهد كيف يعمل
+              {t.hero.cta2}
             </Button>
           </div>
 
           {/* Trust indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-8 opacity-0 animate-fade-in-up animation-delay-400">
+          <div className="flex flex-wrap items-center justify-center gap-8 mb-12 opacity-0 animate-fade-in-up animation-delay-500">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-primary" />
-              <span>حماية كاملة</span>
+              <span>{t.hero.trust1}</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Users className="h-5 w-5 text-primary" />
-              <span>+10,000 مستخدم</span>
+              <span>{t.hero.trust2}</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Zap className="h-5 w-5 text-primary" />
-              <span>تجربة سلسة</span>
+              <span>{t.hero.trust3}</span>
             </div>
+          </div>
+
+          {/* Rating badge */}
+          <div className="flex items-center justify-center gap-3 opacity-0 animate-fade-in-up animation-delay-500">
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-5 w-5 fill-accent text-accent" />
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground">4.9/5</span>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">500+ reviews</span>
           </div>
         </div>
       </div>

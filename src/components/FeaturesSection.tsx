@@ -3,12 +3,14 @@ import {
   SlidersHorizontal, 
   Tags, 
   MessageCircle, 
-  Bell, 
   Lock, 
-  Sparkles 
+  Bell 
 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function FeaturesSection() {
+  const { t } = useLanguage();
+
   return (
     <section id="features" className="py-24">
       <div className="container px-4">
@@ -57,8 +59,8 @@ export function FeaturesSection() {
                     <Bell className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium">رسالة جديدة</div>
-                    <div className="text-xs text-muted-foreground">قسم العمل</div>
+                    <div className="text-sm font-medium">{t.features.notification.title}</div>
+                    <div className="text-xs text-muted-foreground">{t.features.notification.subtitle}</div>
                   </div>
                 </div>
               </div>
@@ -71,35 +73,35 @@ export function FeaturesSection() {
           {/* Right side - Features */}
           <div className="order-1 lg:order-2">
             <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl opacity-0 animate-fade-in-up">
-              مميزات تمنحك <span className="text-gradient">السيطرة الكاملة</span>
+              {t.features.title1} <span className="text-gradient">{t.features.title2}</span>
             </h2>
             <p className="mb-10 text-lg text-muted-foreground opacity-0 animate-fade-in-up animation-delay-100">
-              كل ما تحتاجه لإدارة تواصلك بذكاء وفعالية
+              {t.features.subtitle}
             </p>
 
             <div className="space-y-8">
               <FeatureItem
                 icon={SlidersHorizontal}
-                title="تحكم في عدد الرسائل"
-                description="حدد عدد الرسائل التي تريد استقبالها في كل قسم حسب أولوياتك"
+                title={t.features.feature1.title}
+                description={t.features.feature1.description}
                 delay={200}
               />
               <FeatureItem
                 icon={Tags}
-                title="تصنيف ذكي"
-                description="تصنيف تلقائي للرسائل حسب الموضوعات المحددة مسبقاً"
+                title={t.features.feature2.title}
+                description={t.features.feature2.description}
                 delay={300}
               />
               <FeatureItem
                 icon={MessageCircle}
-                title="تواصل مباشر"
-                description="تواصل مع أي شخص دون قيود مع حماية كاملة من الفوضى"
+                title={t.features.feature3.title}
+                description={t.features.feature3.description}
                 delay={400}
               />
               <FeatureItem
                 icon={Lock}
-                title="خصوصية تامة"
-                description="رسائلك محمية ومشفرة بأعلى معايير الأمان"
+                title={t.features.feature4.title}
+                description={t.features.feature4.description}
                 delay={500}
               />
             </div>

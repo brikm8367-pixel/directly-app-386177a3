@@ -1,7 +1,10 @@
 import { CategoryCard } from "./CategoryCard";
 import { Briefcase, Users, Heart } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function CategoriesSection() {
+  const { t } = useLanguage();
+
   return (
     <section id="categories" className="py-24 relative">
       {/* Background */}
@@ -11,18 +14,18 @@ export function CategoriesSection() {
         {/* Section header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl opacity-0 animate-fade-in-up">
-            ثلاثة أقسام. <span className="text-gradient">صفر فوضى.</span>
+            {t.categories.title1} <span className="text-gradient">{t.categories.title2}</span>
           </h2>
           <p className="text-lg text-muted-foreground opacity-0 animate-fade-in-up animation-delay-100">
-            يقوم التطبيق تلقائياً بتقسيم جميع رسائلك الواردة إلى ٣ أقسام واضحة
+            {t.categories.subtitle}
           </p>
         </div>
 
         {/* Category cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
           <CategoryCard
-            title="العمل"
-            description="رسائل الشركات، فرص التعاون، العروض التجارية، والمراسلات المهنية"
+            title={t.categories.work.title}
+            description={t.categories.work.description}
             icon={Briefcase}
             count={12}
             maxCount={20}
@@ -30,8 +33,8 @@ export function CategoriesSection() {
             delay={200}
           />
           <CategoryCard
-            title="الجمهور"
-            description="المعجبون، المتفاعلون، الأسئلة المختلفة، والتعليقات من متابعيك"
+            title={t.categories.audience.title}
+            description={t.categories.audience.description}
             icon={Users}
             count={45}
             maxCount={50}
@@ -39,8 +42,8 @@ export function CategoriesSection() {
             delay={300}
           />
           <CategoryCard
-            title="آخرون"
-            description="الأشخاص الذين اخترت التواصل معهم شخصياً، العائلة والأصدقاء"
+            title={t.categories.others.title}
+            description={t.categories.others.description}
             icon={Heart}
             count={8}
             maxCount={15}
