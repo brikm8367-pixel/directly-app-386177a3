@@ -30,7 +30,7 @@ export function DemoPersonaModal({ open, onOpenChange }: DemoPersonaModalProps) 
       title: t.demoModal.categories.work.title,
       icon: Briefcase,
       color: "bg-primary/5 text-primary border-primary/20",
-      iconBg: "bg-primary/10",
+      iconBg: "bg-primary/15",
       messages: [
         { sender: t.demoModal.categories.work.messages.sender1, preview: t.demoModal.categories.work.messages.preview1, time: `5 ${t.demoModal.timeAgo.minutes}`, unread: true },
         { sender: t.demoModal.categories.work.messages.sender2, preview: t.demoModal.categories.work.messages.preview2, time: t.demoModal.timeAgo.hour, unread: true },
@@ -43,8 +43,8 @@ export function DemoPersonaModal({ open, onOpenChange }: DemoPersonaModalProps) 
       id: "audience",
       title: t.demoModal.categories.audience.title,
       icon: Users,
-      color: "bg-accent/50 text-accent-foreground border-accent/30",
-      iconBg: "bg-accent/30",
+      color: "bg-accent/10 text-accent border-accent/25",
+      iconBg: "bg-accent/20",
       messages: [
         { sender: t.demoModal.categories.audience.messages.sender1, preview: t.demoModal.categories.audience.messages.preview1, time: `10 ${t.demoModal.timeAgo.minutes}`, unread: true },
         { sender: t.demoModal.categories.audience.messages.sender2, preview: t.demoModal.categories.audience.messages.preview2, time: `30 ${t.demoModal.timeAgo.minutes}`, unread: false },
@@ -57,8 +57,8 @@ export function DemoPersonaModal({ open, onOpenChange }: DemoPersonaModalProps) 
       id: "others",
       title: t.demoModal.categories.closeOnes.title,
       icon: Heart,
-      color: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-      iconBg: "bg-rose-500/20",
+      color: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+      iconBg: "bg-orange-500/20",
       messages: [
         { sender: t.demoModal.categories.closeOnes.messages.sender1, preview: t.demoModal.categories.closeOnes.messages.preview1, time: `15 ${t.demoModal.timeAgo.minutes}`, unread: true },
         { sender: t.demoModal.categories.closeOnes.messages.sender2, preview: t.demoModal.categories.closeOnes.messages.preview2, time: t.demoModal.timeAgo.hour, unread: false },
