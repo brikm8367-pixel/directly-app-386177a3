@@ -95,15 +95,65 @@ export const ar: Translations = {
     contactUs: 'تواصل معنا',
     copyright: '© 2024 Directly. جميع الحقوق محفوظة.',
   },
-  testimonials: {
-    title1: 'ماذا يقول',
-    title2: 'مستخدمونا',
-    subtitle: 'آراء حقيقية من أشخاص غيّر Directly طريقة تواصلهم',
-  },
-  stats: {
-    users: 'مستخدم نشط',
-    messages: 'رسالة منظمة',
-    satisfaction: 'نسبة الرضا',
-    countries: 'دولة حول العالم',
+  demoModal: {
+    persona: {
+      name: 'سارة الأحمد',
+      role: 'مؤثرة ورائدة أعمال',
+      followers: '500K',
+      quote: 'قبل Directly كنت أضيع ساعات في البحث عن رسائل العمل المهمة بين آلاف الرسائل. الآن كل شيء منظم!',
+    },
+    categories: {
+      work: {
+        title: 'العمل',
+        messages: {
+          sender1: 'شركة Nike',
+          preview1: 'نود التعاون معك في حملتنا الجديدة...',
+          sender2: 'وكالة تسويق',
+          preview2: 'عرض شراكة حصري لمدة 6 أشهر...',
+          sender3: 'مجلة Forbes',
+          preview3: 'دعوة لمقابلة حول نجاحك...',
+        },
+        count: 'من',
+      },
+      audience: {
+        title: 'الجمهور',
+        messages: {
+          sender1: 'أحمد محمد',
+          preview1: 'محتواك رائع! كيف بدأت رحلتك؟',
+          sender2: 'نورة علي',
+          preview2: 'شكراً على النصائح في الفيديو الأخير 💕',
+          sender3: 'خالد السعيد',
+          preview3: 'أنت مصدر إلهام لي!',
+        },
+        count: 'من',
+      },
+      closeOnes: {
+        title: 'المقربين',
+        messages: {
+          sender1: 'ماما ❤️',
+          preview1: 'لا تنسي الغداء يوم الجمعة!',
+          sender2: 'صديقتي منى',
+          preview2: 'متى نتقابل؟ اشتقتلك!',
+          sender3: 'زوجي',
+          preview3: 'أحبك، لا تتأخري 💑',
+        },
+        count: 'من',
+      },
+    },
+    stats: {
+      todayMessages: 'رسائل اليوم',
+      importantMessages: 'رسائل مهمة',
+      timeSaved: 'وقت موفر',
+      timeSavedValue: '3 ساعات',
+    },
+    organizedInbox: 'صندوق الوارد المنظم لـ',
+    ofMessages: 'رسالة',
+    footer: 'هكذا تستخدم سارة Directly لإدارة تواصلها بكفاءة.',
+    tryNow: 'جرب الآن مجاناً!',
+    timeAgo: {
+      minutes: 'منذ دقائق',
+      hour: 'منذ ساعة',
+      hours: 'منذ ساعات',
+    },
   },
 };
