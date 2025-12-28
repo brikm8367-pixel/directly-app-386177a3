@@ -95,15 +95,65 @@ export const en: Translations = {
     contactUs: 'Contact Us',
     copyright: '© 2024 Directly. All rights reserved.',
   },
-  testimonials: {
-    title1: 'What our',
-    title2: 'users say',
-    subtitle: 'Real opinions from people whose communication was transformed by Directly',
-  },
-  stats: {
-    users: 'Active users',
-    messages: 'Organized messages',
-    satisfaction: 'Satisfaction rate',
-    countries: 'Countries worldwide',
+  demoModal: {
+    persona: {
+      name: 'Sarah Ahmed',
+      role: 'Influencer & Entrepreneur',
+      followers: '500K',
+      quote: 'Before Directly, I used to spend hours searching for important work messages among thousands of messages. Now everything is organized!',
+    },
+    categories: {
+      work: {
+        title: 'Work',
+        messages: {
+          sender1: 'Nike Company',
+          preview1: 'We would like to collaborate with you on our new campaign...',
+          sender2: 'Marketing Agency',
+          preview2: 'Exclusive partnership offer for 6 months...',
+          sender3: 'Forbes Magazine',
+          preview3: 'Interview invitation about your success...',
+        },
+        count: 'of',
+      },
+      audience: {
+        title: 'Audience',
+        messages: {
+          sender1: 'Ahmed Mohammed',
+          preview1: 'Your content is amazing! How did you start your journey?',
+          sender2: 'Nora Ali',
+          preview2: 'Thanks for the tips in the last video 💕',
+          sender3: 'Khalid Saeed',
+          preview3: 'You are an inspiration to me!',
+        },
+        count: 'of',
+      },
+      closeOnes: {
+        title: 'Close Ones',
+        messages: {
+          sender1: 'Mom ❤️',
+          preview1: "Don't forget lunch on Friday!",
+          sender2: 'My friend Mona',
+          preview2: 'When do we meet? I miss you!',
+          sender3: 'My husband',
+          preview3: "Love you, don't be late 💑",
+        },
+        count: 'of',
+      },
+    },
+    stats: {
+      todayMessages: "Today's messages",
+      importantMessages: 'Important messages',
+      timeSaved: 'Time saved',
+      timeSavedValue: '3 hours',
+    },
+    organizedInbox: "Organized inbox for",
+    ofMessages: 'messages',
+    footer: 'This is how Sarah uses Directly to manage her communication efficiently.',
+    tryNow: 'Try it now for free!',
+    timeAgo: {
+      minutes: 'min ago',
+      hour: '1 hour ago',
+      hours: 'hours ago',
+    },
   },
 };

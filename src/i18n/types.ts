@@ -95,15 +95,65 @@ export interface Translations {
     contactUs: string;
     copyright: string;
   };
-  testimonials: {
-    title1: string;
-    title2: string;
-    subtitle: string;
-  };
-  stats: {
-    users: string;
-    messages: string;
-    satisfaction: string;
-    countries: string;
+  demoModal: {
+    persona: {
+      name: string;
+      role: string;
+      followers: string;
+      quote: string;
+    };
+    categories: {
+      work: {
+        title: string;
+        messages: {
+          sender1: string;
+          preview1: string;
+          sender2: string;
+          preview2: string;
+          sender3: string;
+          preview3: string;
+        };
+        count: string;
+      };
+      audience: {
+        title: string;
+        messages: {
+          sender1: string;
+          preview1: string;
+          sender2: string;
+          preview2: string;
+          sender3: string;
+          preview3: string;
+        };
+        count: string;
+      };
+      closeOnes: {
+        title: string;
+        messages: {
+          sender1: string;
+          preview1: string;
+          sender2: string;
+          preview2: string;
+          sender3: string;
+          preview3: string;
+        };
+        count: string;
+      };
+    };
+    stats: {
+      todayMessages: string;
+      importantMessages: string;
+      timeSaved: string;
+      timeSavedValue: string;
+    };
+    organizedInbox: string;
+    ofMessages: string;
+    footer: string;
+    tryNow: string;
+    timeAgo: {
+      minutes: string;
+      hour: string;
+      hours: string;
+    };
   };
 }

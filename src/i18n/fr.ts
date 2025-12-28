@@ -95,15 +95,65 @@ export const fr: Translations = {
     contactUs: 'Contactez-nous',
     copyright: '© 2024 Directly. Tous droits réservés.',
   },
-  testimonials: {
-    title1: 'Ce que disent',
-    title2: 'nos utilisateurs',
-    subtitle: 'Avis réels de personnes dont la communication a été transformée par Directly',
-  },
-  stats: {
-    users: 'Utilisateurs actifs',
-    messages: 'Messages organisés',
-    satisfaction: 'Taux de satisfaction',
-    countries: 'Pays dans le monde',
+  demoModal: {
+    persona: {
+      name: 'Sarah Ahmed',
+      role: 'Influenceuse & Entrepreneure',
+      followers: '500K',
+      quote: "Avant Directly, je passais des heures à chercher les messages de travail importants parmi des milliers de messages. Maintenant tout est organisé !",
+    },
+    categories: {
+      work: {
+        title: 'Travail',
+        messages: {
+          sender1: 'Nike Company',
+          preview1: 'Nous aimerions collaborer avec vous sur notre nouvelle campagne...',
+          sender2: 'Agence Marketing',
+          preview2: 'Offre de partenariat exclusive pour 6 mois...',
+          sender3: 'Forbes Magazine',
+          preview3: 'Invitation pour une interview sur votre succès...',
+        },
+        count: 'sur',
+      },
+      audience: {
+        title: 'Audience',
+        messages: {
+          sender1: 'Ahmed Mohammed',
+          preview1: 'Votre contenu est incroyable ! Comment avez-vous commencé ?',
+          sender2: 'Nora Ali',
+          preview2: 'Merci pour les conseils dans la dernière vidéo 💕',
+          sender3: 'Khalid Saeed',
+          preview3: 'Vous êtes une source d\'inspiration pour moi !',
+        },
+        count: 'sur',
+      },
+      closeOnes: {
+        title: 'Proches',
+        messages: {
+          sender1: 'Maman ❤️',
+          preview1: "N'oublie pas le déjeuner de vendredi !",
+          sender2: 'Mon amie Mona',
+          preview2: 'Quand on se voit ? Tu me manques !',
+          sender3: 'Mon mari',
+          preview3: "Je t'aime, ne sois pas en retard 💑",
+        },
+        count: 'sur',
+      },
+    },
+    stats: {
+      todayMessages: "Messages d'aujourd'hui",
+      importantMessages: 'Messages importants',
+      timeSaved: 'Temps économisé',
+      timeSavedValue: '3 heures',
+    },
+    organizedInbox: "Boîte de réception organisée de",
+    ofMessages: 'messages',
+    footer: "C'est ainsi que Sarah utilise Directly pour gérer sa communication efficacement.",
+    tryNow: 'Essayez maintenant gratuitement !',
+    timeAgo: {
+      minutes: 'il y a min',
+      hour: 'il y a 1 heure',
+      hours: 'il y a heures',
+    },
   },
 };
