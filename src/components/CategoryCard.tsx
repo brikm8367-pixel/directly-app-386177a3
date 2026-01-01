@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface CategoryCardProps {
   title: string;
@@ -14,26 +15,26 @@ interface CategoryCardProps {
 const variantStyles = {
   work: {
     bg: "bg-work-light",
-    border: "border-work/20 hover:border-work/40",
-    iconBg: "bg-work/10",
-    iconColor: "text-work",
-    progressBg: "bg-work/20",
+    border: "border-work/15 hover:border-work/35",
+    iconBg: "bg-work",
+    iconColor: "text-white",
+    progressBg: "bg-work/15",
     progressFill: "bg-work",
   },
   audience: {
     bg: "bg-audience-light",
-    border: "border-audience/20 hover:border-audience/40",
-    iconBg: "bg-audience/10",
-    iconColor: "text-audience",
-    progressBg: "bg-audience/20",
+    border: "border-audience/15 hover:border-audience/35",
+    iconBg: "bg-audience",
+    iconColor: "text-white",
+    progressBg: "bg-audience/15",
     progressFill: "bg-audience",
   },
   others: {
     bg: "bg-others-light",
-    border: "border-others/20 hover:border-others/40",
-    iconBg: "bg-others/10",
-    iconColor: "text-others",
-    progressBg: "bg-others/20",
+    border: "border-others/15 hover:border-others/35",
+    iconBg: "bg-others",
+    iconColor: "text-white",
+    progressBg: "bg-others/15",
     progressFill: "bg-others",
   },
 };
@@ -47,64 +48,57 @@ export function CategoryCard({
   variant,
   delay = 0,
 }: CategoryCardProps) {
+  const { language } = useLanguage();
   const styles = variantStyles[variant];
   const percentage = (count / maxCount) * 100;
+
+  const messagesLabel = {
+    ar: "رسائل",
+    en: "messages",
+    fr: "messages"
+  };
 
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border-2 p-6 transition-all duration-500",
-        "hover:shadow-lg hover:-translate-y-1 cursor-pointer",
+        "group relative overflow-hidden rounded-2xl border p-6 transition-all duration-500",
+        "hover:shadow-xl hover:-translate-y-2 cursor-pointer bg-card",
         "opacity-0 animate-fade-in-up",
-        styles.border,
-        styles.bg
+        styles.border
       )}
       style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
     >
-      {/* Icon */}
+      {/* الأيقونة - ملونة بالكامل لتوضيح الفئة بصرياً */}
       <div
         className={cn(
-          "mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110",
+          "mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110 shadow-sm",
           styles.iconBg
         )}
       >
-        <Icon className={cn("h-7 w-7", styles.iconColor)} />
+        <Icon className={cn("h-6 w-6", styles.iconColor)} />
       </div>
 
-      {/* Content */}
-      <h3 className="mb-2 text-xl font-bold text-foreground">{title}</h3>
-      <p className="mb-4 text-sm text-muted-foreground leading-relaxed">
+      {/* المحتوى */}
+      <h3 className="mb-2 text-lg font-bold text-foreground">{title}</h3>
+      <p className="mb-5 text-sm text-muted-foreground leading-relaxed line-clamp-2">
         {description}
       </p>
 
-      {/* Stats */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">الرسائل</span>
-          <span className="font-semibold text-foreground">
-            {count} / {maxCount}
-          </span>
-        </div>
-        <div className={cn("h-2 rounded-full overflow-hidden", styles.progressBg)}>
+      {/* عداد بصري بسيط */}
+      <div className="flex items-center gap-3">
+        <div className={cn("h-1.5 flex-1 rounded-full overflow-hidden", styles.progressBg)}>
           <div
             className={cn(
-              "h-full rounded-full transition-all duration-700 ease-out",
+              "h-full rounded-full transition-all duration-1000 ease-out",
               styles.progressFill
             )}
             style={{ width: `${percentage}%` }}
           />
         </div>
+        <span className="text-xs text-muted-foreground font-medium">
+          {count} {messagesLabel[language]}
+        </span>
       </div>
-
-      {/* Decorative gradient */}
-      <div
-        className={cn(
-          "absolute -left-20 -top-20 h-40 w-40 rounded-full opacity-20 blur-3xl transition-opacity duration-500 group-hover:opacity-30",
-          variant === "work" && "bg-work",
-          variant === "audience" && "bg-audience",
-          variant === "others" && "bg-others"
-        )}
-      />
     </div>
   );
 }
