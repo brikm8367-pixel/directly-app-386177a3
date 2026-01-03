@@ -1,21 +1,24 @@
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Target, Eye, Feather } from "lucide-react";
+import { Lock, Eye, Heart } from "lucide-react";
 
-// 🧠 ثلاث نتائج فقط - العقل يحب الثلاثيات
+// 🧠 ثلاث قيم فقط - التحكم في الوصول
 const results = [
   { 
-    icon: Target, 
+    icon: Lock, 
     title: { ar: "تحكّم", en: "Control", fr: "Contrôle" },
+    subtitle: { ar: "في من يصل إليك", en: "who reaches you", fr: "qui vous atteint" },
     color: "primary"
   },
   { 
     icon: Eye, 
     title: { ar: "وضوح", en: "Clarity", fr: "Clarté" },
+    subtitle: { ar: "الرسائل المهمة فقط", en: "only what matters", fr: "seulement ce qui compte" },
     color: "accent"
   },
   { 
-    icon: Feather, 
-    title: { ar: "سهولة", en: "Ease", fr: "Simplicité" },
+    icon: Heart, 
+    title: { ar: "راحة", en: "Peace", fr: "Sérénité" },
+    subtitle: { ar: "بدون ضوضاء", en: "no noise", fr: "sans bruit" },
     color: "others"
   },
 ];
@@ -35,8 +38,8 @@ export function ResultsSection() {
   return (
     <section className="py-20 relative">
       <div className="container px-4">
-        {/* ثلاث كلمات فقط - يفهمها العقل فوراً */}
-        <div className="flex items-center justify-center gap-6 md:gap-12">
+        {/* ثلاث قيم - يفهمها العقل فوراً */}
+        <div className="flex items-center justify-center gap-8 md:gap-16">
           {results.map((result, index) => {
             const colors = getColorClasses(result.color);
             return (
@@ -48,9 +51,12 @@ export function ResultsSection() {
                 <div className={`inline-flex items-center justify-center h-16 w-16 md:h-20 md:w-20 rounded-2xl ${colors.bg} ${colors.text} border ${colors.border} mb-4 transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg`}>
                   <result.icon className="h-7 w-7 md:h-8 md:w-8" />
                 </div>
-                <h3 className={`text-lg md:text-xl font-bold ${colors.text}`}>
+                <h3 className={`text-lg md:text-xl font-bold ${colors.text} mb-1`}>
                   {result.title[language]}
                 </h3>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  {result.subtitle[language]}
+                </p>
               </div>
             );
           })}

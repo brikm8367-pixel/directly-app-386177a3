@@ -1,8 +1,8 @@
 import { FeatureItem } from "./FeatureItem";
 import { 
   SlidersHorizontal, 
-  Tags, 
-  MessageCircle, 
+  Filter, 
+  Shield, 
   Lock, 
   Bell 
 } from "lucide-react";
@@ -18,7 +18,7 @@ export function FeaturesSection() {
           {/* Left side - Visual */}
           <div className="relative order-2 lg:order-1">
             <div className="relative rounded-3xl bg-gradient-to-br from-secondary to-muted p-8 card-shadow-lg">
-              {/* Mock UI */}
+              {/* Mock UI - مستويات الوصول */}
               <div className="space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -30,7 +30,7 @@ export function FeaturesSection() {
                   </div>
                 </div>
                 
-                {/* Message previews */}
+                {/* Message previews - تمثل التحكم */}
                 {[
                   { color: "work", width: "w-3/4" },
                   { color: "audience", width: "w-full" },
@@ -87,13 +87,13 @@ export function FeaturesSection() {
                 delay={200}
               />
               <FeatureItem
-                icon={Tags}
+                icon={Filter}
                 title={t.features.feature2.title}
                 description={t.features.feature2.description}
                 delay={300}
               />
               <FeatureItem
-                icon={MessageCircle}
+                icon={Shield}
                 title={t.features.feature3.title}
                 description={t.features.feature3.description}
                 delay={400}
