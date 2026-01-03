@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Shield, MessageCircle, Layers } from "lucide-react";
+import { ArrowLeft, ArrowRight, Shield, Lock } from "lucide-react";
 import { DemoPersonaModal } from "./DemoPersonaModal";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -10,11 +10,17 @@ export function HeroSection() {
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-  // 🧠 رسائل قصيرة جداً تخاطب العقل الباطن
-  const tagline = {
-    ar: "رسائلك. أنت تقرر.",
-    en: "Your messages. You decide.",
-    fr: "Vos messages. Vous décidez."
+  // 🧠 رسالة قوية تخاطب التحكم في الوصول - Steven Cravotta style
+  const headline = {
+    ar: "قرر من يصل إليك",
+    en: "Decide who gets access to you",
+    fr: "Décidez qui a accès à vous"
+  };
+
+  const subheadline = {
+    ar: "ليس كل شخص يستحق انتباهك.",
+    en: "Not everyone deserves your attention.",
+    fr: "Tout le monde ne mérite pas votre attention."
   };
 
   return (
@@ -22,11 +28,11 @@ export function HeroSection() {
       {/* خلفية نظيفة مع تدرج خفيف */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--accent)/0.04)_0%,_transparent_70%)]" />
       
-      {/* أشكال هندسية تعطي إحساس بالنظام */}
+      {/* أشكال هندسية تعطي إحساس بالتحكم والبوابة */}
       <div className="absolute top-20 right-[15%] h-64 w-64 rounded-full border border-primary/5 animate-pulse-subtle" />
       <div className="absolute bottom-32 left-[10%] h-40 w-40 rounded-full border border-accent/10 animate-pulse-subtle animation-delay-300" />
       
-      {/* نقاط تمثل الفوضى المنظمة */}
+      {/* نقاط تمثل مستويات الوصول */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-work/30 animate-float" />
         <div className="absolute top-1/3 right-1/3 w-2 h-2 rounded-full bg-audience/30 animate-float animation-delay-200" />
@@ -36,19 +42,19 @@ export function HeroSection() {
       <div className="container relative z-10 px-4 py-12">
         <div className="mx-auto max-w-3xl text-center">
           
-          {/* الأيقونة الرئيسية - تمثل التحكم في الرسائل */}
+          {/* أيقونة البوابة - تمثل التحكم في الوصول */}
           <div className="mb-8 inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg opacity-0 animate-fade-in-up">
-            <MessageCircle className="h-10 w-10" />
+            <Lock className="h-10 w-10" />
           </div>
 
-          {/* العنوان الرئيسي - كلمات قليلة، تأثير كبير */}
-          <h1 className="mb-6 text-4xl font-bold leading-tight text-foreground sm:text-5xl md:text-6xl opacity-0 animate-fade-in-up animation-delay-100">
-            <span className="text-gradient-premium">{tagline[language]}</span>
+          {/* العنوان الرئيسي - جملة واحدة قوية عن التحكم */}
+          <h1 className="mb-4 text-4xl font-bold leading-tight text-foreground sm:text-5xl md:text-6xl opacity-0 animate-fade-in-up animation-delay-100">
+            <span className="text-gradient-premium">{headline[language]}</span>
           </h1>
 
-          {/* شرح مختصر جداً */}
-          <p className="mb-10 text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed opacity-0 animate-fade-in-up animation-delay-200">
-            {t.hero.subtitle}
+          {/* نقطة الألم - جملة واحدة */}
+          <p className="mb-10 text-xl md:text-2xl text-muted-foreground max-w-lg mx-auto leading-relaxed opacity-0 animate-fade-in-up animation-delay-200 font-medium">
+            {subheadline[language]}
           </p>
 
           {/* CTA واحد قوي */}
@@ -64,7 +70,7 @@ export function HeroSection() {
             </Button>
           </div>
 
-          {/* مؤشرات ثقة بصرية بدون كلام كثير */}
+          {/* مؤشرات ثقة - تحكم وحماية */}
           <div className="flex items-center justify-center gap-8 opacity-0 animate-fade-in-up animation-delay-400">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Shield className="h-5 w-5 text-accent" />
@@ -72,7 +78,7 @@ export function HeroSection() {
             </div>
             <div className="h-4 w-px bg-border" />
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Layers className="h-5 w-5 text-primary" />
+              <Lock className="h-5 w-5 text-primary" />
               <span className="text-sm">{t.hero.trust2}</span>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { MessageSquarePlus, Filter, CheckCircle } from "lucide-react";
+import { Layers, Filter, CheckCircle } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export function HowItWorksSection() {
@@ -6,7 +6,7 @@ export function HowItWorksSection() {
 
   const steps = [
     {
-      icon: MessageSquarePlus,
+      icon: Layers,
       title: t.howItWorks.step1.title,
       description: t.howItWorks.step1.description,
     },

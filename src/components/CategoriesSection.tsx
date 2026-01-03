@@ -5,11 +5,17 @@ import { useLanguage } from "@/i18n/LanguageContext";
 export function CategoriesSection() {
   const { t, language } = useLanguage();
 
-  // 🧠 عنوان بصري - يوصل الفكرة بدون شرح
+  // 🧠 عنوان يركز على التحكم في الوصول - Steven Cravotta style
   const sectionTitle = {
-    ar: "كل رسالة في مكانها",
-    en: "Every message in its place",
-    fr: "Chaque message à sa place"
+    ar: "ثلاثة مستويات وصول",
+    en: "Three access levels",
+    fr: "Trois niveaux d'accès"
+  };
+
+  const sectionSubtitle = {
+    ar: "أنت تقرر من يمكنه مقاطعتك",
+    en: "You decide who can interrupt you",
+    fr: "Vous décidez qui peut vous interrompre"
   };
 
   return (
@@ -17,20 +23,23 @@ export function CategoriesSection() {
       {/* خلفية تعطي إحساس بالتنظيم */}
       <div className="absolute inset-0 bg-secondary/30" />
       
-      {/* خطوط دقيقة تمثل التنظيم */}
+      {/* خطوط دقيقة تمثل المستويات */}
       <div className="absolute inset-0 opacity-[0.015]" style={{
         backgroundImage: `repeating-linear-gradient(90deg, hsl(var(--foreground)) 0px, hsl(var(--foreground)) 1px, transparent 1px, transparent 80px)`
       }} />
       
       <div className="container relative z-10 px-4">
-        {/* عنوان بسيط */}
+        {/* عنوان يركز على التحكم */}
         <div className="mx-auto max-w-xl text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground opacity-0 animate-fade-in-up">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground opacity-0 animate-fade-in-up mb-3">
             {sectionTitle[language]}
           </h2>
+          <p className="text-lg text-muted-foreground opacity-0 animate-fade-in-up animation-delay-100">
+            {sectionSubtitle[language]}
+          </p>
         </div>
 
-        {/* البطاقات - تشرح نفسها بصرياً */}
+        {/* البطاقات - مستويات الوصول */}
         <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
           <CategoryCard
             title={t.categories.work.title}
