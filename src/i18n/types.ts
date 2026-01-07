@@ -156,4 +156,30 @@ export interface Translations {
       hours: string;
     };
   };
+  auth: {
+    login: string;
+    signup: string;
+    email: string;
+    password: string;
+    username: string;
+    displayName: string;
+    loginButton: string;
+    signupButton: string;
+    noAccount: string;
+    hasAccount: string;
+    forgotPassword: string;
+    or: string;
+    errors: {
+      invalidEmail: string;
+      weakPassword: string;
+      userExists: string;
+      invalidCredentials: string;
+      generic: string;
+    };
+  };
+  search: {
+    placeholder: string;
+    noResults: string;
+    searching: string;
+  };
 }

@@ -35,10 +35,10 @@ export function Header() {
         {/* CTA & Language */}
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+          <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => window.location.href = '/auth'}>
             {t.header.login}
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => window.location.href = '/auth'}>
             {t.header.getStarted}
           </Button>
           
