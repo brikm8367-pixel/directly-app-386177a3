@@ -38,7 +38,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/dashboard');
+      navigate('/home');
     }
   }, [user, loading, navigate]);
 
@@ -206,14 +206,13 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Back to home */}
+        {/* About link */}
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/welcome')}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
           >
-            {isRTL ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
-            {t.footer.home}
+            {isRTL ? 'ما هو Directly؟' : 'What is Directly?'}
           </button>
         </div>
       </div>
