@@ -38,6 +38,98 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_access: {
+        Row: {
+          allowed_user_id: string
+          created_at: string
+          id: string
+          owner_id: string
+        }
+        Insert: {
+          allowed_user_id: string
+          created_at?: string
+          id?: string
+          owner_id: string
+        }
+        Update: {
+          allowed_user_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      message_limits: {
+        Row: {
+          category: Database["public"]["Enums"]["message_category"]
+          id: string
+          max_messages: number | null
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["message_category"]
+          id?: string
+          max_messages?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["message_category"]
+          id?: string
+          max_messages?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          category: Database["public"]["Enums"]["message_category"]
+          content: string
+          created_at: string
+          id: string
+          is_important: boolean | null
+          is_read: boolean | null
+          parent_id: string | null
+          receiver_id: string
+          sender_id: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["message_category"]
+          content: string
+          created_at?: string
+          id?: string
+          is_important?: boolean | null
+          is_read?: boolean | null
+          parent_id?: string | null
+          receiver_id: string
+          sender_id: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["message_category"]
+          content?: string
+          created_at?: string
+          id?: string
+          is_important?: boolean | null
+          is_read?: boolean | null
+          parent_id?: string | null
+          receiver_id?: string
+          sender_id?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -94,6 +186,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_receive_message: {
+        Args: {
+          _category: Database["public"]["Enums"]["message_category"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      can_send_to_direct: {
+        Args: { _receiver_id: string; _sender_id: string }
+        Returns: boolean
+      }
+      get_message_count: {
+        Args: {
+          _category: Database["public"]["Enums"]["message_category"]
+          _user_id: string
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -106,6 +216,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      message_category: "work" | "audience" | "direct"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -234,6 +345,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      message_category: ["work", "audience", "direct"],
     },
   },
 } as const
