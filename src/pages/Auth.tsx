@@ -6,8 +6,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { MessageSquare, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -28,13 +27,12 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   
   const { signIn, signUp, user, loading } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { isRTL } = useLanguage();
   const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
   useEffect(() => {
     if (!loading && user) {
@@ -44,119 +42,148 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
 
     try {
       if (isLogin) {
         const validation = loginSchema.safeParse({ email, password });
         if (!validation.success) {
-          toast({
-            variant: 'destructive',
-            title: t.auth.errors.generic,
-            description: validation.error.errors[0]?.message || t.auth.errors.invalidEmail,
-          });
+          setError(isRTL ? 'تأكد من صحة البريد الإلكتروني وكلمة المرور' : 'Please check your email and password');
           setIsLoading(false);
           return;
         }
 
-        const { error } = await signIn(email, password);
-        if (error) {
-          let errorMessage = t.auth.errors.generic;
-          if (error.message.includes('Invalid login credentials')) {
-            errorMessage = t.auth.errors.invalidCredentials;
+        const { error: signInError } = await signIn(email, password);
+        if (signInError) {
+          if (signInError.message.includes('Invalid login credentials')) {
+            setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
+          } else {
+            setError(isRTL ? 'حدث خطأ، حاول مرة أخرى' : 'An error occurred, please try again');
           }
-          toast({
-            variant: 'destructive',
-            title: t.auth.errors.generic,
-            description: errorMessage,
-          });
         }
       } else {
         const validation = signupSchema.safeParse({ email, password, username, displayName });
         if (!validation.success) {
-          toast({
-            variant: 'destructive',
-            title: t.auth.errors.generic,
-            description: validation.error.errors[0]?.message || t.auth.errors.invalidEmail,
-          });
+          const firstError = validation.error.errors[0];
+          if (firstError?.path[0] === 'username') {
+            setError(isRTL ? 'اسم المستخدم يجب أن يكون 3-30 حرف (أحرف وأرقام و _ فقط)' : 'Username must be 3-30 characters (letters, numbers, _ only)');
+          } else if (firstError?.path[0] === 'displayName') {
+            setError(isRTL ? 'الاسم يجب أن يكون حرفين على الأقل' : 'Display name must be at least 2 characters');
+          } else if (firstError?.path[0] === 'email') {
+            setError(isRTL ? 'أدخل بريد إلكتروني صحيح' : 'Please enter a valid email');
+          } else if (firstError?.path[0] === 'password') {
+            setError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+          }
           setIsLoading(false);
           return;
         }
 
-        const { error } = await signUp(email, password, username, displayName);
-        if (error) {
-          let errorMessage = t.auth.errors.generic;
-          if (error.message.includes('already registered')) {
-            errorMessage = t.auth.errors.userExists;
+        const { error: signUpError } = await signUp(email, password, username, displayName);
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            setError(isRTL ? 'هذا البريد الإلكتروني مسجل مسبقاً' : 'This email is already registered');
+          } else {
+            setError(isRTL ? 'حدث خطأ، حاول مرة أخرى' : 'An error occurred, please try again');
           }
-          toast({
-            variant: 'destructive',
-            title: t.auth.errors.generic,
-            description: errorMessage,
-          });
         }
       }
+    } catch {
+      setError(isRTL ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setEmail('');
+    setPassword('');
+    setUsername('');
+    setDisplayName('');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground text-sm">{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <MessageSquare className="h-6 w-6" />
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
+            <MessageSquare className="h-7 w-7" />
           </div>
           <span className="text-2xl font-bold text-foreground">Directly</span>
+          <p className="text-sm text-muted-foreground text-center">
+            {isRTL ? 'تحكم في من يصل إليك' : 'Control who reaches you'}
+          </p>
         </div>
 
         {/* Card */}
-        <div className="glass rounded-2xl p-8 border border-border/50 shadow-xl">
-          <h1 className="text-2xl font-bold text-center mb-6">
-            {isLogin ? t.auth.login : t.auth.signup}
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-lg">
+          <h1 className="text-xl font-semibold text-center mb-6">
+            {isLogin 
+              ? (isRTL ? 'تسجيل الدخول' : 'Sign In') 
+              : (isRTL ? 'إنشاء حساب جديد' : 'Create Account')}
           </h1>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <p className="text-sm text-destructive text-center">{error}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="username">{t.auth.username}</Label>
+                  <Label htmlFor="username" className="text-sm font-medium">
+                    {isRTL ? 'اسم المستخدم' : 'Username'}
+                  </Label>
                   <Input
                     id="username"
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="@username"
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    placeholder="username"
                     className="h-11"
-                    required
+                    autoComplete="username"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">{t.auth.displayName}</Label>
+                  <Label htmlFor="displayName" className="text-sm font-medium">
+                    {isRTL ? 'الاسم الظاهر' : 'Display Name'}
+                  </Label>
                   <Input
                     id="displayName"
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder={isRTL ? 'محمد أحمد' : 'John Doe'}
                     className="h-11"
-                    required
+                    autoComplete="name"
+                    disabled={isLoading}
                   />
                 </div>
               </>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">{t.auth.email}</Label>
+              <Label htmlFor="email" className="text-sm font-medium">
+                {isRTL ? 'البريد الإلكتروني' : 'Email'}
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -164,30 +191,48 @@ export default function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
                 className="h-11"
-                required
+                autoComplete="email"
+                disabled={isLoading}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">{t.auth.password}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
-                required
-              />
+              <Label htmlFor="password" className="text-sm font-medium">
+                {isRTL ? 'كلمة المرور' : 'Password'}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-11 pe-10"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
-            <Button type="submit" className="w-full h-11" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full h-11 font-medium" 
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  {isLogin ? t.auth.loginButton : t.auth.signupButton}
-                  <ArrowIcon className="h-4 w-4 ms-2" />
-                </>
+                isLogin 
+                  ? (isRTL ? 'دخول' : 'Sign In')
+                  : (isRTL ? 'إنشاء حساب' : 'Create Account')
               )}
             </Button>
           </form>
@@ -195,12 +240,17 @@ export default function Auth() {
           <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={switchMode}
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              disabled={isLoading}
             >
-              {isLogin ? t.auth.noAccount : t.auth.hasAccount}{' '}
+              {isLogin 
+                ? (isRTL ? 'ليس لديك حساب؟ ' : "Don't have an account? ")
+                : (isRTL ? 'لديك حساب؟ ' : 'Already have an account? ')}
               <span className="font-medium text-primary">
-                {isLogin ? t.auth.signup : t.auth.login}
+                {isLogin 
+                  ? (isRTL ? 'إنشاء حساب' : 'Sign Up')
+                  : (isRTL ? 'تسجيل الدخول' : 'Sign In')}
               </span>
             </button>
           </div>
@@ -210,7 +260,7 @@ export default function Auth() {
         <div className="mt-6 text-center">
           <button
             onClick={() => navigate('/welcome')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {isRTL ? 'ما هو Directly؟' : 'What is Directly?'}
           </button>
