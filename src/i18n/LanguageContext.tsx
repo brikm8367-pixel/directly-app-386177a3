@@ -3,9 +3,8 @@ import { Language, Translations } from './types';
 import { ar } from './ar';
 import { en } from './en';
 import { fr } from './fr';
-import { es } from './es';
 
-const translations: Record<Language, Translations> = { ar, en, fr, es };
+const translations: Record<Language, Translations> = { ar, en, fr };
 
 interface LanguageContextType {
   language: Language;

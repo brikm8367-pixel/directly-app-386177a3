@@ -1,4 +1,4 @@
-export type Language = 'ar' | 'en' | 'fr' | 'es';
+export type Language = 'ar' | 'en' | 'fr';
 
 export interface Translations {
   header: {
@@ -181,61 +181,5 @@ export interface Translations {
     placeholder: string;
     noResults: string;
     searching: string;
-  };
-  dashboard: {
-    inbox: string;
-    search: string;
-    patterns: string;
-    profile: string;
-    settings: string;
-    notifications: string;
-    darkMode: string;
-    lightMode: string;
-    language: string;
-    logout: string;
-    welcome: string;
-    messagesReceived: string;
-    messagesSent: string;
-    directAccess: string;
-    setLimit: string;
-    noMessages: string;
-    searchPlaceholder: string;
-    noResults: string;
-    sendMessage: string;
-  };
-  profile: {
-    title: string;
-    editProfile: string;
-    displayName: string;
-    username: string;
-    bio: string;
-    bioPlaceholder: string;
-    avatar: string;
-    changeAvatar: string;
-    save: string;
-    saving: string;
-    saved: string;
-    publicProfile: string;
-    publicProfileDesc: string;
-    memberSince: string;
-  };
-  notifications: {
-    title: string;
-    empty: string;
-    newMessage: string;
-    inboxFull: string;
-    markAllRead: string;
-    viewAll: string;
-  };
-  featureDescriptions: {
-    inbox: string;
-    search: string;
-    patterns: string;
-    profile: string;
-    darkMode: string;
-    languages: string;
-    notifications: string;
-    directAccess: string;
-    messageLimit: string;
   };
 }
