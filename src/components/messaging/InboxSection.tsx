@@ -15,10 +15,14 @@ import { cn } from '@/lib/utils';
 
 export type MessageCategory = 'work' | 'audience' | 'direct';
 
-interface Message {
+export interface Message {
   id: string;
   sender_id: string;
+  receiver_id: string;
+  category: MessageCategory;
+  parent_id: string | null;
   sender_profile?: {
+    id: string;
     display_name: string | null;
     username: string | null;
     avatar_url: string | null;

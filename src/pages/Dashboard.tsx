@@ -7,27 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Search, LogOut, Loader2, User, Send, TrendingUp, Bell, Settings, Heart } from 'lucide-react';
-import { InboxSection, MessageComposer, MessageViewer, DirectAccessManager, CommunicationPatterns, MessageCategory } from '@/components/messaging';
+import { InboxSection, MessageComposer, MessageViewer, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
 
 interface Profile {
   id: string;
   username: string | null;
   display_name: string | null;
   avatar_url: string | null;
-}
-
-interface Message {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  sender_profile?: Profile;
-  subject: string | null;
-  content: string;
-  is_important: boolean;
-  is_read: boolean;
-  created_at: string;
-  category: MessageCategory;
-  parent_id: string | null;
 }
 
 interface MessageLimit {
@@ -100,7 +86,7 @@ export default function Dashboard() {
 
       const withProfiles = data.map(m => ({
         ...m,
-        sender_profile: profiles?.find(p => p.id === m.sender_id)
+        sender_profile: profiles?.find(p => p.id === m.sender_id) || { id: m.sender_id, display_name: null, username: null, avatar_url: null }
       })) as Message[];
 
       setMessages({
