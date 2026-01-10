@@ -6,8 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Search, LogOut, Loader2, User, Send, TrendingUp, Bell, Settings, Heart } from 'lucide-react';
+import { MessageSquare, Search, LogOut, Loader2, User, Send, TrendingUp, Heart } from 'lucide-react';
 import { InboxSection, MessageComposer, MessageViewer, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { NotificationsPanel } from '@/components/NotificationsPanel';
+import { ProfilePage } from '@/components/ProfilePage';
 
 interface Profile {
   id: string;
@@ -23,10 +27,10 @@ interface MessageLimit {
 
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
-  const { isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState<'inbox' | 'search' | 'patterns'>('inbox');
+  const [activeTab, setActiveTab] = useState<'inbox' | 'search' | 'patterns' | 'profile'>('inbox');
   const [myProfile, setMyProfile] = useState<Profile | null>(null);
   
   // Messages state
@@ -186,14 +190,13 @@ export default function Dashboard() {
             </div>
             <span className="font-bold text-foreground">Directly</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <ThemeSwitcher />
+            <LanguageSwitcher />
+            <NotificationsPanel onNotificationClick={() => setActiveTab('inbox')} />
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsDirectAccessOpen(true)}>
               <Heart className="h-4 w-4" />
             </Button>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={myProfile?.avatar_url || undefined} />
-              <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-            </Avatar>
             <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8">
               <LogOut className="h-4 w-4" />
             </Button>
@@ -206,14 +209,15 @@ export default function Dashboard() {
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted rounded-lg mb-4 mt-2">
           {[
-            { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : 'Inbox' },
-            { id: 'search', icon: Search, label: isRTL ? 'بحث' : 'Search' },
-            { id: 'patterns', icon: TrendingUp, label: isRTL ? 'النمط' : 'Patterns' },
+            { id: 'inbox', icon: MessageSquare, label: t.dashboard.inbox },
+            { id: 'search', icon: Search, label: t.dashboard.search },
+            { id: 'patterns', icon: TrendingUp, label: t.dashboard.patterns },
+            { id: 'profile', icon: User, label: t.dashboard.profile },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors ${
                 activeTab === tab.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -286,6 +290,9 @@ export default function Dashboard() {
 
         {/* Patterns Tab */}
         {activeTab === 'patterns' && user && <CommunicationPatterns userId={user.id} />}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && <ProfilePage />}
       </main>
 
       {/* Modals */}
