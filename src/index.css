@@ -286,3 +286,75 @@
 .animation-delay-300 { animation-delay: 300ms; }
 .animation-delay-400 { animation-delay: 400ms; }
 .animation-delay-500 { animation-delay: 500ms; }
+
+/* 🎯 Global App-Like Sizing for Mobile */
+@layer utilities {
+  /* Larger, more comfortable touch targets */
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+  
+  /* App-like text sizing */
+  .text-app-title {
+    @apply text-xl font-bold leading-tight;
+  }
+  
+  .text-app-body {
+    @apply text-base leading-relaxed;
+  }
+  
+  .text-app-caption {
+    @apply text-sm leading-normal;
+  }
+  
+  /* Psychological feedback on touch */
+  .touch-feedback {
+    @apply active:scale-[0.98] transition-transform duration-100;
+  }
+  
+  /* Subconscious trust indicators */
+  .trust-glow {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  }
+  
+  /* Important message highlight */
+  .message-important {
+    @apply relative;
+    &::before {
+      content: '';
+      @apply absolute inset-y-2 start-0 w-1 bg-amber-500 rounded-full;
+    }
+  }
+  
+  /* Unread message emphasis */
+  .message-unread {
+    @apply relative font-medium;
+    &::after {
+      content: '';
+      @apply absolute top-2 end-2 w-2.5 h-2.5 bg-primary rounded-full animate-pulse;
+    }
+  }
+}
+
+/* Psychological micro-interactions */
+@keyframes success-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes attention-grab {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes satisfaction {
+  0% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-success { animation: success-pulse 0.4s ease-out; }
+.animate-attention { animation: attention-grab 0.3s ease-in-out; }
+.animate-satisfaction { animation: satisfaction 0.5s ease-out forwards; }

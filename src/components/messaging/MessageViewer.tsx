@@ -131,76 +131,88 @@ export default function MessageViewer({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
-        <DialogHeader className="shrink-0">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-              {isRTL ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 rounded-3xl">
+        {/* Header - Larger, clearer */}
+        <DialogHeader className="shrink-0 p-5 pb-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose} 
+              className="h-11 w-11 rounded-xl touch-feedback"
+            >
+              {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
             </Button>
-            <DialogTitle className="flex-1 truncate">
-              {message.subject || (isRTL ? 'رسالة' : 'Message')}
-            </DialogTitle>
-            <span className={cn(
-              'text-xs px-2 py-0.5 rounded-full text-white',
-              categoryColors[message.category]
-            )}>
-              {categoryLabels[message.category][isRTL ? 'ar' : 'en']}
-            </span>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg font-bold truncate">
+                {message.subject || (isRTL ? 'رسالة' : 'Message')}
+              </DialogTitle>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={cn(
+                  'text-sm px-3 py-1 rounded-full text-white font-medium',
+                  categoryColors[message.category]
+                )}>
+                  {categoryLabels[message.category][isRTL ? 'ar' : 'en']}
+                </span>
+                {message.is_important && (
+                  <span className="text-sm px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 font-medium flex items-center gap-1">
+                    <Zap className="h-4 w-4" />
+                    {isRTL ? 'مهم' : 'Important'}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {/* Sender info */}
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Sender info - Larger, more prominent */}
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/50">
+            <Avatar className="h-14 w-14 ring-2 ring-primary/10">
               <AvatarImage src={message.sender_profile?.avatar_url || undefined} />
-              <AvatarFallback>
-                {message.sender_profile?.display_name?.[0] || <User className="h-4 w-4" />}
+              <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                {message.sender_profile?.display_name?.[0] || <User className="h-6 w-6" />}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-medium text-sm">
-                  {message.sender_profile?.display_name || message.sender_profile?.username}
-                </p>
-                {message.is_important && (
-                  <Zap className="h-4 w-4 text-amber-500" />
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-bold text-lg text-foreground">
+                {message.sender_profile?.display_name || message.sender_profile?.username}
+              </p>
+              <p className="text-sm text-muted-foreground">
                 {formatDate(message.created_at)}
               </p>
             </div>
           </div>
 
-          {/* Message content */}
-          <div className="p-4 rounded-lg bg-muted/30 border border-border">
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+          {/* Message content - More readable */}
+          <div className="p-5 rounded-2xl bg-card border-2 border-border">
+            <p className="text-base leading-relaxed whitespace-pre-wrap">
               {message.content}
             </p>
           </div>
         </div>
 
-        {/* Reply section */}
-        <div className="shrink-0 border-t border-border pt-4 space-y-3">
+        {/* Reply section - Larger, more comfortable */}
+        <div className="shrink-0 border-t-2 border-border p-5 space-y-4 bg-muted/30">
           <Textarea
-            placeholder={isRTL ? 'اكتب ردك...' : 'Write your reply...'}
+            placeholder={isRTL ? '✍️ اكتب ردك هنا...' : '✍️ Write your reply here...'}
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
-            rows={2}
-            className="resize-none"
+            rows={3}
+            className="resize-none text-base rounded-xl border-2 focus:border-primary p-4"
           />
           <Button 
             onClick={handleReply}
             disabled={!replyContent.trim() || isSending}
-            className="w-full"
+            size="lg"
+            className="w-full h-14 text-lg rounded-xl touch-feedback"
           >
             {isSending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <>
-                <Send className="h-4 w-4 me-1" />
-                {isRTL ? 'رد' : 'Reply'}
+                <Send className="h-5 w-5 me-2" />
+                {isRTL ? 'إرسال الرد' : 'Send Reply'}
               </>
             )}
           </Button>
