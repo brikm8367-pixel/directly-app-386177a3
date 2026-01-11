@@ -177,48 +177,77 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-lg mx-auto flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <MessageSquare className="h-4 w-4" />
+      {/* Header - Larger for better touch */}
+      <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
+        <div className="max-w-lg mx-auto flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
+              <MessageSquare className="h-5 w-5" />
             </div>
-            <span className="font-bold text-foreground">Directly</span>
+            <div>
+              <span className="font-bold text-lg text-foreground">Directly</span>
+              <p className="text-xs text-muted-foreground -mt-0.5">
+                {isRTL ? 'تحكّم في وقتك' : 'Control your time'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsDirectAccessOpen(true)}>
-              <Heart className="h-4 w-4" />
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-11 w-11 rounded-xl touch-feedback" 
+              onClick={() => setIsDirectAccessOpen(true)}
+            >
+              <Heart className="h-5 w-5" />
             </Button>
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-10 w-10 ring-2 ring-primary/10">
               <AvatarImage src={myProfile?.avatar_url || undefined} />
-              <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+              <AvatarFallback className="bg-primary/10"><User className="h-5 w-5 text-primary" /></AvatarFallback>
             </Avatar>
-            <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8">
-              <LogOut className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-11 w-11 rounded-xl touch-feedback">
+              <LogOut className="h-5 w-5" />
             </Button>
           </div>
         </div>
       </header>
 
+      {/* Psychological Motivator - Subconscious messaging */}
+      <div className="fixed top-16 right-0 left-0 z-40 bg-gradient-to-b from-primary/5 to-transparent py-2">
+        <p className="text-center text-sm text-primary/80 font-medium">
+          {isRTL 
+            ? messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length > 0
+              ? `✨ لديك ${messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length} رسائل جديدة`
+              : '🎯 صندوقك منظم ومرتب'
+            : messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length > 0
+              ? `✨ You have ${messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length} new messages`
+              : '🎯 Your inbox is organized'
+          }
+        </p>
+      </div>
+
       {/* Main Content */}
-      <main className="max-w-lg mx-auto pt-16 pb-20 px-4">
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-muted rounded-lg mb-4 mt-2">
+      <main className="max-w-lg mx-auto pt-28 pb-24 px-4">
+        {/* Tabs - Larger for app-like feel */}
+        <div className="flex gap-1 p-1.5 bg-muted rounded-2xl mb-5">
           {[
-            { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : 'Inbox' },
+            { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : 'Inbox', count: messages.work.length + messages.audience.length + messages.direct.length },
             { id: 'search', icon: Search, label: isRTL ? 'بحث' : 'Search' },
             { id: 'patterns', icon: TrendingUp, label: isRTL ? 'النمط' : 'Patterns' },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                activeTab === tab.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              className={`flex-1 py-3 px-4 rounded-xl text-base font-semibold transition-all touch-feedback ${
+                activeTab === tab.id 
+                  ? 'bg-card text-foreground shadow-md' 
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <tab.icon className="h-4 w-4 mx-auto mb-1" />
-              {tab.label}
+              <tab.icon className="h-5 w-5 mx-auto mb-1" />
+              <span className="block">{tab.label}</span>
+              {tab.count && activeTab === tab.id && (
+                <span className="text-xs text-primary mt-0.5 block">{tab.count}</span>
+              )}
             </button>
           ))}
         </div>
@@ -243,42 +272,66 @@ export default function Dashboard() {
         {/* Search Tab */}
         {activeTab === 'search' && (
           <div>
+            {/* Psychological hint */}
+            <div className="mb-4 p-3 rounded-xl bg-accent/10 border border-accent/20">
+              <p className="text-sm text-accent font-medium text-center">
+                {isRTL ? '💡 تواصل مع من يهمك فقط' : '💡 Connect with who matters'}
+              </p>
+            </div>
+            
             <div className="relative mb-4">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 placeholder={isRTL ? 'ابحث عن أشخاص...' : 'Search for people...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="ps-10 h-11"
+                className="ps-12 h-14 text-base rounded-2xl border-2 focus:border-primary"
               />
-              {isSearching && <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
+              {isSearching && <Loader2 className="absolute end-4 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-primary" />}
             </div>
             {searchQuery.length >= 2 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {searchResults.length === 0 && !isSearching ? (
-                  <p className="text-center text-muted-foreground py-8 text-sm">{isRTL ? 'لا توجد نتائج' : 'No results'}</p>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
+                      <Search className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-base text-muted-foreground">{isRTL ? 'لا توجد نتائج' : 'No results'}</p>
+                  </div>
                 ) : (
                   searchResults.map((profile) => (
-                    <div key={profile.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
-                      <Avatar className="h-10 w-10">
+                    <div 
+                      key={profile.id} 
+                      className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border shadow-sm touch-feedback hover:shadow-md transition-shadow"
+                    >
+                      <Avatar className="h-14 w-14 ring-2 ring-primary/10">
                         <AvatarImage src={profile.avatar_url || undefined} />
-                        <AvatarFallback>{profile.display_name?.[0] || <User className="h-4 w-4" />}</AvatarFallback>
+                        <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                          {profile.display_name?.[0] || <User className="h-6 w-6" />}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate text-sm">{profile.display_name || profile.username}</p>
-                        {profile.username && <p className="text-xs text-muted-foreground">@{profile.username}</p>}
+                        <p className="font-semibold text-foreground truncate text-base">{profile.display_name || profile.username}</p>
+                        {profile.username && <p className="text-sm text-muted-foreground">@{profile.username}</p>}
                       </div>
-                      <Button size="sm" onClick={() => setComposeRecipient(profile)}>
-                        <Send className="h-4 w-4" />
+                      <Button 
+                        size="lg" 
+                        onClick={() => setComposeRecipient(profile)}
+                        className="h-12 w-12 rounded-xl touch-feedback"
+                      >
+                        <Send className="h-5 w-5" />
                       </Button>
                     </div>
                   ))
                 )}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <Search className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">{isRTL ? 'ابحث عن أشخاص لإرسال رسالة' : 'Search for people to message'}</p>
+              <div className="text-center py-16">
+                <div className="w-20 h-20 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
+                  <Search className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <p className="text-lg font-medium text-foreground mb-1">{isRTL ? 'ابحث عن أشخاص' : 'Search for people'}</p>
+                <p className="text-base text-muted-foreground">{isRTL ? 'أرسل رسالتك للشخص المناسب' : 'Send your message to the right person'}</p>
               </div>
             )}
           </div>
