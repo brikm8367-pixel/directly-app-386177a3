@@ -6,140 +6,140 @@
 
 @layer base {
   :root {
-    /* 🎯 Directly: هوية بصرية فاخرة - بنفسجي + ذهبي */
+    /* 🎯 Directly: هوية بصرية تعكس الثقة والتركيز والذكاء */
     
-    /* الخلفية: بنفسجي داكن أنيق */
-    --background: 239 84% 58%;
-    --foreground: 210 40% 98%;
+    /* الخلفية: Off-White مريح للعين = صفاء ذهني */
+    --background: 210 40% 98%;
+    --foreground: 222 84% 5%;
 
-    /* البطاقات */
-    --card: 239 70% 52%;
-    --card-foreground: 210 40% 98%;
+    /* البطاقات: أبيض نقي = مساحة آمنة */
+    --card: 0 0% 100%;
+    --card-foreground: 222 84% 5%;
 
-    --popover: 239 70% 52%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 84% 5%;
 
-    /* 🎯 الأساسي: بنفسجي داكن */
-    --primary: 239 84% 58%;
-    --primary-foreground: 210 40% 98%;
+    /* 🎯 الأساسي: Indigo = ثقة، ذكاء، احتراف */
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
 
-    /* ✨ الثانوي: ذهبي للتميز والفخامة */
-    --secondary: 51 100% 50%;
-    --secondary-foreground: 222 47% 11%;
+    /* الثانوي: Deep Purple = عمق وجدية */
+    --secondary: 243 75% 59%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 239 50% 45%;
-    --muted-foreground: 210 30% 85%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    /* ✨ التمييز: ذهبي للأزرار والإشعارات المهمة */
-    --accent: 51 100% 50%;
-    --accent-foreground: 222 47% 11%;
+    /* ✨ التمييز: Soft Emerald = أمان، تم، وصول الرسالة */
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 239 50% 65%;
-    --input: 239 50% 65%;
-    --ring: 51 100% 50%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 239 84% 67%;
 
     --radius: 1rem;
 
     /* 🏷️ ألوان الفئات */
-    /* العمل: بنفسجي فاتح */
-    --work: 243 75% 65%;
-    --work-light: 243 75% 90%;
+    /* العمل: Indigo = احترافية */
+    --work: 239 84% 67%;
+    --work-light: 239 84% 97%;
     
-    /* الجمهور: بنفسجي متوسط */
-    --audience: 239 70% 55%;
-    --audience-light: 239 70% 90%;
+    /* الجمهور: Deep Purple = تواصل */
+    --audience: 243 75% 59%;
+    --audience-light: 243 75% 97%;
     
-    /* المباشر: ذهبي للتميز */
-    --others: 51 100% 50%;
-    --others-light: 51 100% 90%;
+    /* المقربون/المباشر: Soft Emerald = قرب وثقة */
+    --others: 160 84% 39%;
+    --others-light: 160 84% 97%;
 
-    /* النجاح */
+    /* النجاح والتنبيهات */
     --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
     /* التدرجات */
-    --gradient-primary: linear-gradient(135deg, hsl(239 84% 58%), hsl(243 75% 50%));
-    --gradient-hero: linear-gradient(180deg, hsl(239 84% 58%) 0%, hsl(243 75% 50%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(239 70% 52%) 0%, hsl(239 60% 45%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(239 84% 58%) 0%, hsl(51 100% 50%) 100%);
-    --gradient-control: linear-gradient(135deg, hsl(239 84% 58%) 0%, hsl(243 75% 50%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(51 100% 50%) 0%, hsl(45 100% 45%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(239 84% 67%), hsl(243 75% 59%));
+    --gradient-hero: linear-gradient(180deg, hsl(210 40% 98%) 0%, hsl(210 40% 96%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(160 84% 39%) 100%);
+    --gradient-control: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(243 75% 59%) 100%);
+    --gradient-clarity: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(160 84% 50%) 100%);
+    --gradient-warmth: linear-gradient(135deg, hsl(243 75% 59%) 0%, hsl(239 84% 67%) 100%);
 
     /* الظلال */
-    --shadow-sm: 0 1px 3px hsl(222 84% 5% / 0.15);
-    --shadow-md: 0 4px 16px -4px hsl(222 84% 5% / 0.2);
-    --shadow-lg: 0 12px 32px -8px hsl(222 84% 5% / 0.25);
-    --shadow-glow: 0 0 50px hsl(51 100% 50% / 0.3);
-    --shadow-gold: 0 8px 30px -8px hsl(51 100% 50% / 0.4);
+    --shadow-sm: 0 1px 3px hsl(222 84% 5% / 0.04);
+    --shadow-md: 0 4px 16px -4px hsl(222 84% 5% / 0.08);
+    --shadow-lg: 0 12px 32px -8px hsl(222 84% 5% / 0.12);
+    --shadow-glow: 0 0 50px hsl(239 84% 67% / 0.15);
+    --shadow-control: 0 8px 30px -8px hsl(239 84% 67% / 0.2);
+    --shadow-success: 0 0 30px hsl(160 84% 39% / 0.2);
 
     /* Sidebar */
-    --sidebar-background: 239 84% 58%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 51 100% 50%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 239 70% 52%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 239 50% 65%;
-    --sidebar-ring: 51 100% 50%;
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222 84% 5%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 84% 5%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 239 84% 67%;
   }
 
   .dark {
-    /* 🌙 الوضع الليلي: بنفسجي أغمق جدًا */
-    --background: 240 20% 12%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
 
-    --card: 240 20% 16%;
+    --card: 222 40% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 240 20% 16%;
+    --popover: 222 40% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 239 84% 65%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
 
-    /* ✨ ذهبي أكثر إشراقًا للوضع الليلي */
-    --secondary: 51 100% 55%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 243 75% 59%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 15% 22%;
-    --muted-foreground: 215 20% 70%;
+    --muted: 222 30% 16%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 51 100% 55%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 160 84% 45%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 15% 25%;
-    --input: 240 15% 25%;
-    --ring: 51 100% 55%;
+    --border: 222 30% 16%;
+    --input: 222 30% 16%;
+    --ring: 239 84% 67%;
 
-    --work: 243 75% 70%;
-    --work-light: 243 40% 18%;
-    --audience: 239 70% 60%;
-    --audience-light: 239 40% 18%;
-    --others: 51 100% 55%;
-    --others-light: 51 40% 18%;
+    --work: 239 84% 70%;
+    --work-light: 239 40% 12%;
+    --audience: 243 75% 65%;
+    --audience-light: 243 40% 12%;
+    --others: 160 84% 45%;
+    --others-light: 160 40% 12%;
 
     --success: 160 84% 45%;
     --success-foreground: 0 0% 100%;
 
-    --gradient-hero: linear-gradient(180deg, hsl(240 20% 12%) 0%, hsl(240 20% 16%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(240 20% 18%) 0%, hsl(240 20% 14%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(239 84% 65%) 0%, hsl(51 100% 55%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(51 100% 55%) 0%, hsl(45 100% 50%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(222 47% 6%) 0%, hsl(222 40% 10%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(222 40% 12%) 0%, hsl(222 40% 8%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(160 84% 45%) 100%);
+    --gradient-control: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(243 75% 65%) 100%);
 
-    --sidebar-background: 240 20% 10%;
+    --sidebar-background: 222 40% 8%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 51 100% 55%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 240 20% 18%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 35% 14%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 240 15% 25%;
-    --sidebar-ring: 51 100% 55%;
+    --sidebar-border: 222 30% 16%;
+    --sidebar-ring: 239 84% 67%;
   }
 }
 
