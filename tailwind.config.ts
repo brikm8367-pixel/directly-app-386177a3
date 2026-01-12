@@ -71,6 +71,11 @@ export default {
           dark: "#4338CA",
           light: "#6366F1",
         },
+        gold: {
+          DEFAULT: "#FFD700",
+          dark: "#E6C200",
+          light: "#FFE44D",
+        },
         emerald: {
           DEFAULT: "#10B981",
           light: "#34D399",
