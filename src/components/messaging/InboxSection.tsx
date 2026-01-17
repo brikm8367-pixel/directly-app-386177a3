@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Zap, Settings2, Mail, MailOpen } from 'lucide-react';
+import { Briefcase, Users, Heart, Crown, Settings2, Mail, MailOpen, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -46,24 +45,18 @@ interface InboxSectionProps {
 const categoryConfig = {
   work: {
     icon: Briefcase,
-    colorClass: 'bg-[hsl(var(--work))]',
-    bgClass: 'bg-[hsl(var(--work-light))]',
-    borderClass: 'border-[hsl(var(--work)/0.3)]',
-    textClass: 'text-[hsl(var(--work))]',
+    label: { ar: 'العمل', en: 'Work' },
+    subtitle: { ar: 'رسائل مهنية', en: 'Professional' },
   },
   audience: {
     icon: Users,
-    colorClass: 'bg-[hsl(var(--audience))]',
-    bgClass: 'bg-[hsl(var(--audience-light))]',
-    borderClass: 'border-[hsl(var(--audience)/0.3)]',
-    textClass: 'text-[hsl(var(--audience))]',
+    label: { ar: 'الجمهور', en: 'Audience' },
+    subtitle: { ar: 'رسائل عامة', en: 'Public messages' },
   },
   direct: {
     icon: Heart,
-    colorClass: 'bg-[hsl(var(--others))]',
-    bgClass: 'bg-[hsl(var(--others-light))]',
-    borderClass: 'border-[hsl(var(--others)/0.3)]',
-    textClass: 'text-[hsl(var(--others))]',
+    label: { ar: 'مباشر', en: 'Direct' },
+    subtitle: { ar: 'المقربون فقط', en: 'Close contacts' },
   },
 };
 
@@ -82,12 +75,7 @@ export default function InboxSection({
   const config = categoryConfig[category];
   const Icon = config.icon;
   const isFull = messages.length >= messageLimit;
-
-  const categoryLabels = {
-    work: { ar: 'العمل', en: 'Work' },
-    audience: { ar: 'الجمهور', en: 'Audience' },
-    direct: { ar: 'مباشر', en: 'Direct' },
-  };
+  const isAlmostFull = messages.length >= messageLimit * 0.8;
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -116,129 +104,159 @@ export default function InboxSection({
 
   return (
     <div className={cn(
-      'rounded-2xl border-2 p-5 transition-all duration-200',
-      config.bgClass,
-      config.borderClass,
-      unreadCount > 0 && 'ring-2 ring-primary/20'
+      'rounded-3xl border-2 p-5 transition-all duration-300',
+      'bg-card border-primary/10',
+      isFull && 'border-destructive/30 bg-destructive/5',
+      unreadCount > 0 && !isFull && 'ring-2 ring-primary/20 shadow-md'
     )}>
-      {/* Header - Larger and more informative */}
+      {/* Header - Golden and clear */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={cn('p-3 rounded-xl shadow-md', config.colorClass)}>
-            <Icon className="h-5 w-5 text-white" />
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            'p-4 rounded-2xl shadow-lg',
+            isFull ? 'bg-destructive/20' : 'bg-primary/10'
+          )}>
+            <Icon className={cn('h-6 w-6', isFull ? 'text-destructive' : 'text-primary')} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-lg text-foreground">
-                {categoryLabels[category][isRTL ? 'ar' : 'en']}
+              <h3 className="font-bold text-xl text-foreground">
+                {config.label[isRTL ? 'ar' : 'en']}
               </h3>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-primary text-primary-foreground rounded-full animate-pulse">
+                <span className="px-3 py-1 text-sm font-bold bg-primary text-primary-foreground rounded-full animate-gold-glow">
                   {unreadCount}
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {messages.length} / {messageLimit} {isRTL ? 'رسالة' : 'messages'}
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {messages.length} / {messageLimit} {config.subtitle[isRTL ? 'ar' : 'en']}
             </p>
           </div>
         </div>
 
         <Dialog open={isLimitDialogOpen} onOpenChange={setIsLimitDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl touch-feedback">
-              <Settings2 className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl touch-feedback hover:bg-primary/10">
+              <Settings2 className="h-6 w-6 text-primary" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="rounded-3xl">
+          <DialogContent className="rounded-3xl border-2 border-primary/20">
             <DialogHeader>
-              <DialogTitle className="text-xl">
-                {isRTL ? '🎯 تحكم في وقتك' : '🎯 Control your time'}
+              <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                <Crown className="h-7 w-7 text-primary" />
+                {isRTL ? 'تحكم في صندوقك' : 'Control Your Inbox'}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-6 py-4">
               {/* Psychological messaging */}
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-base text-center text-muted-foreground">
                 {isRTL 
-                  ? 'كلما قل العدد، زاد تركيزك وإنتاجيتك' 
-                  : 'Less messages = more focus & productivity'}
+                  ? '🎯 كلما قل العدد، زادت جودة وقتك' 
+                  : '🎯 Less messages = Higher quality time'}
               </p>
-              <div className="text-center p-4 bg-muted rounded-2xl">
-                <span className={cn('text-5xl font-bold', config.textClass)}>
+              
+              {/* Current value - big and clear */}
+              <div className="text-center p-6 bg-primary/5 rounded-3xl border-2 border-primary/20">
+                <span className="text-6xl font-bold text-primary">
                   {tempLimit}
                 </span>
-                <p className="text-base text-muted-foreground mt-2">
-                  {isRTL ? 'رسالة كحد أقصى' : 'messages max'}
+                <p className="text-lg text-muted-foreground mt-2">
+                  {isRTL ? 'رسالة كحد أقصى' : 'messages maximum'}
                 </p>
               </div>
+              
               <Slider
                 value={[tempLimit]}
                 onValueChange={([value]) => setTempLimit(value)}
                 min={10}
                 max={500}
                 step={10}
-                className="w-full py-4"
+                className="w-full py-6"
               />
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>{isRTL ? '🧘 تركيز عالي' : '🧘 High focus'}</span>
-                <span>{isRTL ? '📬 استقبال أكثر' : '📬 More inbox'}</span>
+              
+              <div className="flex justify-between text-base text-muted-foreground">
+                <span>🧘 {isRTL ? 'تركيز عالي' : 'High focus'}</span>
+                <span>📬 {isRTL ? 'استقبال أكثر' : 'More inbox'}</span>
               </div>
-              <Button onClick={handleSaveLimit} size="lg" className="w-full h-14 text-lg rounded-xl touch-feedback">
-                {isRTL ? '✓ حفظ الإعداد' : '✓ Save Setting'}
+              
+              <Button 
+                onClick={handleSaveLimit} 
+                size="lg" 
+                className="w-full h-16 text-xl rounded-2xl touch-feedback glow-gold font-bold"
+              >
+                ✓ {isRTL ? 'حفظ' : 'Save'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Important messages hint */}
+      {/* Important messages hint - Gold themed */}
       {importantCount > 0 && (
-        <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-          <Zap className="h-5 w-5 text-amber-500" />
-          <p className="text-sm font-medium text-amber-700">
+        <div className="mb-4 p-4 rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center gap-3">
+          <Crown className="h-6 w-6 text-primary animate-crown" />
+          <p className="text-base font-semibold text-foreground">
             {isRTL 
               ? `${importantCount} رسائل مهمة تنتظرك` 
-              : `${importantCount} important messages waiting`}
+              : `${importantCount} important messages`}
           </p>
         </div>
       )}
 
-      {/* Full warning - More prominent */}
+      {/* Full warning - Very visible */}
       {isFull && (
-        <div className="mb-4 p-4 rounded-xl bg-destructive/10 border-2 border-destructive/20 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-destructive/20">
-            <Mail className="h-5 w-5 text-destructive" />
+        <div className="mb-4 p-5 rounded-2xl bg-destructive/10 border-2 border-destructive/30 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-destructive/20">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-destructive">
+            <p className="text-lg font-bold text-destructive">
               {isRTL ? 'صندوقك ممتلئ!' : 'Inbox is full!'}
             </p>
-            <p className="text-xs text-destructive/80">
-              {isRTL ? 'اضغط ⚙️ لزيادة الحد' : 'Click ⚙️ to increase limit'}
+            <p className="text-sm text-destructive/80">
+              {isRTL 
+                ? 'لن تستقبل رسائل جديدة. اضغط ⚙️ لزيادة الحد' 
+                : 'No new messages. Click ⚙️ to increase limit'}
             </p>
           </div>
         </div>
       )}
 
-      {/* Messages list - Larger, more readable */}
-      <div className="space-y-3 max-h-80 overflow-y-auto">
+      {/* Almost full warning */}
+      {isAlmostFull && !isFull && (
+        <div className="mb-4 p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/20 flex items-center gap-3">
+          <Mail className="h-5 w-5 text-amber-600" />
+          <p className="text-sm font-medium text-amber-700">
+            {isRTL 
+              ? `الصندوق يمتلئ (${messages.length}/${messageLimit})` 
+              : `Inbox filling up (${messages.length}/${messageLimit})`}
+          </p>
+        </div>
+      )}
+
+      {/* Messages list - Larger and clearer */}
+      <div className="space-y-3 max-h-96 overflow-y-auto">
         {isLoading ? (
-          <div className="text-center py-8">
-            <div className="h-8 w-8 mx-auto animate-spin rounded-full border-3 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground mt-2">
+          <div className="text-center py-12">
+            <div className="relative inline-block">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+              <Crown className="h-4 w-4 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-base text-muted-foreground mt-3">
               {isRTL ? 'جاري التحميل...' : 'Loading...'}
             </p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
-              <Mail className="h-8 w-8 text-muted-foreground" />
+          <div className="text-center py-14">
+            <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <Crown className="h-10 w-10 text-primary" />
             </div>
-            <p className="text-base font-medium text-foreground mb-1">
+            <p className="text-xl font-bold text-foreground mb-2">
               {isRTL ? 'لا توجد رسائل' : 'No messages'}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? '🎯 وقتك محمي' : '🎯 Your time is protected'}
+            <p className="text-base text-muted-foreground">
+              {isRTL ? '🎯 وقتك محمي ومنظم' : '🎯 Your time is protected'}
             </p>
           </div>
         ) : (
@@ -247,30 +265,30 @@ export default function InboxSection({
               key={message.id}
               onClick={() => onMessageClick(message)}
               className={cn(
-                'w-full text-start p-4 rounded-xl border-2 transition-all touch-feedback',
-                'hover:shadow-md active:shadow-sm',
+                'w-full text-start p-5 rounded-2xl border-2 transition-all touch-feedback',
+                'hover:shadow-lg active:shadow-md',
                 message.is_read 
                   ? 'bg-card border-border' 
-                  : 'bg-card border-primary/30 shadow-md',
-                message.is_important && 'border-s-4 border-s-amber-500',
+                  : 'bg-primary/5 border-primary/20 shadow-md',
+                message.is_important && !message.is_read && 'border-s-4 border-s-primary',
                 !message.is_read && 'animate-fade-in-up',
               )}
-              style={{ animationDelay: `${index * 50}ms` }}
+              style={{ animationDelay: `${index * 60}ms` }}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-4">
                 {message.is_read ? (
-                  <div className="p-2 rounded-lg bg-muted">
+                  <div className="p-3 rounded-xl bg-muted">
                     <MailOpen className="h-5 w-5 text-muted-foreground" />
                   </div>
                 ) : (
-                  <div className="p-2 rounded-lg bg-primary/10">
+                  <div className="p-3 rounded-xl bg-primary/10">
                     <Mail className="h-5 w-5 text-primary" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <span className={cn(
-                      'font-semibold text-base truncate',
+                      'font-bold text-lg truncate',
                       !message.is_read ? 'text-foreground' : 'text-muted-foreground'
                     )}>
                       {message.sender_profile?.display_name || 
@@ -278,26 +296,21 @@ export default function InboxSection({
                        (isRTL ? 'مجهول' : 'Unknown')}
                     </span>
                     {message.is_important && (
-                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10">
-                        <Zap className="h-3.5 w-3.5 text-amber-500" />
-                        <span className="text-xs font-medium text-amber-600">
-                          {isRTL ? 'مهم' : 'Important'}
-                        </span>
-                      </div>
+                      <Crown className="h-4 w-4 text-primary flex-shrink-0" />
                     )}
                   </div>
                   {message.subject && (
                     <p className={cn(
-                      'text-sm truncate mb-1',
-                      !message.is_read ? 'font-medium text-foreground' : 'text-muted-foreground'
+                      'text-base truncate mb-1',
+                      !message.is_read ? 'font-semibold text-foreground' : 'text-muted-foreground'
                     )}>
                       {message.subject}
                     </p>
                   )}
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-base text-muted-foreground truncate">
                     {message.content}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <p className="text-sm text-muted-foreground mt-2">
                     {formatTime(message.created_at)}
                   </p>
                 </div>
@@ -311,11 +324,11 @@ export default function InboxSection({
         <Button 
           variant="outline" 
           size="lg" 
-          className="w-full mt-4 h-12 text-base rounded-xl touch-feedback border-2"
+          className="w-full mt-4 h-14 text-lg rounded-2xl touch-feedback border-2 border-primary/20 hover:bg-primary/5"
         >
           {isRTL 
-            ? `📬 عرض كل الرسائل (${messages.length})` 
-            : `📬 View all messages (${messages.length})`}
+            ? `عرض الكل (${messages.length})` 
+            : `View all (${messages.length})`}
         </Button>
       )}
     </div>

@@ -66,14 +66,10 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
-        indigo: {
-          DEFAULT: "#4F46E5",
-          dark: "#4338CA",
-          light: "#6366F1",
-        },
-        emerald: {
-          DEFAULT: "#10B981",
-          light: "#34D399",
+        gold: {
+          DEFAULT: "#D4AF37",
+          light: "#FFD700",
+          dark: "#B8860B",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

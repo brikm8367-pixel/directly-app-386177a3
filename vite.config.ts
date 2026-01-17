@@ -19,9 +19,9 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: "Directly - رسائلك المهمة",
         short_name: "Directly",
-        description: "رسائل مباشرة، تركيز كامل، بدون تشتيت",
-        theme_color: "#4F46E5",
-        background_color: "#F8FAFC",
+        description: "تحكّم في وقتك - Control your time",
+        theme_color: "#D4AF37",
+        background_color: "#000000",
         display: "standalone",
         orientation: "portrait",
         scope: "/",
