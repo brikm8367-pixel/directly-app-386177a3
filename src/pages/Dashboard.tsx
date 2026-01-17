@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Search, LogOut, Loader2, User, Send, TrendingUp, Bell, Settings, Heart } from 'lucide-react';
+import { MessageSquare, Search, LogOut, Loader2, User, Send, TrendingUp, Bell, Heart } from 'lucide-react';
 import { InboxSection, MessageComposer, MessageViewer, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface Profile {
   id: string;
@@ -192,6 +194,16 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <LanguageSwitcher />
+            <ThemeToggle />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-11 w-11 rounded-xl touch-feedback" 
+              onClick={() => navigate('/notifications')}
+            >
+              <Bell className="h-5 w-5" />
+            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -200,10 +212,12 @@ export default function Dashboard() {
             >
               <Heart className="h-5 w-5" />
             </Button>
-            <Avatar className="h-10 w-10 ring-2 ring-primary/10">
-              <AvatarImage src={myProfile?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10"><User className="h-5 w-5 text-primary" /></AvatarFallback>
-            </Avatar>
+            <button onClick={() => navigate('/profile')} className="touch-feedback rounded-full">
+              <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+                <AvatarImage src={myProfile?.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/10"><User className="h-5 w-5 text-primary" /></AvatarFallback>
+              </Avatar>
+            </button>
             <Button variant="ghost" size="icon" onClick={signOut} className="h-11 w-11 rounded-xl touch-feedback">
               <LogOut className="h-5 w-5" />
             </Button>
