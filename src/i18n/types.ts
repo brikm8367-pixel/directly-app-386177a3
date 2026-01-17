@@ -1,4 +1,4 @@
-export type Language = 'ar' | 'en' | 'fr';
+export type Language = 'ar' | 'en' | 'fr' | 'es';
 
 export interface Translations {
   header: {
