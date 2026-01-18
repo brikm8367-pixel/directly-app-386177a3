@@ -37,18 +37,6 @@ const PageLoader = () => (
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [isFirstVisit, setIsFirstVisit] = useState(false);
-
-  useEffect(() => {
-    // Only show splash on first visit per session
-    const visited = sessionStorage.getItem('directly_visited');
-    if (!visited) {
-      setIsFirstVisit(true);
-      sessionStorage.setItem('directly_visited', 'true');
-    } else {
-      setShowSplash(false);
-    }
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -59,8 +47,8 @@ const App = () => {
               <Toaster />
               <Sonner />
               
-              {/* Splash Screen - Only on first visit */}
-              {showSplash && isFirstVisit && (
+              {/* Splash Screen */}
+              {showSplash && (
                 <SplashScreen onComplete={() => setShowSplash(false)} />
               )}
               
