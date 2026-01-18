@@ -1,15 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Search, LogOut, Loader2, User, Send, TrendingUp, Bell, Heart } from 'lucide-react';
+import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart } from 'lucide-react';
 import { InboxSection, MessageComposer, MessageViewer, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { BottomNavigation } from '@/components/BottomNavigation';
 
 interface Profile {
   id: string;
@@ -27,8 +28,17 @@ export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
-  const [activeTab, setActiveTab] = useState<'inbox' | 'search' | 'patterns'>('inbox');
+  // Get initial tab from URL
+  const getInitialTab = () => {
+    const tab = searchParams.get('tab');
+    if (tab === 'search') return 'search';
+    if (tab === 'patterns') return 'patterns';
+    return 'inbox';
+  };
+  
+  const [activeTab, setActiveTab] = useState<'inbox' | 'search' | 'patterns'>(getInitialTab());
   const [myProfile, setMyProfile] = useState<Profile | null>(null);
   
   // Messages state
@@ -179,89 +189,56 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header - Larger for better touch */}
+      {/* Minimal Header - No logo inside app, like global apps */}
       <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
-        <div className="max-w-lg mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
-              <MessageSquare className="h-5 w-5" />
-            </div>
-            <div>
-              <span className="font-bold text-lg text-foreground">Directly</span>
-              <p className="text-xs text-muted-foreground -mt-0.5">
-                {isRTL ? 'تحكّم في وقتك' : 'Control your time'}
-              </p>
-            </div>
-          </div>
+        <div className="max-w-lg mx-auto flex h-14 items-center justify-between px-4">
+          {/* Compact motivator message */}
+          <p className="text-sm font-medium text-muted-foreground">
+            {isRTL 
+              ? messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length > 0
+                ? `✨ ${messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length} جديد`
+                : '🎯 منظم'
+              : messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length > 0
+                ? `✨ ${messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length} new`
+                : '🎯 Organized'
+            }
+          </p>
+          
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-11 w-11 rounded-xl touch-feedback" 
-              onClick={() => navigate('/notifications')}
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-11 w-11 rounded-xl touch-feedback" 
+              className="h-10 w-10 rounded-xl touch-feedback" 
               onClick={() => setIsDirectAccessOpen(true)}
             >
               <Heart className="h-5 w-5" />
-            </Button>
-            <button onClick={() => navigate('/profile')} className="touch-feedback rounded-full">
-              <Avatar className="h-10 w-10 ring-2 ring-primary/10">
-                <AvatarImage src={myProfile?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10"><User className="h-5 w-5 text-primary" /></AvatarFallback>
-              </Avatar>
-            </button>
-            <Button variant="ghost" size="icon" onClick={signOut} className="h-11 w-11 rounded-xl touch-feedback">
-              <LogOut className="h-5 w-5" />
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Psychological Motivator - Subconscious messaging */}
-      <div className="fixed top-16 right-0 left-0 z-40 bg-gradient-to-b from-primary/5 to-transparent py-2">
-        <p className="text-center text-sm text-primary/80 font-medium">
-          {isRTL 
-            ? messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length > 0
-              ? `✨ لديك ${messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length} رسائل جديدة`
-              : '🎯 صندوقك منظم ومرتب'
-            : messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length > 0
-              ? `✨ You have ${messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length} new messages`
-              : '🎯 Your inbox is organized'
-          }
-        </p>
-      </div>
-
-      {/* Main Content */}
-      <main className="max-w-lg mx-auto pt-28 pb-24 px-4">
-        {/* Tabs - Larger for app-like feel */}
-        <div className="flex gap-1 p-1.5 bg-muted rounded-2xl mb-5">
+      {/* Main Content - More space, cleaner */}
+      <main className="max-w-lg mx-auto pt-16 pb-20 px-4">
+        {/* Simple inline tabs */}
+        <div className="flex gap-2 p-1 bg-muted/50 rounded-xl mb-4">
           {[
-            { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : 'Inbox', count: messages.work.length + messages.audience.length + messages.direct.length },
+            { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : 'Inbox' },
             { id: 'search', icon: Search, label: isRTL ? 'بحث' : 'Search' },
-            { id: 'patterns', icon: TrendingUp, label: isRTL ? 'النمط' : 'Patterns' },
+            { id: 'patterns', icon: TrendingUp, label: isRTL ? 'نمطك' : 'Pattern' },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 py-3 px-4 rounded-xl text-base font-semibold transition-all touch-feedback ${
+              className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all touch-feedback flex items-center justify-center gap-2 ${
                 activeTab === tab.id 
-                  ? 'bg-card text-foreground shadow-md' 
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-card text-foreground shadow-sm' 
+                  : 'text-muted-foreground'
               }`}
             >
-              <tab.icon className="h-5 w-5 mx-auto mb-1" />
-              <span className="block">{tab.label}</span>
-              {tab.count && activeTab === tab.id && (
-                <span className="text-xs text-primary mt-0.5 block">{tab.count}</span>
-              )}
+              <tab.icon className="h-4 w-4" />
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
@@ -354,6 +331,9 @@ export default function Dashboard() {
         {/* Patterns Tab */}
         {activeTab === 'patterns' && user && <CommunicationPatterns userId={user.id} />}
       </main>
+
+      {/* Bottom Navigation - Like Instagram/Twitter */}
+      <BottomNavigation />
 
       {/* Modals */}
       <MessageViewer message={selectedMessage} isOpen={!!selectedMessage} onClose={() => setSelectedMessage(null)} onMessageRead={fetchMessages} />
