@@ -8,11 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { toast } from 'sonner';
-import { 
-  ArrowLeft, ArrowRight, Camera, User, Loader2, Check, 
-  Mail, AtSign, FileText, Shield, Crown
-} from 'lucide-react';
+import { Camera, User, Loader2, Check, Mail, AtSign, FileText, Shield, LogOut } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -24,8 +22,8 @@ interface Profile {
 }
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
-  const { isRTL, t } = useLanguage();
+  const { user, loading, signOut } = useAuth();
+  const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,23 +32,19 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Form state
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/');
-    }
+    if (!loading && !user) navigate('/');
   }, [user, loading, navigate]);
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
-      
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -63,57 +57,41 @@ export default function ProfilePage() {
         setBio(data.bio || '');
         setIsPublic(data.is_public ?? true);
       }
-      
       setIsLoading(false);
     };
-
     if (user) fetchProfile();
   }, [user]);
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file
     if (!file.type.startsWith('image/')) {
       toast.error(isRTL ? 'يرجى اختيار صورة' : 'Please select an image');
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       toast.error(isRTL ? 'الصورة كبيرة جداً (الحد 5 ميغابايت)' : 'Image too large (max 5MB)');
       return;
     }
 
     setIsUploading(true);
-
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
-
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
-      // Update profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', user.id);
-
       if (updateError) throw updateError;
 
       setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
@@ -128,9 +106,7 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     if (!user) return;
-
     setIsSaving(true);
-
     try {
       const { error } = await supabase
         .from('profiles')
@@ -142,16 +118,19 @@ export default function ProfilePage() {
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
-
       if (error) throw error;
-
-      toast.success(isRTL ? 'تم الحفظ بنجاح ✨' : 'Saved successfully ✨');
+      toast.success(isRTL ? 'تم الحفظ ✨' : 'Saved ✨');
     } catch (error) {
       console.error('Save error:', error);
       toast.error(isRTL ? 'فشل الحفظ' : 'Failed to save');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
 
   if (loading || isLoading) {
@@ -162,204 +141,116 @@ export default function ProfilePage() {
     );
   }
 
-  const BackIcon = isRTL ? ArrowRight : ArrowLeft;
-
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
-      <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-lg mx-auto flex h-16 items-center justify-between px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/home')}
-            className="h-11 w-11 rounded-xl touch-feedback"
-          >
-            <BackIcon className="h-5 w-5" />
-          </Button>
-          <h1 className="font-bold text-lg">
-            {isRTL ? 'الملف الشخصي' : 'Profile'}
-          </h1>
+      <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
+        <div className="max-w-lg mx-auto flex h-14 items-center justify-between px-4">
+          <h1 className="font-bold text-lg">{isRTL ? 'الملف الشخصي' : 'Profile'}</h1>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleSave}
             disabled={isSaving}
-            className="h-11 w-11 rounded-xl touch-feedback"
+            className="h-10 w-10 rounded-xl touch-feedback"
           >
-            {isSaving ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Check className="h-5 w-5 text-primary" />
-            )}
+            {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5 text-primary" />}
           </Button>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="max-w-lg mx-auto pt-24 pb-8 px-4">
-        {/* Avatar Section */}
-        <div className="flex flex-col items-center mb-8">
+      <main className="max-w-lg mx-auto pt-16 pb-24 px-4">
+        {/* Avatar */}
+        <div className="flex flex-col items-center mb-6 mt-2">
           <div className="relative">
-            <Avatar className="h-28 w-28 ring-4 ring-primary/20">
+            <Avatar className="h-24 w-24 ring-3 ring-primary/20">
               <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className="text-3xl bg-primary/10 text-primary">
-                {displayName?.[0] || <User className="h-12 w-12" />}
+              <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                {displayName?.[0] || <User className="h-10 w-10" />}
               </AvatarFallback>
             </Avatar>
-            
             <button
-              onClick={handleAvatarClick}
+              onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="absolute bottom-0 end-0 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center touch-feedback"
+              className="absolute bottom-0 end-0 h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center touch-feedback"
             >
-              {isUploading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Camera className="h-5 w-5" />
-              )}
+              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </button>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
           </div>
-          
-          <p className="text-sm text-muted-foreground mt-3">
-            {isRTL ? 'اضغط على الكاميرا لتغيير الصورة' : 'Tap camera to change photo'}
-          </p>
-        </div>
-
-        {/* Premium Badge */}
-        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Crown className="h-6 w-6 text-primary animate-crown" />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">
-                {isRTL ? 'أنت ملك وقتك' : "You're the king of your time"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {isRTL ? 'تحكم كامل في من يصل إليك' : 'Full control over who reaches you'}
-              </p>
-            </div>
-          </div>
+          <p className="text-xs text-muted-foreground mt-2">{isRTL ? 'اضغط لتغيير الصورة' : 'Tap to change photo'}</p>
         </div>
 
         {/* Form */}
-        <div className="space-y-5">
-          {/* Display Name */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <User className="h-4 w-4 text-primary" />
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2 text-sm">
+              <User className="h-3.5 w-3.5 text-primary" />
               {isRTL ? 'الاسم الظاهر' : 'Display Name'}
             </Label>
-            <Input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={isRTL ? 'محمد أحمد' : 'John Doe'}
-              className="h-12 text-base rounded-xl"
-            />
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={isRTL ? 'محمد أحمد' : 'John Doe'} className="h-12 text-base rounded-xl" />
           </div>
 
-          {/* Username */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <AtSign className="h-4 w-4 text-primary" />
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2 text-sm">
+              <AtSign className="h-3.5 w-3.5 text-primary" />
               {isRTL ? 'اسم المستخدم' : 'Username'}
             </Label>
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-              placeholder="username"
-              className="h-12 text-base rounded-xl"
-              dir="ltr"
-            />
+            <Input value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="username" className="h-12 text-base rounded-xl" dir="ltr" />
           </div>
 
-          {/* Email (read-only) */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <Mail className="h-4 w-4 text-primary" />
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2 text-sm">
+              <Mail className="h-3.5 w-3.5 text-primary" />
               {isRTL ? 'البريد الإلكتروني' : 'Email'}
             </Label>
-            <Input
-              value={user?.email || ''}
-              disabled
-              className="h-12 text-base rounded-xl bg-muted/50"
-            />
+            <Input value={user?.email || ''} disabled className="h-12 text-base rounded-xl bg-muted/50" />
           </div>
 
-          {/* Bio */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <FileText className="h-4 w-4 text-primary" />
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2 text-sm">
+              <FileText className="h-3.5 w-3.5 text-primary" />
               {isRTL ? 'نبذة عنك' : 'About you'}
             </Label>
-            <Textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder={isRTL ? 'اكتب نبذة مختصرة عنك...' : 'Write a short bio...'}
-              className="min-h-[100px] text-base rounded-xl resize-none"
-              maxLength={200}
-            />
-            <p className="text-xs text-muted-foreground text-end">
-              {bio.length}/200
-            </p>
+            <Textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder={isRTL ? 'اكتب نبذة مختصرة...' : 'Write a short bio...'} className="min-h-[80px] text-base rounded-xl resize-none" maxLength={200} />
+            <p className="text-xs text-muted-foreground text-end">{bio.length}/200</p>
           </div>
 
-          {/* Privacy */}
+          {/* Privacy toggle */}
           <div className="p-4 rounded-2xl bg-card border border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-primary" />
+                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">
-                    {isRTL ? 'ملف شخصي عام' : 'Public Profile'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {isRTL ? 'يمكن للآخرين إيجادك' : 'Others can find you'}
-                  </p>
+                  <p className="font-medium text-sm">{isRTL ? 'ملف شخصي عام' : 'Public Profile'}</p>
+                  <p className="text-xs text-muted-foreground">{isRTL ? 'يمكن للآخرين إيجادك' : 'Others can find you'}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsPublic(!isPublic)}
-                className={`w-14 h-8 rounded-full transition-colors ${
-                  isPublic ? 'bg-primary' : 'bg-muted'
-                }`}
+                className={`w-12 h-7 rounded-full transition-colors ${isPublic ? 'bg-primary' : 'bg-muted'}`}
               >
-                <div
-                  className={`w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
-                    isPublic 
-                      ? (isRTL ? '-translate-x-1' : 'translate-x-7')
-                      : (isRTL ? '-translate-x-7' : 'translate-x-1')
-                  }`}
-                />
+                <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${isPublic ? (isRTL ? '-translate-x-0.5' : 'translate-x-6') : (isRTL ? '-translate-x-6' : 'translate-x-0.5')}`} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Save Button */}
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full h-14 mt-8 text-lg font-semibold rounded-2xl glow-gold"
-        >
-          {isSaving ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            isRTL ? 'حفظ التغييرات' : 'Save Changes'
-          )}
+        {/* Save */}
+        <Button onClick={handleSave} disabled={isSaving} className="w-full h-13 mt-6 text-base font-semibold rounded-2xl glow-gold">
+          {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : isRTL ? 'حفظ التغييرات' : 'Save Changes'}
+        </Button>
+
+        {/* Sign Out */}
+        <Button variant="ghost" onClick={handleSignOut} className="w-full mt-3 h-12 text-destructive rounded-xl">
+          <LogOut className="h-4 w-4 me-2" />
+          {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
         </Button>
       </main>
+
+      <BottomNavigation />
     </div>
   );
 }

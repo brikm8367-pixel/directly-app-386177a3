@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Crown, Settings2, Mail, MailOpen, AlertTriangle } from 'lucide-react';
+import { Briefcase, Users, Heart, Settings2, Mail, MailOpen } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -50,13 +50,13 @@ const categoryConfig = {
   },
   audience: {
     icon: Users,
-    label: { ar: 'الجمهور', en: 'Audience' },
-    subtitle: { ar: 'رسائل عامة', en: 'Public messages' },
+    label: { ar: 'الدائرة', en: 'Audience' },
+    subtitle: { ar: 'تواصل مفتوح', en: 'Open messages' },
   },
   direct: {
     icon: Heart,
-    label: { ar: 'مباشر', en: 'Direct' },
-    subtitle: { ar: 'المقربون فقط', en: 'Close contacts' },
+    label: { ar: 'الخاص', en: 'Private' },
+    subtitle: { ar: 'المقربون', en: 'Close contacts' },
   },
 };
 
@@ -74,8 +74,6 @@ export default function InboxSection({
 
   const config = categoryConfig[category];
   const Icon = config.icon;
-  const isFull = messages.length >= messageLimit;
-  const isAlmostFull = messages.length >= messageLimit * 0.8;
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -85,13 +83,9 @@ export default function InboxSection({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 60) {
-      return isRTL ? `${diffMins} د` : `${diffMins}m`;
-    } else if (diffHours < 24) {
-      return isRTL ? `${diffHours} س` : `${diffHours}h`;
-    } else {
-      return isRTL ? `${diffDays} ي` : `${diffDays}d`;
-    }
+    if (diffMins < 60) return isRTL ? `${diffMins} د` : `${diffMins}m`;
+    if (diffHours < 24) return isRTL ? `${diffHours} س` : `${diffHours}h`;
+    return isRTL ? `${diffDays} ي` : `${diffDays}d`;
   };
 
   const handleSaveLimit = () => {
@@ -100,23 +94,21 @@ export default function InboxSection({
   };
 
   const unreadCount = messages.filter(m => !m.is_read).length;
-  const importantCount = messages.filter(m => m.is_important).length;
 
   return (
     <div className={cn(
-      'rounded-2xl border p-4 transition-all duration-200',
-      'bg-card border-border',
-      unreadCount > 0 && 'border-primary/30'
+      'rounded-2xl border p-4 transition-all duration-200 bg-card border-border',
+      unreadCount > 0 && 'border-primary/25'
     )}>
-      {/* Clean Header - No aggressive colors */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
+          <div className="p-2 rounded-xl bg-primary/10">
             <Icon className="h-5 w-5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-lg text-foreground">
+              <h3 className="font-semibold text-base">
                 {config.label[isRTL ? 'ar' : 'en']}
               </h3>
               {unreadCount > 0 && (
@@ -125,9 +117,7 @@ export default function InboxSection({
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {messages.length}/{messageLimit}
-            </p>
+            <p className="text-xs text-muted-foreground">{messages.length}/{messageLimit}</p>
           </div>
         </div>
 
@@ -139,69 +129,33 @@ export default function InboxSection({
           </DialogTrigger>
           <DialogContent className="rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">
-                {isRTL ? 'إعدادات الصندوق' : 'Inbox Settings'}
-              </DialogTitle>
+              <DialogTitle className="text-lg font-semibold">{isRTL ? 'إعدادات الصندوق' : 'Inbox Settings'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              {/* Current value */}
               <div className="text-center p-4 bg-muted rounded-xl">
-                <span className="text-4xl font-bold text-foreground">
-                  {tempLimit}
-                </span>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {isRTL ? 'الحد الأقصى' : 'maximum'}
-                </p>
+                <span className="text-4xl font-bold">{tempLimit}</span>
+                <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'الحد الأقصى' : 'maximum'}</p>
               </div>
-              
-              <Slider
-                value={[tempLimit]}
-                onValueChange={([value]) => setTempLimit(value)}
-                min={10}
-                max={500}
-                step={10}
-                className="w-full"
-              />
-              
+              <Slider value={[tempLimit]} onValueChange={([value]) => setTempLimit(value)} min={10} max={500} step={10} />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{isRTL ? 'تركيز' : 'Focus'}</span>
                 <span>{isRTL ? 'أكثر' : 'More'}</span>
               </div>
-              
-              <Button 
-                onClick={handleSaveLimit} 
-                className="w-full h-11 rounded-xl"
-              >
-                {isRTL ? 'حفظ' : 'Save'}
-              </Button>
+              <Button onClick={handleSaveLimit} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Important messages - Subtle gold indicator */}
-      {importantCount > 0 && (
-        <div className="mb-3 px-3 py-2 rounded-lg bg-primary/5 flex items-center gap-2">
-          <Crown className="h-4 w-4 text-primary" />
-          <p className="text-sm text-foreground">
-            {isRTL 
-              ? `${importantCount} مهم` 
-              : `${importantCount} important`}
-          </p>
-        </div>
-      )}
-
-      {/* Messages list - Clean and fast */}
-      <div className="space-y-2 max-h-80 overflow-y-auto">
+      {/* Messages */}
+      <div className="space-y-1.5 max-h-80 overflow-y-auto">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">
-              {isRTL ? 'لا توجد رسائل' : 'No messages'}
-            </p>
+          <div className="text-center py-6">
+            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد رسائل' : 'No messages'}</p>
           </div>
         ) : (
           messages.slice(0, 5).map((message) => (
@@ -210,31 +164,18 @@ export default function InboxSection({
               onClick={() => onMessageClick(message)}
               className={cn(
                 'w-full text-start p-3 rounded-xl transition-all touch-feedback',
-                message.is_read 
-                  ? 'bg-muted/50' 
-                  : 'bg-primary/5 border border-primary/20',
+                message.is_read ? 'bg-muted/30' : 'bg-primary/5 border border-primary/15',
               )}
             >
               <div className="flex items-start gap-3">
-                <div className={cn(
-                  'p-2 rounded-lg',
-                  message.is_read ? 'bg-muted' : 'bg-primary/10'
-                )}>
-                  {message.is_read ? (
-                    <MailOpen className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Mail className="h-4 w-4 text-primary" />
-                  )}
+                <div className={cn('p-1.5 rounded-lg', message.is_read ? 'bg-muted' : 'bg-primary/10')}>
+                  {message.is_read ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className={cn(
-                      'font-medium text-sm truncate',
-                      !message.is_read && 'text-foreground'
-                    )}>
+                    <span className={cn('font-medium text-sm truncate', !message.is_read && 'text-foreground')}>
                       {message.sender_profile?.display_name || message.sender_profile?.username || (isRTL ? 'مجهول' : 'Unknown')}
                     </span>
-                    {message.is_important && <Crown className="h-3 w-3 text-primary" />}
                     <span className="text-xs text-muted-foreground ms-auto">{formatTime(message.created_at)}</span>
                   </div>
                   <p className="text-sm text-muted-foreground truncate">{message.content}</p>

@@ -6,140 +6,135 @@
 
 @layer base {
   :root {
-    /* 🏆 Directly: هوية ذهبية فاخرة */
+    /* 🏆 Directly: هوية ذهبية حصرية فاخرة */
     
-    /* الخلفية: أبيض نقي للوضوح */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 8%;
+    --background: 40 20% 99%;
+    --foreground: 30 10% 10%;
 
-    /* البطاقات: أبيض مع ظل خفيف */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
+    --card-foreground: 30 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
+    --popover-foreground: 30 10% 10%;
 
-    /* 🏆 الأساسي: ذهبي فاخر = نجاح، تميز، قيمة */
-    --primary: 45 93% 47%;
-    --primary-foreground: 0 0% 0%;
+    /* 🏆 الأساسي: ذهبي حصري متدرج - أكثر دفئاً وعمقاً */
+    --primary: 42 78% 46%;
+    --primary-foreground: 0 0% 100%;
 
-    /* الثانوي: ذهبي داكن */
-    --secondary: 43 74% 49%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 38 60% 40%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 45 30% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 40 15% 95%;
+    --muted-foreground: 30 5% 45%;
 
-    /* ✨ التمييز: ذهبي لامع */
-    --accent: 45 93% 47%;
-    --accent-foreground: 0 0% 0%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 45 20% 90%;
-    --input: 45 20% 90%;
-    --ring: 45 93% 47%;
-
-    --radius: 1rem;
-
-    /* 🏷️ ألوان الفئات - كلها ذهبية بدرجات */
-    --work: 45 93% 47%;
-    --work-light: 45 100% 97%;
-    
-    --audience: 43 74% 49%;
-    --audience-light: 43 100% 97%;
-    
-    --others: 40 100% 50%;
-    --others-light: 40 100% 97%;
-
-    /* النجاح */
-    --success: 45 93% 47%;
-    --success-foreground: 0 0% 0%;
-
-    /* التدرجات الذهبية */
-    --gradient-primary: linear-gradient(135deg, hsl(45 93% 47%), hsl(43 74% 49%));
-    --gradient-hero: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(45 30% 98%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(45 30% 98%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(40 100% 50%) 100%);
-    --gradient-control: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(43 74% 49%) 100%);
-    --gradient-gold: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #B8860B 100%);
-
-    /* الظلال الذهبية */
-    --shadow-sm: 0 1px 3px hsl(45 93% 47% / 0.08);
-    --shadow-md: 0 4px 16px -4px hsl(45 93% 47% / 0.12);
-    --shadow-lg: 0 12px 32px -8px hsl(45 93% 47% / 0.18);
-    --shadow-glow: 0 0 50px hsl(45 93% 47% / 0.2);
-    --shadow-gold: 0 8px 30px -8px hsl(45 93% 47% / 0.3);
-
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 8%;
-    --sidebar-primary: 45 93% 47%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 45 30% 96%;
-    --sidebar-accent-foreground: 0 0% 8%;
-    --sidebar-border: 45 20% 90%;
-    --sidebar-ring: 45 93% 47%;
-  }
-
-  .dark {
-    /* 🌙 الوضع الليلي: أسود مع ذهبي */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
-
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 0% 98%;
-
-    /* ذهبي في الليل */
-    --primary: 45 93% 50%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 43 74% 52%;
-    --secondary-foreground: 0 0% 0%;
-
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 45 93% 50%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 42 78% 46%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 45 93% 50%;
+    --border: 40 15% 90%;
+    --input: 40 15% 90%;
+    --ring: 42 78% 46%;
 
-    --work: 45 93% 55%;
-    --work-light: 45 30% 10%;
-    --audience: 43 74% 55%;
-    --audience-light: 43 30% 10%;
-    --others: 40 100% 55%;
-    --others-light: 40 30% 10%;
+    --radius: 1rem;
 
-    --success: 45 93% 50%;
-    --success-foreground: 0 0% 0%;
+    /* 🏷️ ألوان الفئات */
+    --work: 42 78% 46%;
+    --work-light: 42 60% 96%;
+    
+    --audience: 38 60% 40%;
+    --audience-light: 38 50% 96%;
+    
+    --others: 48 90% 50%;
+    --others-light: 48 80% 96%;
 
-    --gradient-hero: linear-gradient(180deg, hsl(0 0% 0%) 0%, hsl(0 0% 5%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 8%) 0%, hsl(0 0% 3%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(45 93% 50%) 0%, hsl(40 100% 55%) 100%);
-    --gradient-gold: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #B8860B 100%);
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
 
-    --shadow-glow: 0 0 50px hsl(45 93% 50% / 0.15);
-    --shadow-gold: 0 8px 30px -8px hsl(45 93% 50% / 0.25);
+    /* التدرجات الذهبية الحصرية */
+    --gradient-primary: linear-gradient(135deg, hsl(42 78% 46%), hsl(38 60% 40%));
+    --gradient-hero: linear-gradient(180deg, hsl(40 20% 99%) 0%, hsl(42 30% 96%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(42 20% 97%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(42 78% 46%) 0%, hsl(48 90% 50%) 100%);
+    --gradient-gold: linear-gradient(135deg, #B8860B 0%, #D4AF37 35%, #FFD700 65%, #B8860B 100%);
+    --gradient-gold-soft: linear-gradient(135deg, hsl(42 78% 46% / 0.15), hsl(48 90% 50% / 0.08));
 
-    --sidebar-background: 0 0% 3%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 45 93% 50%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 45 93% 50%;
+    /* الظلال */
+    --shadow-sm: 0 1px 3px hsl(42 78% 46% / 0.06);
+    --shadow-md: 0 4px 16px -4px hsl(42 78% 46% / 0.1);
+    --shadow-lg: 0 12px 32px -8px hsl(42 78% 46% / 0.15);
+    --shadow-glow: 0 0 40px hsl(42 78% 46% / 0.12);
+    --shadow-gold: 0 4px 20px -4px hsl(42 78% 46% / 0.25);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 30 10% 10%;
+    --sidebar-primary: 42 78% 46%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 15% 95%;
+    --sidebar-accent-foreground: 30 10% 10%;
+    --sidebar-border: 40 15% 90%;
+    --sidebar-ring: 42 78% 46%;
+  }
+
+  .dark {
+    /* 🌙 الوضع الليلي: أسود عميق + ذهبي دافئ */
+    --background: 0 0% 3%;
+    --foreground: 40 10% 92%;
+
+    --card: 0 0% 6%;
+    --card-foreground: 40 10% 92%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 40 10% 92%;
+
+    --primary: 42 78% 52%;
+    --primary-foreground: 0 0% 3%;
+
+    --secondary: 38 60% 45%;
+    --secondary-foreground: 0 0% 3%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 40 10% 60%;
+
+    --accent: 42 78% 52%;
+    --accent-foreground: 0 0% 3%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 13%;
+    --input: 0 0% 13%;
+    --ring: 42 78% 52%;
+
+    --work: 42 78% 55%;
+    --work-light: 42 30% 10%;
+    --audience: 38 60% 50%;
+    --audience-light: 38 25% 10%;
+    --others: 48 90% 55%;
+    --others-light: 48 30% 10%;
+
+    --success: 142 70% 50%;
+    --success-foreground: 0 0% 3%;
+
+    --gradient-hero: linear-gradient(180deg, hsl(0 0% 3%) 0%, hsl(0 0% 5%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 7%) 0%, hsl(0 0% 4%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(42 78% 52%) 0%, hsl(48 90% 55%) 100%);
+    --gradient-gold: linear-gradient(135deg, #B8860B 0%, #D4AF37 35%, #FFD700 65%, #B8860B 100%);
+    --gradient-gold-soft: linear-gradient(135deg, hsl(42 78% 52% / 0.12), hsl(48 90% 55% / 0.06));
+
+    --shadow-glow: 0 0 40px hsl(42 78% 52% / 0.1);
+    --shadow-gold: 0 4px 20px -4px hsl(42 78% 52% / 0.2);
+
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 40 10% 92%;
+    --sidebar-primary: 42 78% 52%;
+    --sidebar-primary-foreground: 0 0% 3%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 40 10% 92%;
+    --sidebar-border: 0 0% 13%;
+    --sidebar-ring: 42 78% 52%;
   }
 }
 
@@ -206,52 +201,76 @@
     @apply border border-primary/20;
   }
 
-  /* Gold shine effect */
   .gold-shine {
     background: var(--gradient-gold);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* Touch targets */
+  .touch-target {
+    @apply min-h-[52px] min-w-[52px];
+  }
+  
+  .text-app-title {
+    @apply text-2xl font-bold leading-tight;
+  }
+  
+  .text-app-body {
+    @apply text-lg leading-relaxed;
+  }
+  
+  .text-app-caption {
+    @apply text-base leading-normal;
+  }
+  
+  .touch-feedback {
+    @apply active:scale-[0.97] transition-all duration-150;
+  }
+  
+  .trust-glow {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+  }
+  
+  .message-important {
+    @apply relative;
+    &::before {
+      content: '';
+      @apply absolute inset-y-2 start-0 w-1.5 rounded-full;
+      background: var(--gradient-gold);
+    }
+  }
+  
+  .message-unread {
+    @apply relative font-semibold;
+    &::after {
+      content: '';
+      @apply absolute top-2 end-2 w-3 h-3 bg-primary rounded-full;
+      box-shadow: 0 0 10px hsl(42 78% 46% / 0.5);
+    }
+  }
 }
 
-/* Smooth animations */
+/* Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
 }
 
 @keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(-16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes pulse-subtle {
@@ -265,8 +284,8 @@
 }
 
 @keyframes gold-glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(45 93% 47% / 0.2); }
-  50% { box-shadow: 0 0 35px hsl(45 93% 47% / 0.4); }
+  0%, 100% { box-shadow: 0 0 15px hsl(42 78% 46% / 0.15); }
+  50% { box-shadow: 0 0 30px hsl(42 78% 46% / 0.3); }
 }
 
 @keyframes crown-pulse {
@@ -274,33 +293,13 @@
   50% { transform: scale(1.05); }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.4s ease-out forwards;
-}
-
-.animate-slide-in {
-  animation: slide-in-right 0.4s ease-out forwards;
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 4s ease-in-out infinite;
-}
-
-.animate-gold-glow {
-  animation: gold-glow 3s ease-in-out infinite;
-}
-
-.animate-crown {
-  animation: crown-pulse 2s ease-in-out infinite;
-}
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }
+.animate-scale-in { animation: scale-in 0.4s ease-out forwards; }
+.animate-slide-in { animation: slide-in-right 0.4s ease-out forwards; }
+.animate-pulse-subtle { animation: pulse-subtle 4s ease-in-out infinite; }
+.animate-gold-glow { animation: gold-glow 3s ease-in-out infinite; }
+.animate-crown { animation: crown-pulse 2s ease-in-out infinite; }
 
 .animation-delay-100 { animation-delay: 100ms; }
 .animation-delay-200 { animation-delay: 200ms; }
@@ -308,68 +307,11 @@
 .animation-delay-400 { animation-delay: 400ms; }
 .animation-delay-500 { animation-delay: 500ms; }
 
-/* 🎯 Global App-Like Sizing for Mobile */
-@layer utilities {
-  /* Larger, more comfortable touch targets */
-  .touch-target {
-    @apply min-h-[52px] min-w-[52px];
-  }
-  
-  /* App-like text sizing - larger for clarity */
-  .text-app-title {
-    @apply text-2xl font-bold leading-tight;
-  }
-  
-  .text-app-body {
-    @apply text-lg leading-relaxed;
-  }
-  
-  .text-app-caption {
-    @apply text-base leading-normal;
-  }
-  
-  /* Psychological feedback on touch */
-  .touch-feedback {
-    @apply active:scale-[0.97] transition-all duration-150;
-  }
-  
-  /* Gold trust indicators */
-  .trust-glow {
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
-  }
-  
-  /* Important message highlight - gold */
-  .message-important {
-    @apply relative;
-    &::before {
-      content: '';
-      @apply absolute inset-y-2 start-0 w-1.5 rounded-full;
-      background: var(--gradient-gold);
-    }
-  }
-  
-  /* Unread message emphasis - gold dot */
-  .message-unread {
-    @apply relative font-semibold;
-    &::after {
-      content: '';
-      @apply absolute top-2 end-2 w-3 h-3 bg-primary rounded-full;
-      box-shadow: 0 0 10px hsl(45 93% 47% / 0.5);
-    }
-  }
-}
-
-/* Psychological micro-interactions */
+/* Micro-interactions */
 @keyframes success-pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
-}
-
-@keyframes attention-grab {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
 }
 
 @keyframes satisfaction {
@@ -379,24 +321,10 @@
 }
 
 .animate-success { animation: success-pulse 0.4s ease-out; }
-.animate-attention { animation: attention-grab 0.3s ease-in-out; }
 .animate-satisfaction { animation: satisfaction 0.5s ease-out forwards; }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.3);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--primary) / 0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.4); }
