@@ -88,6 +88,7 @@ export type Database = {
           id: string
           is_important: boolean | null
           is_read: boolean | null
+          is_sealed: boolean | null
           parent_id: string | null
           receiver_id: string
           sender_id: string
@@ -101,6 +102,7 @@ export type Database = {
           id?: string
           is_important?: boolean | null
           is_read?: boolean | null
+          is_sealed?: boolean | null
           parent_id?: string | null
           receiver_id: string
           sender_id: string
@@ -114,6 +116,7 @@ export type Database = {
           id?: string
           is_important?: boolean | null
           is_read?: boolean | null
+          is_sealed?: boolean | null
           parent_id?: string | null
           receiver_id?: string
           sender_id?: string

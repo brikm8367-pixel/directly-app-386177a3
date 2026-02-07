@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { Crown, Mail, Send, Clock, Briefcase, Users, Heart, Sparkles, Brain, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -86,66 +87,64 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
 
     const totalReceived = received.length;
     const totalSent = sent.length;
-    const responseRate = totalReceived > 0 ? (totalSent / totalReceived * 100).toFixed(0) : '0';
-    const workRatio = totalReceived > 0 ? (byCategoryReceived.work / totalReceived * 100).toFixed(0) : '0';
-    const directRatio = totalReceived > 0 ? (byCategoryReceived.direct / totalReceived * 100).toFixed(0) : '0';
+    const responseRate = totalReceived > 0 ? Math.round(totalSent / totalReceived * 100) : 0;
+    const workRatio = totalReceived > 0 ? Math.round(byCategoryReceived.work / totalReceived * 100) : 0;
+    const directRatio = totalReceived > 0 ? Math.round(byCategoryReceived.direct / totalReceived * 100) : 0;
+    const audienceRatio = totalReceived > 0 ? Math.round(byCategoryReceived.audience / totalReceived * 100) : 0;
 
     return {
       totalReceived,
       totalSent,
       byCategoryReceived,
       mostActiveHour: parseInt(mostActiveHour),
-      responseRate: parseInt(responseRate),
-      workRatio: parseInt(workRatio),
-      directRatio: parseInt(directRatio),
+      responseRate,
+      workRatio,
+      directRatio,
+      audienceRatio,
     };
   }, [messages, userId]);
 
+  // Real AI-powered personality analysis
   const analyzePersonality = async () => {
     setIsAnalyzing(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-personality', {
+        body: {
+          stats: {
+            totalReceived: stats.totalReceived,
+            totalSent: stats.totalSent,
+            workCount: stats.byCategoryReceived.work,
+            audienceCount: stats.byCategoryReceived.audience,
+            directCount: stats.byCategoryReceived.direct,
+            workRatio: stats.workRatio,
+            audienceRatio: stats.audienceRatio,
+            directRatio: stats.directRatio,
+            responseRate: stats.responseRate,
+            mostActiveHour: stats.mostActiveHour,
+            period,
+          },
+          language: isRTL ? 'ar' : 'en',
+        },
+      });
 
-    let analysis: PersonalityAnalysis;
-
-    if (stats.workRatio > 60) {
-      analysis = {
-        type: isRTL ? '🎯 القائد المركّز' : '🎯 Focused Leader',
-        description: isRTL 
-          ? 'أنت شخص يركز على العمل والإنتاجية. تواصلك مهني ومنظم.'
-          : 'You focus on work and productivity. Your communication is professional and organized.',
-        traits: isRTL ? ['منظم', 'مهني', 'فعّال', 'موجه نحو الأهداف'] : ['Organized', 'Professional', 'Efficient', 'Goal-oriented'],
-        advice: isRTL ? 'نصيحة: خصص وقتاً للتواصل الشخصي لتحقيق التوازن.' : 'Tip: Allocate time for personal connections to achieve balance.',
-      };
-    } else if (stats.directRatio > 40) {
-      analysis = {
-        type: isRTL ? '💎 الرابط الاجتماعي' : '💎 Social Connector',
-        description: isRTL ? 'أنت تقدر العلاقات الشخصية العميقة. تواصلك دافئ وأصيل.' : 'You value deep personal relationships. Your communication is warm and authentic.',
-        traits: isRTL ? ['ودود', 'أصيل', 'مخلص', 'داعم'] : ['Friendly', 'Authentic', 'Loyal', 'Supportive'],
-        advice: isRTL ? 'نصيحة: استثمر في علاقاتك القريبة فهي مصدر قوتك.' : 'Tip: Invest in your close relationships - they are your strength.',
-      };
-    } else if (stats.responseRate > 80) {
-      analysis = {
-        type: isRTL ? '⚡ المستجيب السريع' : '⚡ Quick Responder',
-        description: isRTL ? 'أنت سريع الاستجابة ومتفاعل. الناس يعتمدون عليك.' : 'You are responsive and engaged. People rely on you.',
-        traits: isRTL ? ['سريع', 'موثوق', 'متفاعل', 'مسؤول'] : ['Fast', 'Reliable', 'Engaged', 'Responsible'],
-        advice: isRTL ? 'نصيحة: لا تنسَ أن تأخذ وقتاً للتفكير قبل الرد.' : 'Tip: Remember to take time to think before responding.',
-      };
-    } else {
-      analysis = {
-        type: isRTL ? '🌟 المتوازن الحكيم' : '🌟 Wise Balancer',
-        description: isRTL ? 'أنت تحافظ على توازن جيد في تواصلك. حكيم في اختياراتك.' : 'You maintain good balance in your communication. Wise in your choices.',
-        traits: isRTL ? ['متوازن', 'حكيم', 'مرن', 'مدرك'] : ['Balanced', 'Wise', 'Flexible', 'Mindful'],
-        advice: isRTL ? 'نصيحة: استمر في الحفاظ على هذا التوازن الصحي.' : 'Tip: Continue maintaining this healthy balance.',
-      };
+      if (error) throw error;
+      
+      if (data?.error && !data?.type) {
+        toast.error(isRTL ? 'تعذر التحليل، حاول لاحقاً' : 'Analysis unavailable, try later');
+      } else {
+        setPersonalityAnalysis(data as PersonalityAnalysis);
+      }
+    } catch (error) {
+      console.error('Personality analysis error:', error);
+      toast.error(isRTL ? 'تعذر التحليل' : 'Analysis failed');
+    } finally {
+      setIsAnalyzing(false);
     }
-
-    setPersonalityAnalysis(analysis);
-    setIsAnalyzing(false);
   };
 
-  // Weekly bar chart data - visually engaging
+  // Bar chart data
   const barData = useMemo(() => {
-    const days = period === 'week' ? 7 : 14; // Show 14 days for month (less cluttered)
+    const days = period === 'week' ? 7 : 14;
     const data: { day: string; work: number; audience: number; direct: number }[] = [];
     
     for (let i = days - 1; i >= 0; i--) {
@@ -157,15 +156,12 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
         : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       
       data.push({
-        day: period === 'week' 
-          ? dayNames[date.getDay()]
-          : date.getDate().toString(),
+        day: period === 'week' ? dayNames[date.getDay()] : date.getDate().toString(),
         work: messages.filter(m => m.receiver_id === userId && m.category === 'work' && m.created_at.startsWith(dateStr)).length,
         audience: messages.filter(m => m.receiver_id === userId && m.category === 'audience' && m.created_at.startsWith(dateStr)).length,
         direct: messages.filter(m => m.receiver_id === userId && m.category === 'direct' && m.created_at.startsWith(dateStr)).length,
       });
     }
-    
     return data;
   }, [messages, userId, period, isRTL]);
 
@@ -212,10 +208,10 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
           </div>
           <div>
             <h2 className="font-bold text-xl">{isRTL ? 'نمط التواصل' : 'Your Pattern'}</h2>
-            <p className="text-sm text-muted-foreground">{isRTL ? 'تحليل شخصيتك' : 'Personality analysis'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'تحليل ديناميكي حقيقي' : 'Real dynamic analysis'}</p>
           </div>
         </div>
-        <Select value={period} onValueChange={(v: 'week' | 'month') => setPeriod(v)}>
+        <Select value={period} onValueChange={(v: 'week' | 'month') => { setPeriod(v); setPersonalityAnalysis(null); }}>
           <SelectTrigger className="w-28 h-12 rounded-xl border-2 border-primary/20">
             <SelectValue />
           </SelectTrigger>
@@ -243,7 +239,7 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
         ))}
       </div>
 
-      {/* Bar Chart - Clean, colorful, engaging */}
+      {/* Bar Chart */}
       <Card className="border border-primary/10 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -255,25 +251,20 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} barCategoryGap="20%">
-                <XAxis 
-                  dataKey="day" 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
-                  axisLine={false} 
-                  tickLine={false} 
-                />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="direct" stackId="a" fill="hsl(var(--others))" radius={[0, 0, 0, 0]} name={isRTL ? 'الخاص' : 'Private'} />
                 <Bar dataKey="work" stackId="a" fill="hsl(var(--work))" radius={[0, 0, 0, 0]} name={isRTL ? 'العمل' : 'Work'} />
-                <Bar dataKey="audience" stackId="a" fill="hsl(var(--audience))" radius={[0, 0, 0, 0]} name={isRTL ? 'الجمهور' : 'Audience'} />
-                <Bar dataKey="direct" stackId="a" fill="hsl(var(--others))" radius={[4, 4, 0, 0]} name={isRTL ? 'الخاص' : 'Private'} />
+                <Bar dataKey="audience" stackId="a" fill="hsl(var(--audience))" radius={[4, 4, 0, 0]} name={isRTL ? 'الدائرة' : 'Audience'} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="flex justify-center gap-5 mt-3">
             {[
-              { color: 'hsl(var(--work))', label: isRTL ? 'العمل' : 'Work' },
-              { color: 'hsl(var(--audience))', label: isRTL ? 'الجمهور' : 'Audience' },
               { color: 'hsl(var(--others))', label: isRTL ? 'الخاص' : 'Private' },
+              { color: 'hsl(var(--work))', label: isRTL ? 'العمل' : 'Work' },
+              { color: 'hsl(var(--audience))', label: isRTL ? 'الدائرة' : 'Audience' },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
@@ -284,7 +275,7 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
         </CardContent>
       </Card>
 
-      {/* Category Breakdown - Horizontal bars */}
+      {/* Category Breakdown */}
       <Card className="border border-primary/10">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -294,9 +285,9 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
         </CardHeader>
         <CardContent className="space-y-4">
           {[
-            { icon: Briefcase, label: isRTL ? 'العمل' : 'Work', value: stats.byCategoryReceived.work, color: 'bg-work' },
-            { icon: Users, label: isRTL ? 'الجمهور' : 'Audience', value: stats.byCategoryReceived.audience, color: 'bg-audience' },
             { icon: Heart, label: isRTL ? 'الخاص' : 'Private', value: stats.byCategoryReceived.direct, color: 'bg-others' },
+            { icon: Briefcase, label: isRTL ? 'العمل' : 'Work', value: stats.byCategoryReceived.work, color: 'bg-work' },
+            { icon: Users, label: isRTL ? 'الدائرة' : 'Audience', value: stats.byCategoryReceived.audience, color: 'bg-audience' },
           ].map((item, i) => {
             const total = stats.totalReceived || 1;
             const pct = Math.round((item.value / total) * 100);
@@ -309,7 +300,7 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
                   </div>
                   <span className="text-sm font-bold text-primary">{item.value} <span className="text-xs text-muted-foreground font-normal">({pct}%)</span></span>
                 </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                   <div className={`h-full rounded-full ${item.color} transition-all duration-700`} style={{ width: `${pct}%` }} />
                 </div>
               </div>
@@ -318,12 +309,12 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
         </CardContent>
       </Card>
 
-      {/* AI Personality */}
+      {/* AI Personality - Real AI */}
       <Card className="border border-primary/20 overflow-hidden" style={{ background: 'var(--gradient-gold-soft)' }}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary animate-crown" />
-            {isRTL ? 'تحليل شخصيتك' : 'Personality Analysis'}
+            {isRTL ? 'تحليل شخصيتك بالذكاء الاصطناعي' : 'AI Personality Analysis'}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -331,7 +322,7 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
             <div className="space-y-4 animate-fade-in-up">
               <div className="text-center p-5 bg-card rounded-2xl border border-primary/20">
                 <p className="text-2xl font-bold mb-2">{personalityAnalysis.type}</p>
-                <p className="text-sm text-muted-foreground">{personalityAnalysis.description}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{personalityAnalysis.description}</p>
               </div>
 
               <div className="flex flex-wrap gap-2 justify-center">
@@ -343,24 +334,32 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
               </div>
 
               <div className="p-4 bg-primary/10 rounded-xl border border-primary/20 text-center">
-                <p className="text-sm font-medium">{personalityAnalysis.advice}</p>
+                <p className="text-sm font-medium leading-relaxed">{personalityAnalysis.advice}</p>
               </div>
+
+              <Button
+                variant="ghost"
+                onClick={() => { setPersonalityAnalysis(null); analyzePersonality(); }}
+                className="w-full text-sm text-muted-foreground"
+              >
+                {isRTL ? '🔄 تحليل جديد' : '🔄 New Analysis'}
+              </Button>
             </div>
           ) : (
             <div className="text-center py-5">
               <p className="text-sm text-muted-foreground mb-4">
-                {isRTL ? 'اكتشف نمط شخصيتك بناءً على تواصلك' : 'Discover your personality type based on your communication'}
+                {isRTL ? 'اكتشف شخصيتك الحقيقية بناءً على تواصلك' : 'Discover your true personality based on your communication'}
               </p>
-              <Button 
-                onClick={analyzePersonality} 
+              <Button
+                onClick={analyzePersonality}
                 disabled={isAnalyzing}
                 size="lg"
-                className="h-13 px-8 text-base rounded-2xl touch-feedback glow-gold"
+                className="h-14 px-8 text-base rounded-2xl touch-feedback glow-gold"
               >
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin me-2" />
-                    {isRTL ? 'جاري التحليل...' : 'Analyzing...'}
+                    {isRTL ? 'الذكاء الاصطناعي يحلل...' : 'AI is analyzing...'}
                   </>
                 ) : (
                   <>

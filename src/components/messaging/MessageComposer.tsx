@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Send, Loader2, User, X } from 'lucide-react';
+import { Send, Loader2, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -46,47 +46,41 @@ export default function MessageComposer({
     try {
       // Get AI classification
       const { data: classificationData } = await supabase.functions.invoke('classify-message', {
-        body: {
-          subject,
-          content,
-          senderProfile: null, // Will be fetched on the backend if needed
-        },
+        body: { subject, content, senderProfile: null },
       });
 
       const category = classificationData?.category || 'audience';
 
-      // Check if recipient can receive in Direct category
+      const { data: auth } = await supabase.auth.getUser();
+      const senderId = auth.user?.id;
+
       if (category === 'direct') {
-        const { data: auth } = await supabase.auth.getUser();
         const { data: canSend } = await supabase.rpc('can_send_to_direct', {
-          _sender_id: auth.user?.id,
+          _sender_id: senderId,
           _receiver_id: recipient.id,
         });
 
         if (!canSend) {
-          // Fallback to audience if not allowed in direct
+          // Fallback to audience
           const { error } = await supabase.from('messages').insert({
-            sender_id: (await supabase.auth.getUser()).data.user?.id,
+            sender_id: senderId,
             receiver_id: recipient.id,
             subject: subject || null,
             content,
             category: 'audience',
           });
-
           if (error) throw error;
         } else {
           const { error } = await supabase.from('messages').insert({
-            sender_id: (await supabase.auth.getUser()).data.user?.id,
+            sender_id: senderId,
             receiver_id: recipient.id,
             subject: subject || null,
             content,
             category: 'direct',
           });
-
           if (error) throw error;
         }
       } else {
-        // Check if recipient can receive more messages in this category
         const { data: canReceive } = await supabase.rpc('can_receive_message', {
           _user_id: recipient.id,
           _category: category,
@@ -94,26 +88,23 @@ export default function MessageComposer({
 
         if (!canReceive) {
           toast.error(
-            isRTL 
-              ? 'صندوق المستلم ممتلئ في هذه الفئة' 
-              : 'Recipient inbox is full for this category'
+            isRTL ? 'صندوق المستلم ممتلئ في هذه الفئة' : 'Recipient inbox is full for this category'
           );
           setIsSending(false);
           return;
         }
 
         const { error } = await supabase.from('messages').insert({
-          sender_id: (await supabase.auth.getUser()).data.user?.id,
+          sender_id: senderId,
           receiver_id: recipient.id,
           subject: subject || null,
           content,
           category,
         });
-
         if (error) throw error;
       }
 
-      toast.success(isRTL ? 'تم إرسال الرسالة' : 'Message sent');
+      toast.success(isRTL ? 'تم إرسال الرسالة ✨' : 'Message sent ✨');
       setSubject('');
       setContent('');
       onClose();
@@ -128,37 +119,38 @@ export default function MessageComposer({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <span>{isRTL ? 'رسالة جديدة' : 'New Message'}</span>
+      <DialogContent className="max-w-md rounded-3xl p-0 gap-0">
+        <DialogHeader className="p-5 pb-3 border-b border-border">
+          <DialogTitle className="text-lg font-bold">
+            {isRTL ? 'رسالة جديدة' : 'New Message'}
           </DialogTitle>
         </DialogHeader>
 
-        {recipient && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={recipient.avatar_url || undefined} />
-              <AvatarFallback>
-                {recipient.display_name?.[0] || <User className="h-4 w-4" />}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">
-                {recipient.display_name || recipient.username}
-              </p>
-              {recipient.username && (
-                <p className="text-xs text-muted-foreground">@{recipient.username}</p>
-              )}
+        <div className="p-5 space-y-4">
+          {recipient && (
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50">
+              <Avatar className="h-12 w-12 ring-2 ring-primary/10">
+                <AvatarImage src={recipient.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                  {recipient.display_name?.[0] || <User className="h-5 w-5" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-base truncate">
+                  {recipient.display_name || recipient.username}
+                </p>
+                {recipient.username && (
+                  <p className="text-sm text-muted-foreground">@{recipient.username}</p>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="space-y-4">
           <Input
             placeholder={isRTL ? 'الموضوع (اختياري)' : 'Subject (optional)'}
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
+            className="h-13 text-base rounded-xl border-2 focus:border-primary"
           />
 
           <Textarea
@@ -166,23 +158,23 @@ export default function MessageComposer({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={4}
-            className="resize-none"
+            className="resize-none text-base rounded-xl border-2 focus:border-primary p-4"
           />
 
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose} className="flex-1 h-13 text-base rounded-xl touch-feedback">
               {isRTL ? 'إلغاء' : 'Cancel'}
             </Button>
-            <Button 
-              onClick={handleSend} 
+            <Button
+              onClick={handleSend}
               disabled={!content.trim() || isSending}
-              className="flex-1"
+              className="flex-1 h-13 text-base rounded-xl touch-feedback"
             >
               {isSending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  <Send className="h-4 w-4 me-1" />
+                  <Send className="h-5 w-5 me-2" />
                   {isRTL ? 'إرسال' : 'Send'}
                 </>
               )}
@@ -190,9 +182,9 @@ export default function MessageComposer({
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            {isRTL 
-              ? 'سيتم تصنيف رسالتك تلقائياً في الصندوق المناسب' 
-              : 'Your message will be automatically categorized'}
+            {isRTL
+              ? '✨ سيتم تصنيف رسالتك تلقائياً بالذكاء الاصطناعي'
+              : '✨ Your message will be auto-classified by AI'}
           </p>
         </div>
       </DialogContent>
