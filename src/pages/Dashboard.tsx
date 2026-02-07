@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart } from 'lucide-react';
-import { InboxSection, MessageComposer, MessageViewer, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
+import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNavigation } from '@/components/BottomNavigation';
@@ -265,7 +265,7 @@ export default function Dashboard() {
       <BottomNavigation />
 
       {/* Modals */}
-      <MessageViewer message={selectedMessage} isOpen={!!selectedMessage} onClose={() => setSelectedMessage(null)} onMessageRead={fetchMessages} />
+      <ConversationView message={selectedMessage} isOpen={!!selectedMessage} onClose={() => setSelectedMessage(null)} onMessageRead={fetchMessages} />
       <MessageComposer isOpen={!!composeRecipient} onClose={() => setComposeRecipient(null)} recipient={composeRecipient} onMessageSent={fetchMessages} />
       <DirectAccessManager isOpen={isDirectAccessOpen} onClose={() => setIsDirectAccessOpen(false)} />
     </div>
