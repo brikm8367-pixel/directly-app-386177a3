@@ -4,4 +4,7 @@ export { default as MessageViewer } from './MessageViewer';
 export { default as ConversationView } from './ConversationView';
 export { default as DirectAccessManager } from './DirectAccessManager';
 export { default as CommunicationPatterns } from './CommunicationPatterns';
+export { default as VoiceRecorder } from './VoiceRecorder';
+export { default as VoicePlayer } from './VoicePlayer';
+export { default as CallScreen } from './CallScreen';
 export type { MessageCategory, Message } from './InboxSection';

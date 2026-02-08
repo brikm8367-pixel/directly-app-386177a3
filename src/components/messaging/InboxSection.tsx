@@ -31,6 +31,7 @@ export interface Message {
   is_important: boolean;
   is_read: boolean;
   created_at: string;
+  voice_url?: string | null;
 }
 
 interface InboxSectionProps {
@@ -40,6 +41,7 @@ interface InboxSectionProps {
   onSetLimit: (limit: number) => void;
   onMessageClick: (message: Message) => void;
   isLoading?: boolean;
+  isOnline?: (userId: string) => boolean;
 }
 
 const categoryConfig = {
@@ -67,6 +69,7 @@ export default function InboxSection({
   onSetLimit,
   onMessageClick,
   isLoading = false,
+  isOnline,
 }: InboxSectionProps) {
   const { isRTL } = useLanguage();
   const [tempLimit, setTempLimit] = useState(messageLimit);
@@ -158,31 +161,46 @@ export default function InboxSection({
             <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد رسائل' : 'No messages'}</p>
           </div>
         ) : (
-          messages.slice(0, 5).map((message) => (
-            <button
-              key={message.id}
-              onClick={() => onMessageClick(message)}
-              className={cn(
-                'w-full text-start p-3 rounded-xl transition-all touch-feedback',
-                message.is_read ? 'bg-muted/30' : 'bg-primary/5 border border-primary/15',
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div className={cn('p-1.5 rounded-lg', message.is_read ? 'bg-muted' : 'bg-primary/10')}>
-                  {message.is_read ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className={cn('font-medium text-sm truncate', !message.is_read && 'text-foreground')}>
-                      {message.sender_profile?.display_name || message.sender_profile?.username || (isRTL ? 'مجهول' : 'Unknown')}
-                    </span>
-                    <span className="text-xs text-muted-foreground ms-auto">{formatTime(message.created_at)}</span>
+          messages.slice(0, 5).map((message) => {
+            const senderName = message.sender_profile?.display_name || message.sender_profile?.username || (isRTL ? 'مجهول' : 'Unknown');
+            const senderOnline = category === 'direct' && isOnline && message.sender_profile?.id
+              ? isOnline(message.sender_profile.id) : false;
+
+            return (
+              <button
+                key={message.id}
+                onClick={() => onMessageClick(message)}
+                className={cn(
+                  'w-full text-start p-3 rounded-xl transition-all touch-feedback',
+                  message.is_read ? 'bg-muted/30' : 'bg-primary/5 border border-primary/15',
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn('p-1.5 rounded-lg relative', message.is_read ? 'bg-muted' : 'bg-primary/10')}>
+                    {message.is_read ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
+                    {/* Gold online indicator */}
+                    {senderOnline && (
+                      <div className="absolute -top-0.5 -end-0.5 w-3 h-3 rounded-full border-2 border-card" style={{ background: 'var(--gradient-gold)' }} />
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">{message.content}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={cn('font-medium text-sm truncate', !message.is_read && 'text-foreground')}>
+                        {senderName}
+                      </span>
+                      {senderOnline && (
+                        <span className="text-[10px] text-primary font-medium">{isRTL ? 'نشط' : 'Active'}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground ms-auto">{formatTime(message.created_at)}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {message.voice_url ? (isRTL ? '🎤 رسالة صوتية' : '🎤 Voice message') : message.content}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))
+              </button>
+            );
+          })
         )}
       </div>
 

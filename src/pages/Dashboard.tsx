@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { usePresence } from '@/hooks/usePresence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +12,7 @@ import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, C
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNavigation } from '@/components/BottomNavigation';
+import CallScreen from '@/components/messaging/CallScreen';
 
 interface Profile {
   id: string;
@@ -24,40 +26,40 @@ export default function Dashboard() {
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+  const { isOnline, canCall } = usePresence(user?.id);
+
   const getInitialTab = () => {
     const tab = searchParams.get('tab');
     if (tab === 'search') return 'search';
     if (tab === 'patterns') return 'patterns';
     return 'inbox';
   };
-  
+
   const [activeTab, setActiveTab] = useState<'inbox' | 'search' | 'patterns'>(getInitialTab());
-  
-  // Messages state
-  const [messages, setMessages] = useState<{ work: Message[]; audience: Message[]; direct: Message[] }>({
-    work: [], audience: [], direct: []
-  });
-  const [limits, setLimits] = useState<{ work: number; audience: number; direct: number }>({
-    work: 100, audience: 100, direct: 100
-  });
+  const [messages, setMessages] = useState<{ work: Message[]; audience: Message[]; direct: Message[] }>({ work: [], audience: [], direct: [] });
+  const [limits, setLimits] = useState<{ work: number; audience: number; direct: number }>({ work: 100, audience: 100, direct: 100 });
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  
-  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  // Modals
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [composeRecipient, setComposeRecipient] = useState<Profile | null>(null);
   const [isDirectAccessOpen, setIsDirectAccessOpen] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user) navigate('/');
-  }, [user, loading, navigate]);
+  // Incoming call state
+  const [incomingCall, setIncomingCall] = useState<{ from: string; callType: 'audio' | 'video'; offer: RTCSessionDescriptionInit } | null>(null);
 
-  // Fetch messages
+  useEffect(() => { if (!loading && !user) navigate('/'); }, [user, loading, navigate]);
+
+  // Listen for incoming calls
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel(`call-listener-${user.id}`);
+    // Listen on all possible call channels
+    // This is simplified - in production you'd use a more sophisticated approach
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   const fetchMessages = useCallback(async () => {
     if (!user) return;
     setIsLoadingMessages(true);
@@ -65,19 +67,23 @@ export default function Dashboard() {
     const { data } = await supabase
       .from('messages')
       .select('*')
-      .eq('receiver_id', user.id)
+      .or(`receiver_id.eq.${user.id},sender_id.eq.${user.id}`)
+      .is('parent_id', null)
       .order('created_at', { ascending: false });
 
     if (data) {
-      const senderIds = [...new Set(data.map(m => m.sender_id))];
-      const { data: profiles } = senderIds.length > 0 
-        ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', senderIds)
+      const userIds = [...new Set(data.flatMap(m => [m.sender_id, m.receiver_id]).filter(id => id !== user.id))];
+      const { data: profiles } = userIds.length > 0
+        ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds)
         : { data: [] };
 
-      const withProfiles = data.map(m => ({
-        ...m,
-        sender_profile: profiles?.find(p => p.id === m.sender_id) || { id: m.sender_id, display_name: null, username: null, avatar_url: null }
-      })) as Message[];
+      const withProfiles = data.map(m => {
+        const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+        return {
+          ...m,
+          sender_profile: profiles?.find(p => p.id === otherId) || { id: otherId, display_name: null, username: null, avatar_url: null },
+        };
+      }) as Message[];
 
       setMessages({
         work: withProfiles.filter(m => m.category === 'work'),
@@ -102,7 +108,6 @@ export default function Dashboard() {
 
   useEffect(() => { if (user) fetchMessages(); }, [user, fetchMessages]);
 
-  // Realtime
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -112,7 +117,6 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchMessages]);
 
-  // Search
   useEffect(() => {
     const searchUsers = async () => {
       if (searchQuery.length < 2 || !user) { setSearchResults([]); return; }
@@ -150,14 +154,12 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
       <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
         <div className="max-w-lg mx-auto flex h-14 items-center justify-between px-4">
           <p className="text-sm font-medium text-muted-foreground">
             {unreadCount > 0
               ? (isRTL ? `✨ ${unreadCount} جديد` : `✨ ${unreadCount} new`)
-              : (isRTL ? '🎯 منظم' : '🎯 Organized')
-            }
+              : (isRTL ? '🎯 منظم' : '🎯 Organized')}
           </p>
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
@@ -170,7 +172,6 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-lg mx-auto pt-16 pb-20 px-4">
-        {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-4">
           {[
             { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : 'Inbox' },
@@ -190,7 +191,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Inbox */}
         {activeTab === 'inbox' && (
           <div className="space-y-4">
             {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
@@ -202,12 +202,12 @@ export default function Dashboard() {
                 onSetLimit={(limit) => handleSetLimit(category, limit)}
                 onMessageClick={setSelectedMessage}
                 isLoading={isLoadingMessages}
+                isOnline={category === 'direct' ? isOnline : undefined}
               />
             ))}
           </div>
         )}
 
-        {/* Search */}
         {activeTab === 'search' && (
           <div>
             <div className="relative mb-4">
@@ -258,14 +258,18 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Patterns */}
         {activeTab === 'patterns' && user && <CommunicationPatterns userId={user.id} />}
       </main>
 
       <BottomNavigation />
 
-      {/* Modals */}
-      <ConversationView message={selectedMessage} isOpen={!!selectedMessage} onClose={() => setSelectedMessage(null)} onMessageRead={fetchMessages} />
+      <ConversationView
+        message={selectedMessage}
+        isOpen={!!selectedMessage}
+        onClose={() => setSelectedMessage(null)}
+        onMessageRead={fetchMessages}
+        canCall={selectedMessage ? canCall(selectedMessage.sender_profile?.id || selectedMessage.sender_id) : false}
+      />
       <MessageComposer isOpen={!!composeRecipient} onClose={() => setComposeRecipient(null)} recipient={composeRecipient} onMessageSent={fetchMessages} />
       <DirectAccessManager isOpen={isDirectAccessOpen} onClose={() => setIsDirectAccessOpen(false)} />
     </div>

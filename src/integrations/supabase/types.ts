@@ -94,6 +94,7 @@ export type Database = {
           sender_id: string
           subject: string | null
           updated_at: string
+          voice_url: string | null
         }
         Insert: {
           category?: Database["public"]["Enums"]["message_category"]
@@ -108,6 +109,7 @@ export type Database = {
           sender_id: string
           subject?: string | null
           updated_at?: string
+          voice_url?: string | null
         }
         Update: {
           category?: Database["public"]["Enums"]["message_category"]
@@ -122,6 +124,7 @@ export type Database = {
           sender_id?: string
           subject?: string | null
           updated_at?: string
+          voice_url?: string | null
         }
         Relationships: [
           {
