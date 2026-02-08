@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -12,24 +12,27 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, content, senderProfile } = await req.json();
+    const { content } = await req.json();
 
-    const prompt = `You are a message classifier for a professional communication app. Classify this message into ONE of these categories:
+    const prompt = `You are an intelligent message classifier for a premium communication app called "Directly". 
+Your job is to analyze the MESSAGE CONTENT deeply and classify it into exactly one category.
 
 Categories:
-- "work": Business, partnerships, projects, clients, professional teams, job offers, collaborations, sponsorships, brand deals, professional inquiries
-- "audience": Fans, followers, potential customers, support requests, general public inquiries, feedback, questions about content/products
-- "direct": Personal messages (only if sender is explicitly a close friend/family, otherwise default to audience)
+- "work": Business communication, professional inquiries, partnerships, projects, collaborations, sponsorships, job offers, client communication, brand deals, formal requests, professional networking
+- "audience": Fan messages, follower communication, general public inquiries, support requests, feedback, product questions, casual greetings from unknown people, content-related messages
+- "direct": Deeply personal messages that clearly indicate an existing close relationship (family, close friends, romantic partner). Messages with intimate tone, personal references, inside jokes, emotional sharing
 
-Message Details:
-Subject: ${subject || 'No subject'}
-Content: ${content}
-Sender: ${senderProfile?.display_name || 'Unknown'} (@${senderProfile?.username || 'unknown'})
+Classification Rules:
+1. Analyze the TONE, INTENT, and CONTEXT of the message — NOT just keywords
+2. If a message tries to disguise its intent (e.g., casual tone but business request), classify by TRUE INTENT
+3. Default to "audience" when uncertain — never default to "direct"
+4. "direct" requires STRONG evidence of personal closeness
+5. Professional language or formal tone = "work"
+6. Casual greetings without personal context = "audience"
+7. Messages mixing personal and business = classify by PRIMARY intent
 
-IMPORTANT: 
-- Default to "audience" if unsure
-- "direct" should only be used for clearly personal/intimate messages
-- "work" is for any business/professional context
+Message to classify:
+"${content}"
 
 Respond with ONLY one word: work, audience, or direct`;
 
@@ -43,36 +46,29 @@ Respond with ONLY one word: work, audience, or direct`;
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
+        messages: [{ role: 'user', content: prompt }],
         max_tokens: 10,
         temperature: 0.1,
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI Gateway error:', errorText);
-      // Default to audience if AI fails
+      console.error('AI Gateway error:', await response.text());
       return new Response(JSON.stringify({ category: 'audience' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
-    const classification = data.choices?.[0]?.message?.content?.toLowerCase().trim() || 'audience';
-    
-    // Validate the response
+    const raw = data.choices?.[0]?.message?.content?.toLowerCase().trim() || 'audience';
     const validCategories = ['work', 'audience', 'direct'];
-    const category = validCategories.includes(classification) ? classification : 'audience';
+    const category = validCategories.includes(raw) ? raw : 'audience';
 
     return new Response(JSON.stringify({ category }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in classify-message function:', error);
-    // Default to audience on error
+    console.error('classify-message error:', error);
     return new Response(JSON.stringify({ category: 'audience' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
