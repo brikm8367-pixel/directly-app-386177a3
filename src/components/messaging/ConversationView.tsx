@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Send, Loader2, User, ArrowLeft, ArrowRight, Lock, Mic, Phone, Video } from 'lucide-react';
+import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -27,13 +27,13 @@ interface ThreadMessage {
   sender_id: string;
   receiver_id: string;
   content: string;
-  subject: string | null;
   created_at: string;
   is_read: boolean | null;
-  is_sealed: boolean;
   category: MessageCategory;
   parent_id: string | null;
   voice_url?: string | null;
+  media_url?: string | null;
+  media_type?: string | null;
 }
 
 export default function ConversationView({ message, isOpen, onClose, onMessageRead, canCall }: ConversationViewProps) {
@@ -41,11 +41,12 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const { user } = useAuth();
   const [replyContent, setReplyContent] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [isSealing, setIsSealing] = useState(false);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showVoice, setShowVoice] = useState(false);
   const [activeCall, setActiveCall] = useState<{ type: 'audio' | 'video' } | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const getRootId = (msg: Message | null): string | null => {
@@ -53,7 +54,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     return msg.parent_id || msg.id;
   };
 
-  // Check if conversation is inactive (1 hour since last message)
   const isInactiveThread = useCallback((threadMsgs: ThreadMessage[]) => {
     if (threadMsgs.length === 0) return true;
     const lastMsg = threadMsgs[threadMsgs.length - 1];
@@ -64,7 +64,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     const loadThread = async () => {
       if (!message || !user) return;
       setIsLoading(true);
-
       const rootId = getRootId(message);
       if (!rootId) return;
 
@@ -85,7 +84,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         }
       }
     };
-
     if (isOpen && message) loadThread();
   }, [isOpen, message?.id]);
 
@@ -93,21 +91,40 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [thread]);
 
-  const isConversationSealed = thread.some(m => m.is_sealed);
   const otherUserId = message?.sender_id === user?.id ? message?.receiver_id : message?.sender_id;
-  const isReceiver = message?.receiver_id === user?.id;
   const isInactive = isInactiveThread(thread);
 
-  const handleSendReply = async (text: string, voiceUrl?: string) => {
-    if (!message || (!text.trim() && !voiceUrl) || !user) return;
+  const uploadMedia = async (file: File): Promise<{ url: string; type: string } | null> => {
+    const { data: auth } = await supabase.auth.getUser();
+    const userId = auth.user?.id;
+    const ext = file.name.split('.').pop();
+    const fileName = `${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('media-messages').upload(fileName, file);
+    if (error) return null;
+    const { data: urlData } = supabase.storage.from('media-messages').getPublicUrl(fileName);
+    const type = file.type.startsWith('video/') ? 'video' : 'image';
+    return { url: urlData.publicUrl, type };
+  };
 
+  const handleSendReply = async (text: string, voiceUrl?: string) => {
+    if (!message || (!text.trim() && !voiceUrl && !mediaPreview) || !user) return;
     setIsSending(true);
+
     try {
       const rootId = getRootId(message);
-      const shouldBeNewContext = isConversationSealed || isInactive;
+      const shouldBeNewContext = isInactive;
+
+      let mediaUrl: string | null = null;
+      let mediaType: string | null = null;
+
+      if (mediaPreview) {
+        const result = await uploadMedia(mediaPreview.file);
+        if (result) { mediaUrl = result.url; mediaType = result.type; }
+        URL.revokeObjectURL(mediaPreview.url);
+        setMediaPreview(null);
+      }
 
       if (shouldBeNewContext) {
-        // New context — deducts from counter
         const { data: canReceive } = await supabase.rpc('can_receive_message', {
           _user_id: otherUserId!, _category: message.category,
         });
@@ -120,34 +137,44 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         const { error } = await supabase.from('messages').insert({
           sender_id: user.id,
           receiver_id: otherUserId!,
-          content: text || '🎤',
+          content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
           voice_url: voiceUrl || null,
+          media_url: mediaUrl,
+          media_type: mediaType,
           category: message.category,
         } as any);
         if (error) throw error;
-        toast.success(isRTL ? 'تم إرسال رسالة جديدة' : 'New message sent');
       } else {
-        // Reply within conversation — unlimited
         const { error } = await supabase.from('messages').insert({
           sender_id: user.id,
           receiver_id: otherUserId!,
-          content: text || '🎤',
+          content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
           voice_url: voiceUrl || null,
+          media_url: mediaUrl,
+          media_type: mediaType,
           category: message.category,
           parent_id: rootId,
         } as any);
         if (error) throw error;
-        toast.success(isRTL ? 'تم إرسال الرد' : 'Reply sent');
       }
+
+      // Trigger push notification
+      const senderProfile = await supabase.from('profiles').select('display_name').eq('id', user.id).single();
+      supabase.functions.invoke('send-push-notification', {
+        body: {
+          receiverId: otherUserId,
+          senderName: senderProfile.data?.display_name || 'Someone',
+          messageType: voiceUrl ? 'voice' : mediaType || 'text',
+          content: text,
+        },
+      }).catch(() => {});
 
       setReplyContent('');
       setShowVoice(false);
+      toast.success(isRTL ? 'تم الإرسال ✨' : 'Sent ✨');
 
-      // Reload thread
       if (rootId) {
-        const { data } = await supabase
-          .from('messages')
-          .select('*')
+        const { data } = await supabase.from('messages').select('*')
           .or(`id.eq.${rootId},parent_id.eq.${rootId}`)
           .order('created_at', { ascending: true });
         setThread((data as ThreadMessage[]) || []);
@@ -161,19 +188,18 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     }
   };
 
-  const handleSeal = async () => {
-    if (!message || !user) return;
-    setIsSealing(true);
-    try {
-      const rootId = getRootId(message);
-      await supabase.from('messages').update({ is_sealed: true }).eq('id', rootId!);
-      setThread(prev => prev.map(m => m.id === rootId ? { ...m, is_sealed: true } : m));
-      toast.success(isRTL ? 'تم ختم المحادثة' : 'Conversation sealed');
-    } catch {
-      toast.error(isRTL ? 'فشل الختم' : 'Failed to seal');
-    } finally {
-      setIsSealing(false);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error(isRTL ? 'الحد الأقصى 25 ميغابايت' : 'Max 25MB');
+      return;
     }
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      toast.error(isRTL ? 'صور وفيديوهات فقط' : 'Images and videos only');
+      return;
+    }
+    setMediaPreview({ file, url: URL.createObjectURL(file) });
   };
 
   const fmtTime = (d: string) => new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { hour: '2-digit', minute: '2-digit' }).format(new Date(d));
@@ -216,47 +242,21 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                message.category === 'work' ? (isRTL ? 'العمل' : 'Work') : (isRTL ? 'الدائرة' : 'Audience')}
             </p>
           </div>
-          <div className="flex items-center gap-1">
-            {/* Call buttons — only for Private inbox with mutual access */}
-            {canCall && message.category === 'direct' && (
-              <>
-                <Button variant="ghost" size="icon" onClick={() => setActiveCall({ type: 'audio' })} className="h-10 w-10 rounded-xl touch-feedback">
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => setActiveCall({ type: 'video' })} className="h-10 w-10 rounded-xl touch-feedback">
-                  <Video className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-            {isReceiver && !isConversationSealed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSeal}
-                disabled={isSealing}
-                className="h-10 w-10 rounded-xl touch-feedback text-muted-foreground hover:text-destructive"
-                title={isRTL ? 'ختم المحادثة' : 'Seal conversation'}
-              >
-                <Lock className="h-4 w-4" />
+          {/* Call buttons — only for Private inbox with mutual access */}
+          {canCall && message.category === 'direct' && (
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={() => setActiveCall({ type: 'audio' })} className="h-10 w-10 rounded-xl touch-feedback">
+                <Phone className="h-4 w-4" />
               </Button>
-            )}
-          </div>
+              <Button variant="ghost" size="icon" onClick={() => setActiveCall({ type: 'video' })} className="h-10 w-10 rounded-xl touch-feedback">
+                <Video className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Sealed notice — gentle and quiet */}
-        {isConversationSealed && (
-          <div className="mx-4 mt-3 flex items-center gap-2 p-3 rounded-xl bg-muted/50">
-            <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <p className="text-xs text-muted-foreground">
-              {isRTL
-                ? 'محادثة مختومة. رسالتك التالية ستُوجّه حسب نوعها.'
-                : 'Sealed conversation. Your next message will be routed by type.'}
-            </p>
-          </div>
-        )}
-
         {/* 1-hour inactivity notice */}
-        {!isConversationSealed && isInactive && thread.length > 0 && (
+        {isInactive && thread.length > 0 && (
           <div className="mx-4 mt-3 flex items-center gap-2 p-3 rounded-xl bg-primary/5">
             <p className="text-xs text-muted-foreground">
               {isRTL
@@ -291,11 +291,18 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                       'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
                       isMine ? 'bg-primary text-primary-foreground rounded-ee-md' : 'bg-muted rounded-es-md'
                     )}>
-                      {(msg as any).voice_url ? (
-                        <VoicePlayer url={(msg as any).voice_url} isMine={isMine} />
-                      ) : (
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      {/* Media content */}
+                      {msg.media_url && msg.media_type === 'image' && (
+                        <img src={msg.media_url} alt="" className="rounded-xl max-w-full mb-2 cursor-pointer" onClick={() => window.open(msg.media_url!, '_blank')} />
                       )}
+                      {msg.media_url && msg.media_type === 'video' && (
+                        <video src={msg.media_url} controls className="rounded-xl max-w-full mb-2" />
+                      )}
+                      {msg.voice_url ? (
+                        <VoicePlayer url={msg.voice_url} isMine={isMine} />
+                      ) : msg.content && msg.content !== '📷' && msg.content !== '🎥' && msg.content !== '🎤' ? (
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      ) : null}
                       <p className={cn('text-[10px] mt-1', isMine ? 'text-primary-foreground/60' : 'text-muted-foreground')}>
                         {fmtTime(msg.created_at)}
                       </p>
@@ -307,8 +314,23 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
           )}
         </div>
 
+        {/* Media preview */}
+        {mediaPreview && (
+          <div className="mx-3 mb-2 relative">
+            {mediaPreview.file.type.startsWith('video/') ? (
+              <video src={mediaPreview.url} className="h-24 rounded-xl" />
+            ) : (
+              <img src={mediaPreview.url} className="h-24 rounded-xl object-cover" />
+            )}
+            <Button size="icon" variant="destructive" className="absolute top-1 end-1 h-6 w-6 rounded-full" onClick={() => { URL.revokeObjectURL(mediaPreview.url); setMediaPreview(null); }}>
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+
         {/* Reply area */}
         <div className="shrink-0 border-t border-border p-3 bg-card/50 rounded-b-3xl">
+          <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileSelect} className="hidden" />
           {showVoice ? (
             <VoiceRecorder
               onRecordComplete={(url) => handleSendReply('🎤', url)}
@@ -316,12 +338,15 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
             />
           ) : (
             <div className="flex items-end gap-2">
+              <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} className="h-12 w-12 rounded-xl shrink-0 touch-feedback">
+                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              </Button>
               <Button variant="ghost" size="icon" onClick={() => setShowVoice(true)} className="h-12 w-12 rounded-xl shrink-0 touch-feedback">
                 <Mic className="h-5 w-5 text-muted-foreground" />
               </Button>
               <Textarea
                 placeholder={
-                  isConversationSealed || isInactive
+                  isInactive
                     ? (isRTL ? 'رسالة جديدة...' : 'New message...')
                     : (isRTL ? 'اكتب ردك...' : 'Reply...')
                 }
@@ -335,7 +360,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               />
               <Button
                 onClick={() => handleSendReply(replyContent)}
-                disabled={!replyContent.trim() || isSending}
+                disabled={(!replyContent.trim() && !mediaPreview) || isSending}
                 size="icon"
                 className="h-12 w-12 rounded-xl shrink-0 touch-feedback"
               >

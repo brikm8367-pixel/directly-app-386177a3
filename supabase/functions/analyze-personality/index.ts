@@ -14,11 +14,11 @@ serve(async (req) => {
     const { stats, language } = await req.json();
     const isArabic = language === 'ar';
 
-    const prompt = `You are a communication psychologist analyzing a user's messaging patterns. Based on the following data, provide a unique, personalized personality analysis.
+    const prompt = `You are a brutally honest communication psychologist. Analyze this user's messaging data and give a TRUTHFUL, data-driven personality assessment. DO NOT flatter or sugarcoat. If the data shows problems, say so directly but respectfully.
 
 DATA:
-- Total received messages: ${stats.totalReceived}
-- Total sent messages: ${stats.totalSent}
+- Total received: ${stats.totalReceived}
+- Total sent: ${stats.totalSent}
 - Work messages: ${stats.workCount} (${stats.workRatio}%)
 - Audience messages: ${stats.audienceCount} (${stats.audienceRatio}%)
 - Private messages: ${stats.directCount} (${stats.directRatio}%)
@@ -28,18 +28,21 @@ DATA:
 
 RESPOND IN ${isArabic ? 'ARABIC' : 'ENGLISH'} with a JSON object (no markdown, just raw JSON):
 {
-  "type": "A creative emoji + title for their personality type (max 4 words)",
-  "description": "A 2-sentence personalized description of their communication style based on the actual data. Be specific, not generic.",
+  "type": "An emoji + honest personality title (max 4 words)",
+  "description": "2 sentences describing their REAL communication style based on actual data. Be specific and truthful. If they barely message, say so. If they ignore people, say so. If they're balanced, acknowledge it genuinely.",
   "traits": ["trait1", "trait2", "trait3", "trait4"],
-  "advice": "One specific, actionable, non-generic tip based on their actual pattern. Reference their data."
+  "advice": "One specific, honest, actionable tip based on their actual pattern. Don't just encourage — challenge them if needed. Reference their actual numbers.",
+  "insight": "A short, surprising psychological observation about what their pattern reveals about their personality. Be insightful and genuine, not generic."
 }
 
-IMPORTANT:
-- Be creative and vary your responses
-- Reference specific numbers from the data
-- Never give the same generic analysis
-- Make it feel personal and insightful
-- If data is empty (0 messages), acknowledge that and give an encouraging welcome message`;
+CRITICAL RULES:
+- NEVER lie or exaggerate to make the user feel good
+- If they have 0 messages, say "you haven't started yet" — don't invent traits
+- If their response rate is low, point it out honestly
+- If they only use one inbox, note the imbalance
+- Be like a wise friend who tells the truth, not a salesperson
+- Each analysis must be unique — vary your language every time
+- The "insight" should be genuinely thought-provoking`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
@@ -50,9 +53,9 @@ IMPORTANT:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
+        model: 'google/gemini-2.5-flash',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.8,
+        temperature: 0.9,
       }),
     });
 
@@ -63,21 +66,12 @@ IMPORTANT:
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
       throw new Error('AI gateway error');
     }
 
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || '';
-    
-    // Clean up markdown formatting if present
     content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
     const analysis = JSON.parse(content);
 
     return new Response(JSON.stringify(analysis), {
@@ -87,10 +81,11 @@ IMPORTANT:
     console.error('Error in analyze-personality:', error);
     return new Response(JSON.stringify({ 
       error: 'Analysis failed',
-      type: '🌟 Wise Balancer',
-      description: 'Your communication pattern is still forming. Keep using the app to get personalized insights.',
-      traits: ['Curious', 'Growing', 'Mindful', 'Balanced'],
-      advice: 'Start by organizing your contacts into the three inboxes to get better insights.'
+      type: '🌱 Just Starting',
+      description: 'Not enough data yet to provide a meaningful analysis. Keep communicating and come back later.',
+      traits: ['New', 'Exploring', 'Growing', 'Open'],
+      advice: 'Start by sending a few messages across different inboxes to build your communication profile.',
+      insight: 'Every communication journey starts with a single message.'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

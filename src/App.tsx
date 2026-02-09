@@ -9,7 +9,6 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
 
-// Lazy load pages for faster initial load
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -17,18 +16,19 @@ const Install = lazy(() => import("./pages/Install"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const AdminStats = lazy(() => import("./pages/AdminStats"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
-      gcTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 60 * 1000,
+      gcTime: 5 * 60 * 1000,
     },
   },
 });
 
-// Loading fallback
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
@@ -40,7 +40,6 @@ const App = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
 
   useEffect(() => {
-    // Only show splash on first visit per session
     const visited = sessionStorage.getItem('directly_visited');
     if (!visited) {
       setIsFirstVisit(true);
@@ -59,7 +58,6 @@ const App = () => {
               <Toaster />
               <Sonner />
               
-              {/* Splash Screen - Only on first visit */}
               {showSplash && isFirstVisit && (
                 <SplashScreen onComplete={() => setShowSplash(false)} />
               )}
@@ -74,7 +72,8 @@ const App = () => {
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/admin" element={<AdminStats />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

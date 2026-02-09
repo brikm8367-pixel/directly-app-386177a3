@@ -243,11 +243,25 @@ export default function ProfilePage() {
           {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : isRTL ? 'حفظ التغييرات' : 'Save Changes'}
         </Button>
 
+        {/* Legal links — App Store / Play Store compliance */}
+        <div className="mt-6 p-4 rounded-2xl bg-card border border-border space-y-2">
+          <a href="/privacy" className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors touch-feedback">
+            <span className="text-sm font-medium">{isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
+            <span className="text-xs text-muted-foreground">→</span>
+          </a>
+          <a href="/terms" className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors touch-feedback">
+            <span className="text-sm font-medium">{isRTL ? 'شروط الخدمة' : 'Terms of Service'}</span>
+            <span className="text-xs text-muted-foreground">→</span>
+          </a>
+        </div>
+
         {/* Sign Out */}
         <Button variant="ghost" onClick={handleSignOut} className="w-full mt-3 h-12 text-destructive rounded-xl">
           <LogOut className="h-4 w-4 me-2" />
           {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
         </Button>
+
+        <p className="text-center text-xs text-muted-foreground mt-4 mb-2">Directly v1.0 · © 2026</p>
       </main>
 
       <BottomNavigation />
