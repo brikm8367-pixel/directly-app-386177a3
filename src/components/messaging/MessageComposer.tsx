@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Send, Loader2, User, Mic } from 'lucide-react';
+import { Send, Loader2, User, Mic, Image as ImageIcon, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VoiceRecorder from './VoiceRecorder';
@@ -28,9 +28,22 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadMedia = async (file: File): Promise<{ url: string; type: string } | null> => {
+    const { data: auth } = await supabase.auth.getUser();
+    const userId = auth.user?.id;
+    const ext = file.name.split('.').pop();
+    const fileName = `${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('media-messages').upload(fileName, file);
+    if (error) return null;
+    const { data: urlData } = supabase.storage.from('media-messages').getPublicUrl(fileName);
+    return { url: urlData.publicUrl, type: file.type.startsWith('video/') ? 'video' : 'image' };
+  };
 
   const sendMessage = async (text: string, voiceUrl?: string) => {
-    if (!recipient || (!text.trim() && !voiceUrl)) return;
+    if (!recipient || (!text.trim() && !voiceUrl && !mediaPreview)) return;
     setIsSending(true);
 
     try {
@@ -38,24 +51,44 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
       const senderId = auth.user?.id;
       if (!senderId) throw new Error('Not authenticated');
 
-      // AI classification — no subject, content-only
-      const { data: classData } = await supabase.functions.invoke('classify-message', {
-        body: { content: text || 'Voice message' },
-      });
-      let category = classData?.category || 'audience';
+      let mediaUrl: string | null = null;
+      let mediaType: string | null = null;
+      if (mediaPreview) {
+        const result = await uploadMedia(mediaPreview.file);
+        if (result) { mediaUrl = result.url; mediaType = result.type; }
+        URL.revokeObjectURL(mediaPreview.url);
+        setMediaPreview(null);
+      }
 
-      // Check direct access
-      if (category === 'direct') {
-        const { data: canSend } = await supabase.rpc('can_send_to_direct', {
-          _sender_id: senderId, _receiver_id: recipient.id,
+      // Check if sender is in recipient's direct_access → force category to 'direct'
+      const { data: directAccess } = await supabase
+        .from('direct_access')
+        .select('id')
+        .eq('owner_id', recipient.id)
+        .eq('allowed_user_id', senderId)
+        .limit(1);
+
+      let category: 'work' | 'audience' | 'direct' = 'audience';
+      if (directAccess && directAccess.length > 0) {
+        // Recipient has added sender to their private box → always goes to direct
+        category = 'direct';
+      } else {
+        // AI classification
+        const { data: classData } = await supabase.functions.invoke('classify-message', {
+          body: { content: text || 'Voice message' },
         });
-        if (!canSend) category = 'audience';
+        category = classData?.category || 'audience';
+
+        // If classified as direct but sender not in recipient's direct_access, downgrade
+        if (category === 'direct') {
+          category = 'audience';
+        }
       }
 
       // Smart routing: find existing active conversation in same category
       const { data: roots } = await supabase
         .from('messages')
-        .select('id, is_sealed, created_at')
+        .select('id, created_at')
         .is('parent_id', null)
         .eq('category', category)
         .or(`and(sender_id.eq.${senderId},receiver_id.eq.${recipient.id}),and(sender_id.eq.${recipient.id},receiver_id.eq.${senderId})`)
@@ -65,8 +98,7 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
       let parentId: string | null = null;
       let isNewContext = true;
 
-      if (roots && roots.length > 0 && !roots[0].is_sealed) {
-        // Check last activity in this thread
+      if (roots && roots.length > 0) {
         const { data: lastMsg } = await supabase
           .from('messages')
           .select('created_at')
@@ -84,7 +116,6 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
         }
       }
 
-      // Check receiver limits only for new contexts
       if (isNewContext) {
         const { data: canReceive } = await supabase.rpc('can_receive_message', {
           _user_id: recipient.id, _category: category,
@@ -99,12 +130,25 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
       const { error } = await supabase.from('messages').insert({
         sender_id: senderId,
         receiver_id: recipient.id,
-        content: text || '🎤',
+        content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
         voice_url: voiceUrl || null,
+        media_url: mediaUrl,
+        media_type: mediaType,
         category,
         parent_id: parentId,
       } as any);
       if (error) throw error;
+
+      // Trigger push notification
+      const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', senderId).single();
+      supabase.functions.invoke('send-push-notification', {
+        body: {
+          receiverId: recipient.id,
+          senderName: senderProfile?.display_name || 'Someone',
+          messageType: voiceUrl ? 'voice' : mediaType || 'text',
+          content: text,
+        },
+      }).catch(() => {});
 
       toast.success(isRTL ? 'تم الإرسال ✨' : 'Sent ✨');
       setContent('');
@@ -117,6 +161,14 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) { toast.error(isRTL ? 'الحد الأقصى 25 ميغابايت' : 'Max 25MB'); return; }
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) { toast.error(isRTL ? 'صور وفيديوهات فقط' : 'Images and videos only'); return; }
+    setMediaPreview({ file, url: URL.createObjectURL(file) });
   };
 
   return (
@@ -158,13 +210,28 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
                 rows={4}
                 className="resize-none text-base rounded-xl border-2 focus:border-primary p-4"
               />
+
+              {/* Media preview */}
+              {mediaPreview && (
+                <div className="relative inline-block">
+                  {mediaPreview.file.type.startsWith('video/') ? (
+                    <video src={mediaPreview.url} className="h-24 rounded-xl" />
+                  ) : (
+                    <img src={mediaPreview.url} className="h-24 rounded-xl object-cover" />
+                  )}
+                  <Button size="icon" variant="destructive" className="absolute top-1 end-1 h-6 w-6 rounded-full" onClick={() => { URL.revokeObjectURL(mediaPreview.url); setMediaPreview(null); }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+
+              <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileSelect} className="hidden" />
+
               <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowVoice(true)}
-                  className="h-13 w-13 rounded-xl touch-feedback"
-                >
+                <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} className="h-13 w-13 rounded-xl touch-feedback">
+                  <ImageIcon className="h-5 w-5" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setShowVoice(true)} className="h-13 w-13 rounded-xl touch-feedback">
                   <Mic className="h-5 w-5" />
                 </Button>
                 <Button variant="outline" onClick={onClose} className="flex-1 h-13 text-base rounded-xl touch-feedback">
@@ -172,7 +239,7 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
                 </Button>
                 <Button
                   onClick={() => sendMessage(content)}
-                  disabled={!content.trim() || isSending}
+                  disabled={(!content.trim() && !mediaPreview) || isSending}
                   className="flex-1 h-13 text-base rounded-xl touch-feedback"
                 >
                   {isSending ? (

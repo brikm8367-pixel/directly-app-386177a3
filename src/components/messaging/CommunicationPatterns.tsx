@@ -3,10 +3,10 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Crown, Mail, Send, Clock, Heart, Briefcase, Users, Sparkles, Brain, Loader2 } from 'lucide-react';
+import { Crown, Mail, Send, Clock, Heart, Briefcase, Users, Sparkles, Brain, Loader2, Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useMood, moodConfigs, Mood } from '@/hooks/useMood';
+import { useMood, moodConfigs } from '@/hooks/useMood';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -17,18 +17,15 @@ interface Message {
   receiver_id: string;
 }
 
-interface CommunicationPatternsProps {
-  userId: string;
-}
-
 interface PersonalityAnalysis {
   type: string;
   description: string;
   traits: string[];
   advice: string;
+  insight?: string;
 }
 
-export default function CommunicationPatterns({ userId }: CommunicationPatternsProps) {
+export default function CommunicationPatterns({ userId }: { userId: string }) {
   const { isRTL } = useLanguage();
   const { mood, setMood } = useMood();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -119,21 +116,21 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
     <div className="space-y-5">
       {/* Mood Selector */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground">{isRTL ? 'نمطك الحالي' : 'Your Mode'}</h3>
+        <h3 className="text-base font-semibold text-muted-foreground">{isRTL ? 'نمطك الحالي' : 'Your Mode'}</h3>
         <div className="grid grid-cols-4 gap-2">
           {moodConfigs.map((m) => (
             <button
               key={m.id}
               onClick={() => setMood(m.id)}
               className={cn(
-                'flex flex-col items-center gap-1 p-3 rounded-xl transition-all touch-feedback border',
+                'flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all touch-feedback border',
                 mood === m.id
                   ? 'bg-primary/10 border-primary/30 text-foreground'
                   : 'bg-card border-border text-muted-foreground'
               )}
             >
-              <span className="text-xl">{m.emoji}</span>
-              <span className="text-xs font-medium">{m.label[isRTL ? 'ar' : 'en']}</span>
+              <span className="text-2xl">{m.emoji}</span>
+              <span className="text-xs font-semibold">{m.label[isRTL ? 'ar' : 'en']}</span>
             </button>
           ))}
         </div>
@@ -148,7 +145,7 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
           <h2 className="font-bold text-lg">{isRTL ? 'نمط تواصلك' : 'Your Pattern'}</h2>
         </div>
         <Select value={period} onValueChange={(v: 'week' | 'month') => { setPeriod(v); setAnalysis(null); }}>
-          <SelectTrigger className="w-24 h-10 rounded-xl border-primary/20 text-sm">
+          <SelectTrigger className="w-28 h-10 rounded-xl border-primary/20 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -158,7 +155,7 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
         </Select>
       </div>
 
-      {/* Simple Stats */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { icon: Mail, label: isRTL ? 'مستلمة' : 'Received', value: stats.received },
@@ -175,9 +172,9 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
         ))}
       </div>
 
-      {/* Simple Distribution Bars */}
+      {/* Distribution */}
       <Card className="p-4 border-primary/10">
-        <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           {isRTL ? 'توزيع رسائلك' : 'Message Distribution'}
         </h3>
@@ -191,11 +188,11 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <item.icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{item.label}</span>
+                  <span className="text-sm font-medium">{item.label}</span>
                 </div>
-                <span className="text-sm font-semibold">{item.count} <span className="text-xs text-muted-foreground font-normal">({item.pct}%)</span></span>
+                <span className="text-sm font-bold">{item.count} <span className="text-xs text-muted-foreground font-normal">({item.pct}%)</span></span>
               </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                 <div className={cn('h-full rounded-full transition-all duration-700', item.color)} style={{ width: `${item.pct}%` }} />
               </div>
             </div>
@@ -214,18 +211,31 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
               </div>
               <div className="flex flex-wrap gap-2 justify-center">
                 {analysis.traits.map((t, i) => (
-                  <span key={i} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-xs border border-primary/15">
+                  <span key={i} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary font-semibold text-xs border border-primary/15">
                     {t}
                   </span>
                 ))}
               </div>
-              <div className="p-4 bg-primary/5 rounded-xl text-center">
-                <p className="text-sm leading-relaxed">{analysis.advice}</p>
+              {/* Honest advice */}
+              <div className="p-4 bg-primary/5 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <Lightbulb className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <p className="text-sm leading-relaxed font-medium">{analysis.advice}</p>
+                </div>
               </div>
+              {/* Psychological insight */}
+              {analysis.insight && (
+                <div className="p-4 bg-muted/50 rounded-xl">
+                  <div className="flex items-start gap-2">
+                    <Brain className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <p className="text-sm text-muted-foreground leading-relaxed italic">{analysis.insight}</p>
+                  </div>
+                </div>
+              )}
               <Button
                 variant="ghost"
                 onClick={() => { setAnalysis(null); analyzePersonality(); }}
-                className="w-full text-xs text-muted-foreground"
+                className="w-full text-sm text-muted-foreground"
               >
                 {isRTL ? '🔄 تحليل جديد' : '🔄 New Analysis'}
               </Button>
@@ -234,7 +244,7 @@ export default function CommunicationPatterns({ userId }: CommunicationPatternsP
             <div className="text-center py-4">
               <Brain className="h-8 w-8 text-primary mx-auto mb-3 animate-crown" />
               <p className="text-sm text-muted-foreground mb-4">
-                {isRTL ? 'اكتشف شخصيتك بناءً على تواصلك' : 'Discover your personality'}
+                {isRTL ? 'اكتشف شخصيتك الحقيقية بناءً على تواصلك' : 'Discover your true personality from your communication'}
               </p>
               <Button
                 onClick={analyzePersonality}
