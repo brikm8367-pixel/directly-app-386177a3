@@ -13,6 +13,9 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import CallScreen from '@/components/messaging/CallScreen';
+import { playNotificationSound } from '@/utils/sounds';
+import { registerPushNotifications, showInAppNotification } from '@/utils/pushNotifications';
+import { startRingtone, stopRingtone } from '@/utils/sounds';
 
 interface Profile {
   id: string;
@@ -47,17 +50,71 @@ export default function Dashboard() {
   const [isDirectAccessOpen, setIsDirectAccessOpen] = useState(false);
 
   // Incoming call state
-  const [incomingCall, setIncomingCall] = useState<{ from: string; callType: 'audio' | 'video'; offer: RTCSessionDescriptionInit } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{ from: string; callType: 'audio' | 'video'; offer: RTCSessionDescriptionInit; callerName?: string; callerAvatar?: string } | null>(null);
 
   useEffect(() => { if (!loading && !user) navigate('/'); }, [user, loading, navigate]);
 
-  // Listen for incoming calls
+  // Register push notifications on mount
+  useEffect(() => {
+    if (user) {
+      registerPushNotifications();
+      // Request notification permission proactively
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, [user]);
+
+  // Listen for incoming calls via Supabase Realtime broadcast
   useEffect(() => {
     if (!user) return;
-    const channel = supabase.channel(`call-listener-${user.id}`);
-    // Listen on all possible call channels
-    // This is simplified - in production you'd use a more sophisticated approach
-    return () => { supabase.removeChannel(channel); };
+
+    // Listen on a personal channel for incoming call offers
+    const callChannels: any[] = [];
+
+    const setupCallListener = async () => {
+      // Get all users who have mutual direct access
+      const { data: myAccess } = await supabase
+        .from('direct_access')
+        .select('allowed_user_id')
+        .eq('owner_id', user.id);
+
+      if (!myAccess) return;
+
+      for (const access of myAccess) {
+        const channelName = [user.id, access.allowed_user_id].sort().join('-');
+        const channel = supabase.channel(`call-${channelName}`);
+
+        channel
+          .on('broadcast', { event: 'offer' }, async ({ payload }) => {
+            if (payload.from !== user.id) {
+              // Incoming call! Play ringtone
+              startRingtone();
+
+              // Get caller profile
+              const { data: callerProfile } = await supabase
+                .from('profiles')
+                .select('display_name, avatar_url')
+                .eq('id', payload.from)
+                .single();
+
+              setIncomingCall({
+                from: payload.from,
+                callType: payload.callType || 'audio',
+                offer: payload.offer,
+                callerName: callerProfile?.display_name || 'Unknown',
+                callerAvatar: callerProfile?.avatar_url || undefined,
+              });
+            }
+          })
+          .subscribe();
+
+        callChannels.push(channel);
+      }
+    };
+
+    setupCallListener();
+    return () => { callChannels.forEach(ch => supabase.removeChannel(ch)); };
   }, [user]);
 
   const fetchMessages = useCallback(async () => {
@@ -112,7 +169,19 @@ export default function Dashboard() {
     if (!user) return;
     const channel = supabase
       .channel('messages-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, () => fetchMessages())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, (payload) => {
+        fetchMessages();
+        // Play notification sound for new message
+        playNotificationSound();
+        // Show browser notification
+        const msg = payload.new as any;
+        if (msg) {
+          showInAppNotification(
+            'Directly',
+            msg.voice_url ? '🎤 Voice message' : msg.content?.substring(0, 50) || 'New message'
+          );
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchMessages]);
@@ -262,6 +331,19 @@ export default function Dashboard() {
       </main>
 
       <BottomNavigation />
+
+      {/* Incoming call overlay */}
+      {incomingCall && (
+        <CallScreen
+          recipientId={incomingCall.from}
+          recipientName={incomingCall.callerName || 'Unknown'}
+          recipientAvatar={incomingCall.callerAvatar}
+          callType={incomingCall.callType}
+          isIncoming
+          offer={incomingCall.offer}
+          onEnd={() => { stopRingtone(); setIncomingCall(null); }}
+        />
+      )}
 
       <ConversationView
         message={selectedMessage}

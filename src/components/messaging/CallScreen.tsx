@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, User } from 'lucide-react';
+import { PhoneOff, Video, VideoOff, Mic, MicOff, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { startRingingSound, stopRingingSound, startRingtone, stopRingtone } from '@/utils/sounds';
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -33,7 +34,6 @@ export default function CallScreen({
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const remoteStreamRef = useRef<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const channelRef = useRef<any>(null);
@@ -43,6 +43,8 @@ export default function CallScreen({
 
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    stopRingingSound();
+    stopRingtone();
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     pcRef.current?.close();
     if (channelRef.current) supabase.removeChannel(channelRef.current);
@@ -66,8 +68,10 @@ export default function CallScreen({
     stream.getTracks().forEach(t => pc.addTrack(t, stream));
 
     pc.ontrack = (e) => {
-      remoteStreamRef.current = e.streams[0];
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
+      // Call connected — stop all ring sounds
+      stopRingingSound();
+      stopRingtone();
       setStatus('active');
       timerRef.current = window.setInterval(() => setDuration(d => d + 1), 1000);
     };
@@ -75,8 +79,7 @@ export default function CallScreen({
     pc.onicecandidate = (e) => {
       if (e.candidate && channelRef.current) {
         channelRef.current.send({
-          type: 'broadcast',
-          event: 'ice-candidate',
+          type: 'broadcast', event: 'ice-candidate',
           payload: { candidate: e.candidate.toJSON(), from: user?.id },
         });
       }
@@ -99,6 +102,8 @@ export default function CallScreen({
         .on('broadcast', { event: 'answer' }, async ({ payload }) => {
           if (payload.from !== user.id) {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
+            // Answer received — stop ringing for caller
+            stopRingingSound();
           }
         })
         .on('broadcast', { event: 'offer' }, async ({ payload }) => {
@@ -106,11 +111,7 @@ export default function CallScreen({
             await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            channel.send({
-              type: 'broadcast',
-              event: 'answer',
-              payload: { answer, from: user.id },
-            });
+            channel.send({ type: 'broadcast', event: 'answer', payload: { answer, from: user.id } });
           }
         })
         .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
@@ -119,29 +120,37 @@ export default function CallScreen({
           }
         })
         .on('broadcast', { event: 'end-call' }, ({ payload }) => {
-          if (payload.from !== user.id) {
-            cleanup();
-            onEnd();
-          }
+          if (payload.from !== user.id) { cleanup(); onEnd(); }
         })
         .subscribe(async (s) => {
           if (s === 'SUBSCRIBED') {
             if (isIncoming && offer) {
+              // I'm answering — stop ringtone
+              stopRingtone();
               await pc.setRemoteDescription(new RTCSessionDescription(offer));
               const answer = await pc.createAnswer();
               await pc.setLocalDescription(answer);
-              channel.send({
-                type: 'broadcast',
-                event: 'answer',
-                payload: { answer, from: user.id },
-              });
+              channel.send({ type: 'broadcast', event: 'answer', payload: { answer, from: user.id } });
             } else {
+              // I'm calling — play ringing sound for myself
               setStatus('ringing');
+              startRingingSound();
+
+              // Send push notification to recipient for incoming call
+              const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', user.id).single();
+              supabase.functions.invoke('send-push-notification', {
+                body: {
+                  receiverId: recipientId,
+                  senderName: profile?.display_name || 'Someone',
+                  messageType: callType === 'video' ? 'call_video' : 'call_audio',
+                  content: '',
+                },
+              }).catch(() => {});
+
               const offerDesc = await pc.createOffer();
               await pc.setLocalDescription(offerDesc);
               channel.send({
-                type: 'broadcast',
-                event: 'offer',
+                type: 'broadcast', event: 'offer',
                 payload: { offer: offerDesc, from: user.id, callType },
               });
             }
@@ -154,11 +163,7 @@ export default function CallScreen({
   }, []);
 
   const endCall = () => {
-    channelRef.current?.send({
-      type: 'broadcast',
-      event: 'end-call',
-      payload: { from: user?.id },
-    });
+    channelRef.current?.send({ type: 'broadcast', event: 'end-call', payload: { from: user?.id } });
     cleanup();
     onEnd();
   };
@@ -177,7 +182,6 @@ export default function CallScreen({
 
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-between py-safe">
-      {/* Remote video / Avatar */}
       <div className="flex-1 w-full flex items-center justify-center relative">
         {callType === 'video' ? (
           <video ref={remoteVideoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
@@ -190,16 +194,19 @@ export default function CallScreen({
               </AvatarFallback>
             </Avatar>
             <h2 className="text-2xl font-bold">{recipientName}</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-lg">
               {status === 'ringing' && (isRTL ? 'جاري الاتصال...' : 'Calling...')}
               {status === 'connecting' && (isRTL ? 'جاري الاتصال...' : 'Connecting...')}
               {status === 'active' && fmt(duration)}
               {status === 'ended' && (isRTL ? 'انتهت المكالمة' : 'Call ended')}
             </p>
+            {/* Pulsing animation while ringing */}
+            {(status === 'ringing' || status === 'connecting') && (
+              <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
+            )}
           </div>
         )}
 
-        {/* Local video (small) */}
         {callType === 'video' && (
           <div className="absolute top-6 end-6 w-28 h-40 rounded-2xl overflow-hidden border-2 border-background shadow-lg">
             <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
@@ -207,35 +214,17 @@ export default function CallScreen({
         )}
       </div>
 
-      {/* Controls */}
       <div className="shrink-0 pb-8 pt-4">
         <div className="flex items-center gap-4">
-          <Button
-            size="icon"
-            variant={isMuted ? 'destructive' : 'secondary'}
-            onClick={toggleMute}
-            className="h-14 w-14 rounded-full"
-          >
+          <Button size="icon" variant={isMuted ? 'destructive' : 'secondary'} onClick={toggleMute} className="h-14 w-14 rounded-full">
             {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
           </Button>
-
           {callType === 'video' && (
-            <Button
-              size="icon"
-              variant={isCameraOff ? 'destructive' : 'secondary'}
-              onClick={toggleCamera}
-              className="h-14 w-14 rounded-full"
-            >
+            <Button size="icon" variant={isCameraOff ? 'destructive' : 'secondary'} onClick={toggleCamera} className="h-14 w-14 rounded-full">
               {isCameraOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
             </Button>
           )}
-
-          <Button
-            size="icon"
-            variant="destructive"
-            onClick={endCall}
-            className="h-16 w-16 rounded-full"
-          >
+          <Button size="icon" variant="destructive" onClick={endCall} className="h-16 w-16 rounded-full">
             <PhoneOff className="h-7 w-7" />
           </Button>
         </div>

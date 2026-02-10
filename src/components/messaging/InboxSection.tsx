@@ -52,7 +52,7 @@ const categoryConfig = {
   },
   audience: {
     icon: Users,
-    label: { ar: 'الدائرة', en: 'Audience' },
+    label: { ar: 'العلاقات', en: 'Relationships' },
     subtitle: { ar: 'تواصل مفتوح', en: 'Open messages' },
   },
   direct: {
