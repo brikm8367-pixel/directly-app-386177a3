@@ -239,7 +239,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
             <p className="font-bold text-base truncate">{otherName}</p>
             <p className="text-xs text-muted-foreground">
               {message.category === 'direct' ? (isRTL ? 'الخاص' : 'Private') :
-               message.category === 'work' ? (isRTL ? 'العمل' : 'Work') : (isRTL ? 'الدائرة' : 'Audience')}
+               message.category === 'work' ? (isRTL ? 'العمل' : 'Work') : (isRTL ? 'العلاقات' : 'Relationships')}
             </p>
           </div>
           {/* Call buttons — only for Private inbox with mutual access */}
