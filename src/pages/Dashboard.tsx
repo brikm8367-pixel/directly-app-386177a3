@@ -17,6 +17,8 @@ import IncomingCallOverlay from '@/components/messaging/IncomingCallOverlay';
 import { playNotificationSound } from '@/utils/sounds';
 import { registerPushNotifications, showInAppNotification } from '@/utils/pushNotifications';
 import { startRingtone, stopRingtone } from '@/utils/sounds';
+import { OnboardingFlow } from '@/components/OnboardingFlow';
+import { FeatureHint } from '@/components/FeatureHint';
 
 interface Profile {
   id: string;
@@ -31,6 +33,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isOnline, canCall } = usePresence(user?.id);
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('directly_onboarded'));
 
   const getInitialTab = () => {
     const tab = searchParams.get('tab');
@@ -223,6 +226,10 @@ export default function Dashboard() {
     );
   }
 
+  if (showOnboarding) {
+    return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
@@ -264,6 +271,10 @@ export default function Dashboard() {
 
         {activeTab === 'inbox' && (
           <div className="space-y-4">
+            <FeatureHint
+              id="inbox_intro"
+              text={isRTL ? 'صناديقك مصنّفة تلقائياً بالذكاء الاصطناعي — كل رسالة في مكانها' : 'Your inboxes are auto-sorted by AI — every message in its place'}
+            />
             {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
               <InboxSection
                 key={category}
