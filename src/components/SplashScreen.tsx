@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { playSplashSound } from '@/utils/sounds';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -8,15 +9,14 @@ interface SplashScreenProps {
 export function SplashScreen({ onComplete }: SplashScreenProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [showLogo, setShowLogo] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Start animation after a brief moment
     const showTimer = setTimeout(() => setShowLogo(true), 100);
     
-    // Play satisfying pop sound when animation completes
+    // Play soft premium sound when animation completes
     const soundTimer = setTimeout(() => {
-      playPopSound();
+      playSplashSoundFn();
     }, 1200);
     
     // Complete splash after animation
@@ -32,44 +32,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     };
   }, [onComplete]);
 
-  const playPopSound = () => {
-    // Create a satisfying, gentle "pop" sound using Web Audio API
+  const playSplashSoundFn = () => {
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // Main pop tone
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
-      
-      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-      
-      oscillator.type = 'sine';
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.15);
-      
-      // Secondary harmonic for richness
-      const osc2 = audioContext.createOscillator();
-      const gain2 = audioContext.createGain();
-      
-      osc2.connect(gain2);
-      gain2.connect(audioContext.destination);
-      
-      osc2.frequency.setValueAtTime(1200, audioContext.currentTime);
-      osc2.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.08);
-      
-      gain2.gain.setValueAtTime(0.08, audioContext.currentTime);
-      gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
-      osc2.type = 'sine';
-      osc2.start(audioContext.currentTime);
-      osc2.stop(audioContext.currentTime + 0.1);
+      playSplashSound();
     } catch (e) {
       // Audio not supported, continue silently
     }

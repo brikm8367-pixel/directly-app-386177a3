@@ -1,0 +1,9 @@
+{
+  "appId": "app.lovable.cff71a1cdd2f4cb2bc5e295e0221f7dc",
+  "appName": "Directly",
+  "webDir": "dist",
+  "server": {
+    "url": "https://cff71a1c-dd2f-4cb2-bc5e-295e0221f7dc.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  }
+}

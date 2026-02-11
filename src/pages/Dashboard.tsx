@@ -13,6 +13,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import CallScreen from '@/components/messaging/CallScreen';
+import IncomingCallOverlay from '@/components/messaging/IncomingCallOverlay';
 import { playNotificationSound } from '@/utils/sounds';
 import { registerPushNotifications, showInAppNotification } from '@/utils/pushNotifications';
 import { startRingtone, stopRingtone } from '@/utils/sounds';
@@ -51,6 +52,7 @@ export default function Dashboard() {
 
   // Incoming call state
   const [incomingCall, setIncomingCall] = useState<{ from: string; callType: 'audio' | 'video'; offer: RTCSessionDescriptionInit; callerName?: string; callerAvatar?: string } | null>(null);
+  const [activeIncomingCall, setActiveIncomingCall] = useState<typeof incomingCall>(null);
 
   useEffect(() => { if (!loading && !user) navigate('/'); }, [user, loading, navigate]);
 
@@ -332,16 +334,43 @@ export default function Dashboard() {
 
       <BottomNavigation />
 
-      {/* Incoming call overlay */}
-      {incomingCall && (
-        <CallScreen
-          recipientId={incomingCall.from}
-          recipientName={incomingCall.callerName || 'Unknown'}
-          recipientAvatar={incomingCall.callerAvatar}
+      {/* Incoming call: show answer/reject overlay first */}
+      {incomingCall && !activeIncomingCall && (
+        <IncomingCallOverlay
+          callerName={incomingCall.callerName || 'Unknown'}
+          callerAvatar={incomingCall.callerAvatar}
           callType={incomingCall.callType}
+          onAnswer={() => {
+            stopRingtone();
+            setActiveIncomingCall(incomingCall);
+            setIncomingCall(null);
+          }}
+          onReject={() => {
+            stopRingtone();
+            // Send rejection via broadcast
+            const channelName = [user?.id, incomingCall.from].sort().join('-');
+            const ch = supabase.channel(`call-${channelName}`);
+            ch.subscribe((s) => {
+              if (s === 'SUBSCRIBED') {
+                ch.send({ type: 'broadcast', event: 'end-call', payload: { from: user?.id } });
+                setTimeout(() => supabase.removeChannel(ch), 1000);
+              }
+            });
+            setIncomingCall(null);
+          }}
+        />
+      )}
+
+      {/* Active incoming call screen (after answering) */}
+      {activeIncomingCall && (
+        <CallScreen
+          recipientId={activeIncomingCall.from}
+          recipientName={activeIncomingCall.callerName || 'Unknown'}
+          recipientAvatar={activeIncomingCall.callerAvatar}
+          callType={activeIncomingCall.callType}
           isIncoming
-          offer={incomingCall.offer}
-          onEnd={() => { stopRingtone(); setIncomingCall(null); }}
+          offer={activeIncomingCall.offer}
+          onEnd={() => { stopRingtone(); setActiveIncomingCall(null); }}
         />
       )}
 
