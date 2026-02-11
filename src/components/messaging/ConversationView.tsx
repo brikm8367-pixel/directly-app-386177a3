@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X } from 'lucide-react';
+import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,16 @@ import { Message, MessageCategory } from './InboxSection';
 import VoiceRecorder from './VoiceRecorder';
 import VoicePlayer from './VoicePlayer';
 import CallScreen from './CallScreen';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ConversationViewProps {
   message: Message | null;
@@ -43,6 +53,8 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const [isSending, setIsSending] = useState(false);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; isMine: boolean } | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'me' | 'both' | null>(null);
   const [showVoice, setShowVoice] = useState(false);
   const [activeCall, setActiveCall] = useState<{ type: 'audio' | 'video' } | null>(null);
   const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string } | null>(null);
@@ -112,7 +124,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
 
     try {
       const rootId = getRootId(message);
-      const shouldBeNewContext = isInactive;
 
       let mediaUrl: string | null = null;
       let mediaType: string | null = null;
@@ -124,7 +135,13 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         setMediaPreview(null);
       }
 
-      if (shouldBeNewContext) {
+      // 1-hour rule: only affects whether a credit is deducted from receiver's limit.
+      // The message always stays in the SAME conversation thread (same parent_id).
+      // It does NOT create a new conversation or move the message elsewhere.
+      const shouldDeductCredit = isInactive;
+
+      if (shouldDeductCredit) {
+        // Check if receiver's inbox can accept a new context
         const { data: canReceive } = await supabase.rpc('can_receive_message', {
           _user_id: otherUserId!, _category: message.category,
         });
@@ -133,30 +150,37 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
           setIsSending(false);
           return;
         }
-
-        const { error } = await supabase.from('messages').insert({
-          sender_id: user.id,
-          receiver_id: otherUserId!,
-          content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
-          voice_url: voiceUrl || null,
-          media_url: mediaUrl,
-          media_type: mediaType,
-          category: message.category,
-        } as any);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('messages').insert({
-          sender_id: user.id,
-          receiver_id: otherUserId!,
-          content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
-          voice_url: voiceUrl || null,
-          media_url: mediaUrl,
-          media_type: mediaType,
-          category: message.category,
-          parent_id: rootId,
-        } as any);
-        if (error) throw error;
       }
+
+      // AI re-classification: if after 1 hour, check if the new message's topic
+      // still matches the current category. If not, reclassify.
+      let finalCategory = message.category;
+      if (shouldDeductCredit && text.trim()) {
+        try {
+          const { data: classData } = await supabase.functions.invoke('classify-message', {
+            body: { content: text },
+          });
+          if (classData?.category && classData.category !== 'direct') {
+            // Only reclassify between work/audience. Direct stays direct.
+            if (message.category !== 'direct') {
+              finalCategory = classData.category;
+            }
+          }
+        } catch { /* keep original category */ }
+      }
+
+      // Always reply in the same thread — the 1-hour rule only deducts credit
+      const { error } = await supabase.from('messages').insert({
+        sender_id: user.id,
+        receiver_id: otherUserId!,
+        content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
+        voice_url: voiceUrl || null,
+        media_url: mediaUrl,
+        media_type: mediaType,
+        category: finalCategory,
+        parent_id: shouldDeductCredit ? null : rootId,
+      } as any);
+      if (error) throw error;
 
       // Trigger push notification
       const senderProfile = await supabase.from('profiles').select('display_name').eq('id', user.id).single();
@@ -222,6 +246,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const otherName = senderProfile?.display_name || senderProfile?.username || (isRTL ? 'مجهول' : 'Unknown');
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 rounded-3xl border-primary/10">
         {/* Header */}
@@ -260,8 +285,8 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
           <div className="mx-4 mt-3 flex items-center gap-2 p-3 rounded-xl bg-primary/5">
             <p className="text-xs text-muted-foreground">
               {isRTL
-                ? 'مضت ساعة. رسالتك التالية ستكون سياقاً جديداً.'
-                : 'Over an hour passed. Your next message will be a new context.'}
+                ? 'مضت ساعة — رسالتك التالية ستُخصم من الرصيد'
+                : 'Over an hour passed — your next message will deduct a credit'}
             </p>
           </div>
         )}
@@ -286,12 +311,20 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                       </span>
                     </div>
                   )}
-                  <div className={cn('flex', isMine ? 'justify-end' : 'justify-start')}>
+                  <div className={cn('flex group', isMine ? 'justify-end' : 'justify-start')}>
+                    {/* Delete button (appears on hover) */}
+                    {isMine && (
+                      <button
+                        onClick={() => setDeleteTarget({ id: msg.id, isMine })}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity self-center mx-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    )}
                     <div className={cn(
                       'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
                       isMine ? 'bg-primary text-primary-foreground rounded-ee-md' : 'bg-muted rounded-es-md'
                     )}>
-                      {/* Media content */}
                       {msg.media_url && msg.media_type === 'image' && (
                         <img src={msg.media_url} alt="" className="rounded-xl max-w-full mb-2 cursor-pointer" onClick={() => window.open(msg.media_url!, '_blank')} />
                       )}
@@ -307,6 +340,15 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                         {fmtTime(msg.created_at)}
                       </p>
                     </div>
+                    {/* Delete button for received messages */}
+                    {!isMine && (
+                      <button
+                        onClick={() => setDeleteTarget({ id: msg.id, isMine })}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity self-center mx-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -371,5 +413,48 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Delete confirmation */}
+    <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+      <AlertDialogContent className="rounded-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{isRTL ? 'حذف الرسالة' : 'Delete message'}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {isRTL ? 'كيف تريد حذف هذه الرسالة؟' : 'How do you want to delete this message?'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+          {deleteTarget?.isMine && (
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+              onClick={async () => {
+                if (!deleteTarget) return;
+                await supabase.from('messages').delete().eq('id', deleteTarget.id);
+                setThread(prev => prev.filter(m => m.id !== deleteTarget.id));
+                setDeleteTarget(null);
+                toast.success(isRTL ? 'تم الحذف للجميع' : 'Deleted for everyone');
+                onMessageRead?.();
+              }}
+            >
+              {isRTL ? 'حذف للجميع' : 'Delete for everyone'}
+            </AlertDialogAction>
+          )}
+          <AlertDialogAction
+            className="bg-muted text-foreground hover:bg-muted/80 rounded-xl"
+            onClick={async () => {
+              // "Delete for me" — we just remove from local view
+              if (!deleteTarget) return;
+              setThread(prev => prev.filter(m => m.id !== deleteTarget.id));
+              setDeleteTarget(null);
+              toast.success(isRTL ? 'تم الحذف' : 'Deleted');
+            }}
+          >
+            {isRTL ? 'حذف من عندي' : 'Delete for me'}
+          </AlertDialogAction>
+          <AlertDialogCancel className="rounded-xl">{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
