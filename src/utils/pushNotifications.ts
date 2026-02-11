@@ -1,21 +1,40 @@
 import { supabase } from '@/integrations/supabase/client';
 
+let cachedVapidKey: string | null = null;
+
+async function getVapidKey(): Promise<string | null> {
+  if (cachedVapidKey) return cachedVapidKey;
+  
+  // Try env var first
+  const envKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  if (envKey) { cachedVapidKey = envKey; return envKey; }
+
+  // Fetch from edge function
+  try {
+    const { data, error } = await supabase.functions.invoke('get-vapid-key');
+    if (!error && data?.key) {
+      cachedVapidKey = data.key;
+      return data.key;
+    }
+  } catch (e) {
+    console.error('Failed to fetch VAPID key:', e);
+  }
+  return null;
+}
+
 export async function registerPushNotifications() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
   try {
-    // Register the push service worker
     const registration = await navigator.serviceWorker.register('/sw-push.js', { scope: '/' });
     await navigator.serviceWorker.ready;
 
-    // Request notification permission
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return;
 
-    // Check if VAPID key is available
-    const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    const vapidKey = await getVapidKey();
     if (!vapidKey) {
-      console.log('VAPID public key not configured');
+      console.log('VAPID public key not available');
       return;
     }
 
@@ -24,7 +43,6 @@ export async function registerPushNotifications() {
       applicationServerKey: urlBase64ToUint8Array(vapidKey),
     });
 
-    // Save subscription to database
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return;
 
@@ -35,6 +53,8 @@ export async function registerPushNotifications() {
       p256dh: subJson.keys!.p256dh,
       auth: subJson.keys!.auth,
     }, { onConflict: 'user_id,endpoint' as any });
+
+    console.log('Push notifications registered successfully');
   } catch (error) {
     console.error('Push registration error:', error);
   }
@@ -49,14 +69,12 @@ function urlBase64ToUint8Array(base64String: string) {
 
 /** Show in-app notification with sound when a message arrives */
 export function showInAppNotification(title: string, body: string) {
-  // Browser notification (works even when tab is not focused)
   if (Notification.permission === 'granted') {
     const n = new Notification(title, {
       body,
       icon: '/pwa-192x192.png',
       tag: 'directly-msg',
     });
-    // Auto-close after 5s
     setTimeout(() => n.close(), 5000);
   }
 }
