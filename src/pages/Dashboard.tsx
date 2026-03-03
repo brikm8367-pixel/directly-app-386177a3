@@ -63,7 +63,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       registerPushNotifications();
-      // Request notification permission proactively
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
       }
@@ -73,12 +72,9 @@ export default function Dashboard() {
   // Listen for incoming calls via Supabase Realtime broadcast
   useEffect(() => {
     if (!user) return;
-
-    // Listen on a personal channel for incoming call offers
     const callChannels: any[] = [];
 
     const setupCallListener = async () => {
-      // Get all users who have mutual direct access
       const { data: myAccess } = await supabase
         .from('direct_access')
         .select('allowed_user_id')
@@ -93,10 +89,8 @@ export default function Dashboard() {
         channel
           .on('broadcast', { event: 'offer' }, async ({ payload }) => {
             if (payload.from !== user.id) {
-              // Incoming call! Play ringtone
               startRingtone();
 
-              // Get caller profile
               const { data: callerProfile } = await supabase
                 .from('profiles')
                 .select('display_name, avatar_url')
@@ -110,6 +104,15 @@ export default function Dashboard() {
                 callerName: callerProfile?.display_name || 'Unknown',
                 callerAvatar: callerProfile?.avatar_url || undefined,
               });
+
+              // Also send push notification for the call
+              supabase.functions.invoke('send-push-notification', {
+                body: {
+                  receiverId: user.id,
+                  senderName: callerProfile?.display_name || 'Someone',
+                  notificationType: payload.callType === 'video' ? 'call_video' : 'call_audio',
+                },
+              }).catch(() => {});
             }
           })
           .subscribe();
@@ -170,20 +173,20 @@ export default function Dashboard() {
 
   useEffect(() => { if (user) fetchMessages(); }, [user, fetchMessages]);
 
+  // Realtime: category-specific notifications
   useEffect(() => {
     if (!user) return;
     const channel = supabase
       .channel('messages-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, (payload) => {
         fetchMessages();
-        // Play notification sound for new message
         playNotificationSound();
-        // Show browser notification
         const msg = payload.new as any;
         if (msg) {
+          const categoryLabel = msg.category === 'work' ? '💼' : msg.category === 'direct' ? '⭐' : '👥';
           showInAppNotification(
-            'Directly',
-            msg.voice_url ? '🎤 Voice message' : msg.content?.substring(0, 50) || 'New message'
+            `${categoryLabel} Directly`,
+            msg.voice_url ? '🎤 Voice message' : msg.media_url ? '📷 Media' : msg.content?.substring(0, 50) || 'New message'
           );
         }
       })
@@ -273,7 +276,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             <FeatureHint
               id="inbox_intro"
-              text={isRTL ? 'صناديقك مصنّفة تلقائياً بالذكاء الاصطناعي — كل رسالة في مكانها' : 'Your inboxes are auto-sorted by AI — every message in its place'}
+              text={isRTL ? 'صناديقك مصنّفة تلقائياً — كل رسالة في مكانها' : 'Your inboxes are auto-sorted — every message in its place'}
             />
             {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
               <InboxSection
@@ -345,7 +348,7 @@ export default function Dashboard() {
 
       <BottomNavigation />
 
-      {/* Incoming call: show answer/reject overlay first */}
+      {/* Incoming call overlay */}
       {incomingCall && !activeIncomingCall && (
         <IncomingCallOverlay
           callerName={incomingCall.callerName || 'Unknown'}
@@ -358,7 +361,6 @@ export default function Dashboard() {
           }}
           onReject={() => {
             stopRingtone();
-            // Send rejection via broadcast
             const channelName = [user?.id, incomingCall.from].sort().join('-');
             const ch = supabase.channel(`call-${channelName}`);
             ch.subscribe((s) => {
@@ -372,7 +374,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Active incoming call screen (after answering) */}
+      {/* Active incoming call screen */}
       {activeIncomingCall && (
         <CallScreen
           recipientId={activeIncomingCall.from}

@@ -70,19 +70,15 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
 
       let category: 'work' | 'audience' | 'direct' = 'audience';
       if (directAccess && directAccess.length > 0) {
-        // Recipient has added sender to their private box → always goes to direct
         category = 'direct';
       } else {
-        // AI classification
+        // AI classification with sender history for learning
         const { data: classData } = await supabase.functions.invoke('classify-message', {
           body: { content: text || 'Voice message' },
         });
         category = classData?.category || 'audience';
-
         // If classified as direct but sender not in recipient's direct_access, downgrade
-        if (category === 'direct') {
-          category = 'audience';
-        }
+        if (category === 'direct') category = 'audience';
       }
 
       // Smart routing: find existing active conversation in same category
@@ -139,14 +135,17 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
       } as any);
       if (error) throw error;
 
-      // Trigger push notification
+      // Trigger category-specific push notification
       const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', senderId).single();
+      const notificationType = voiceUrl ? 'voice' : mediaType ? mediaType : `${category}_message`;
+      
       supabase.functions.invoke('send-push-notification', {
         body: {
           receiverId: recipient.id,
           senderName: senderProfile?.display_name || 'Someone',
           messageType: voiceUrl ? 'voice' : mediaType || 'text',
           content: text,
+          notificationType,
         },
       }).catch(() => {});
 
@@ -211,7 +210,6 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
                 className="resize-none text-base rounded-xl border-2 focus:border-primary p-4"
               />
 
-              {/* Media preview */}
               {mediaPreview && (
                 <div className="relative inline-block">
                   {mediaPreview.file.type.startsWith('video/') ? (
@@ -256,7 +254,7 @@ export default function MessageComposer({ isOpen, onClose, recipient, onMessageS
           )}
 
           <p className="text-xs text-muted-foreground text-center">
-            {isRTL ? '✨ يتم تصنيف رسالتك تلقائياً بالذكاء الاصطناعي' : '✨ Auto-classified by AI'}
+            {isRTL ? '✨ يتم تصنيف رسالتك تلقائياً' : '✨ Auto-classified by AI'}
           </p>
         </div>
       </DialogContent>
