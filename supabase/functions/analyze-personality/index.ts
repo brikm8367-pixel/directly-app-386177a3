@@ -14,35 +14,34 @@ serve(async (req) => {
     const { stats, language } = await req.json();
     const isArabic = language === 'ar';
 
-    const prompt = `You are a brutally honest communication psychologist. Analyze this user's messaging data and give a TRUTHFUL, data-driven personality assessment. DO NOT flatter or sugarcoat. If the data shows problems, say so directly but respectfully.
+    // Simplified, psychologically-driven prompt that produces SHORT, ego-boosting output
+    const prompt = `You are a world-class communication psychologist. Analyze this user's messaging data and create a SHORT, psychologically powerful personality card.
 
 DATA:
-- Total received: ${stats.totalReceived}
-- Total sent: ${stats.totalSent}
-- Work messages: ${stats.workCount} (${stats.workRatio}%)
-- Audience messages: ${stats.audienceCount} (${stats.audienceRatio}%)
-- Private messages: ${stats.directCount} (${stats.directRatio}%)
+- Received: ${stats.totalReceived} | Sent: ${stats.totalSent}
+- Work: ${stats.workCount} (${stats.workRatio}%) | Audience: ${stats.audienceCount} (${stats.audienceRatio}%) | Private: ${stats.directCount} (${stats.directRatio}%)
 - Response rate: ${stats.responseRate}%
-- Most active hour: ${stats.mostActiveHour}
+- Peak hour: ${stats.mostActiveHour}
 - Period: ${stats.period}
 
-RESPOND IN ${isArabic ? 'ARABIC' : 'ENGLISH'} with a JSON object (no markdown, just raw JSON):
+RESPOND IN ${isArabic ? 'ARABIC' : 'ENGLISH'}. Return ONLY raw JSON (no markdown):
 {
-  "type": "An emoji + honest personality title (max 4 words)",
-  "description": "2 sentences describing their REAL communication style based on actual data. Be specific and truthful. If they barely message, say so. If they ignore people, say so. If they're balanced, acknowledge it genuinely.",
-  "traits": ["trait1", "trait2", "trait3", "trait4"],
-  "advice": "One specific, honest, actionable tip based on their actual pattern. Don't just encourage — challenge them if needed. Reference their actual numbers.",
-  "insight": "A short, surprising psychological observation about what their pattern reveals about their personality. Be insightful and genuine, not generic."
+  "type": "emoji + powerful 2-3 word title that makes the user feel special and understood",
+  "description": "ONE sentence (max 15 words) — make the user feel seen, validated, and proud. Be specific to their data.",
+  "traits": ["trait1", "trait2", "trait3"],
+  "advice": "ONE short actionable sentence (max 12 words). Challenge or encourage based on real data.",
+  "insight": "ONE surprising psychological observation (max 15 words). Make them think 'wow, that's true about me'."
 }
 
-CRITICAL RULES:
-- NEVER lie or exaggerate to make the user feel good
-- If they have 0 messages, say "you haven't started yet" — don't invent traits
-- If their response rate is low, point it out honestly
-- If they only use one inbox, note the imbalance
-- Be like a wise friend who tells the truth, not a salesperson
-- Each analysis must be unique — vary your language every time
-- The "insight" should be genuinely thought-provoking`;
+PSYCHOLOGY RULES:
+- This is an EGO TOOL — users will SHARE this on Instagram Stories
+- The "type" title is their CROWN — make it memorable and unique (not generic like "Good Communicator")
+- Keep EVERYTHING ultra-short — like a premium fortune card, not a report
+- Be HONEST but frame truths positively (low activity = "selective", not "inactive")
+- If data is minimal (< 5 messages), still give a compelling micro-analysis
+- NEVER use more than 15 words per field
+- traits should be 1-2 words each, punchy and shareable
+- Make the user want to screenshot this immediately`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
@@ -55,7 +54,7 @@ CRITICAL RULES:
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.9,
+        temperature: 0.85,
       }),
     });
 
@@ -82,10 +81,10 @@ CRITICAL RULES:
     return new Response(JSON.stringify({ 
       error: 'Analysis failed',
       type: '🌱 Just Starting',
-      description: 'Not enough data yet to provide a meaningful analysis. Keep communicating and come back later.',
-      traits: ['New', 'Exploring', 'Growing', 'Open'],
-      advice: 'Start by sending a few messages across different inboxes to build your communication profile.',
-      insight: 'Every communication journey starts with a single message.'
+      description: 'Not enough data yet for a meaningful analysis.',
+      traits: ['New', 'Exploring', 'Open'],
+      advice: 'Send a few messages to build your profile.',
+      insight: 'Every journey starts with one message.'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

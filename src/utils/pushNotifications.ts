@@ -38,7 +38,7 @@ export async function registerPushNotifications() {
       return;
     }
 
-    const subscription = await registration.pushManager.subscribe({
+    const subscription = await (registration as any).pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidKey),
     });

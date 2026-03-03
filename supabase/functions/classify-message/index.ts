@@ -12,24 +12,32 @@ serve(async (req) => {
   }
 
   try {
-    const { content } = await req.json();
+    const { content, senderHistory } = await req.json();
 
-    const prompt = `You are an intelligent message classifier for a premium communication app called "Directly". 
-Your job is to analyze the MESSAGE CONTENT deeply and classify it into exactly one category.
+    // Enhanced cognitive AI classification prompt — TikTok-grade understanding
+    const prompt = `You are the world's most advanced cognitive message classifier for "Directly", a premium communication app.
+Your intelligence EXCEEDS TikTok's pre-acquisition algorithm in understanding human intent.
+
+MISSION: Analyze the MESSAGE deeply — tone, semantics, cultural context, emotional undertones, hidden intent — and classify into ONE category.
 
 Categories:
-- "work": Business communication, professional inquiries, partnerships, projects, collaborations, sponsorships, job offers, client communication, brand deals, formal requests, professional networking
-- "audience": Fan messages, follower communication, general public inquiries, support requests, feedback, product questions, casual greetings from unknown people, content-related messages
-- "direct": Deeply personal messages that clearly indicate an existing close relationship (family, close friends, romantic partner). Messages with intimate tone, personal references, inside jokes, emotional sharing
+- "work": Professional communication of ANY kind: business proposals, partnerships, sponsorships, job offers, brand deals, client requests, professional networking, formal inquiries, money-related messages, service requests, freelance work, collaboration pitches, interview requests, consulting
+- "audience": General public messages: fan messages, follower greetings, casual inquiries, content feedback, product questions, general support requests, casual compliments, "hi/hello" from strangers, subscription questions, event inquiries
+- "direct": ONLY messages that clearly indicate a pre-existing deep personal bond — family talk, romantic messages, close friend references, inside jokes, emotional vulnerability, crisis/emergency from someone close
 
-Classification Rules:
-1. Analyze the TONE, INTENT, and CONTEXT of the message — NOT just keywords
-2. If a message tries to disguise its intent (e.g., casual tone but business request), classify by TRUE INTENT
-3. Default to "audience" when uncertain — never default to "direct"
-4. "direct" requires STRONG evidence of personal closeness
-5. Professional language or formal tone = "work"
-6. Casual greetings without personal context = "audience"
-7. Messages mixing personal and business = classify by PRIMARY intent
+COGNITIVE RULES (think like a psychologist):
+1. Read BETWEEN the lines — detect manipulation attempts (someone pretending to be a friend to bypass filters)
+2. Professional language OR any monetary/business intent = ALWAYS "work"
+3. Casual/generic greetings without personal context = ALWAYS "audience"
+4. "direct" requires OVERWHELMING evidence of intimacy — names, shared memories, emotional depth
+5. Mixed signals → classify by PRIMARY commercial or social intent
+6. Cultural sensitivity: Arabic formal greetings that seem warm are often professional = "work"
+7. Fan admiration ≠ personal relationship = "audience"
+8. If uncertain, choose "audience" — NEVER default to "direct"
+9. Sponsorship, collaboration, "let's work together" = "work"
+10. "I love your content" or "you're amazing" from unknown = "audience"
+
+${senderHistory ? `SENDER PATTERN (learning signal): Previous messages from this sender were classified as: ${senderHistory}. Use this as a weak signal, but ALWAYS prioritize current message content.` : ''}
 
 Message to classify:
 "${content}"
@@ -48,12 +56,12 @@ Respond with ONLY one word: work, audience, or direct`;
         model: 'google/gemini-2.5-flash',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 10,
-        temperature: 0.1,
+        temperature: 0.05, // Even lower temp for more deterministic classification
       }),
     });
 
     if (!response.ok) {
-      console.error('AI Gateway error:', await response.text());
+      console.error('AI Gateway error:', response.status, await response.text());
       return new Response(JSON.stringify({ category: 'audience' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -64,7 +72,7 @@ Respond with ONLY one word: work, audience, or direct`;
     const validCategories = ['work', 'audience', 'direct'];
     const category = validCategories.includes(raw) ? raw : 'audience';
 
-    return new Response(JSON.stringify({ category }), {
+    return new Response(JSON.stringify({ category, confidence: raw === category ? 'high' : 'low' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

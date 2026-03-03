@@ -6,50 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Web Push helpers — implements RFC 8291 + RFC 8188 simplified
-async function sendWebPush(subscription: { endpoint: string; p256dh: string; auth: string }, payload: string, vapidPublic: string, vapidPrivate: string) {
-  // For web push we need to use the web-push protocol
-  // Use fetch to the push endpoint with proper VAPID headers
-  const url = new URL(subscription.endpoint);
-  
-  // Create a simple JWT for VAPID
-  const vapidToken = await createVapidJwt(url.origin, vapidPublic, vapidPrivate);
-  
-  const response = await fetch(subscription.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/octet-stream',
-      'Content-Encoding': 'aes128gcm',
-      'TTL': '86400',
-      'Urgency': 'high',
-      'Authorization': `vapid t=${vapidToken}, k=${vapidPublic}`,
-    },
-    body: new TextEncoder().encode(payload),
-  });
-
-  return response;
-}
-
-async function createVapidJwt(audience: string, publicKey: string, privateKey: string): Promise<string> {
-  const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'ES256' })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const now = Math.floor(Date.now() / 1000);
-  const payload = btoa(JSON.stringify({
-    aud: audience,
-    exp: now + 86400,
-    sub: 'mailto:directly@app.com',
-  })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  
-  // For simplicity, return unsigned token — most push services accept this for TTL-limited pushes
-  return `${header}.${payload}`;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { receiverId, senderName, messageType, content } = await req.json();
+    const { receiverId, senderName, messageType, content, notificationType } = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -70,22 +33,49 @@ serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
-    // Build notification payload
+    // ── Smart notification builder based on type ──
     let title = senderName || 'Directly';
     let body = content || '';
     let tag = `directly-${receiverId}`;
     let requireInteraction = false;
+    let silent = false;
 
-    switch (messageType) {
-      case 'voice':
-        body = '🎤 Voice message';
+    // BANNED notifications (never send these):
+    // ❌ "someone liked your profile"
+    // ❌ "someone viewed your profile"  
+    // ❌ "X joined Directly"
+    // ❌ "remind your friend to share"
+
+    switch (notificationType || messageType) {
+      // ── Work inbox: "The Money Notification" ──
+      case 'work_message':
+        title = `💼 ${senderName}`;
+        body = content ? `${content.substring(0, 60)}...` : 'New work message';
+        tag = `directly-work-${receiverId}`;
         break;
-      case 'image':
-        body = '📷 Photo';
+
+      // ── Private inbox: "The Safe Haven" ──  
+      case 'direct_message':
+        title = senderName || 'Directly';
+        body = '📩 New private message'; // Hide content for privacy on lock screen
+        tag = `directly-direct-${receiverId}`;
         break;
-      case 'video':
-        body = '🎥 Video';
+
+      // ── Audience inbox ──
+      case 'audience_message':
+        title = 'Directly';
+        body = `${senderName}: ${(content || '').substring(0, 40)}`;
+        tag = `directly-audience-${receiverId}`;
         break;
+
+      // ── Direct Access: someone added you ──
+      case 'direct_access_added':
+        title = '⭐ Directly';
+        body = `${senderName} added you to their private circle`;
+        tag = `directly-access-${receiverId}`;
+        break;
+
+      // ── Calls ──
       case 'call_audio':
         title = `📞 ${senderName}`;
         body = 'Incoming call';
@@ -98,6 +88,26 @@ serve(async (req) => {
         tag = `directly-call-${receiverId}`;
         requireInteraction = true;
         break;
+
+      // ── Media messages ──
+      case 'voice':
+        body = '🎤 Voice message';
+        break;
+      case 'image':
+        body = '📷 Photo';
+        break;
+      case 'video':
+        body = '🎥 Video';
+        break;
+
+      // ── Weekly pattern report ──
+      case 'pattern_report':
+        title = '✨ Directly';
+        body = 'Your weekly personality report is ready!';
+        tag = `directly-pattern-${receiverId}`;
+        silent = true; // Gentle, no sound
+        break;
+
       default:
         if (body.length > 50) body = body.substring(0, 50) + '...';
     }
@@ -110,29 +120,39 @@ serve(async (req) => {
       tag,
       renotify: true,
       requireInteraction,
-      vibrate: [200, 100, 200, 100, 200],
+      silent,
+      vibrate: silent ? [] : [200, 100, 200, 100, 200],
       data: { url: '/home' },
     });
 
     let sentCount = 0;
 
-    // Try to send via web push if VAPID keys are available
     if (vapidPublicKey && vapidPrivateKey) {
       for (const sub of subscriptions) {
         try {
-          await sendWebPush(
-            { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-            payload,
-            vapidPublicKey,
-            vapidPrivateKey
-          );
-          sentCount++;
-        } catch (e) {
-          console.error('Push send error:', e);
-          // Remove invalid subscription
-          if (e instanceof Error && e.message?.includes('410')) {
+          const url = new URL(sub.endpoint);
+          const vapidToken = await createVapidJwt(url.origin, vapidPublicKey, vapidPrivateKey);
+          
+          const response = await fetch(sub.endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'Content-Encoding': 'aes128gcm',
+              'TTL': '86400',
+              'Urgency': requireInteraction ? 'very-low' : 'high',
+              'Authorization': `vapid t=${vapidToken}, k=${vapidPublicKey}`,
+            },
+            body: new TextEncoder().encode(payload),
+          });
+
+          if (response.ok || response.status === 201) {
+            sentCount++;
+          } else if (response.status === 410 || response.status === 404) {
+            // Remove invalid subscription
             await supabase.from('push_subscriptions').delete().eq('id', sub.id);
           }
+        } catch (e) {
+          console.error('Push send error:', e);
         }
       }
     }
@@ -148,3 +168,14 @@ serve(async (req) => {
     });
   }
 });
+
+async function createVapidJwt(audience: string, publicKey: string, privateKey: string): Promise<string> {
+  const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'ES256' })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const now = Math.floor(Date.now() / 1000);
+  const payload = btoa(JSON.stringify({
+    aud: audience,
+    exp: now + 86400,
+    sub: 'mailto:directly@app.com',
+  })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return `${header}.${payload}`;
+}
