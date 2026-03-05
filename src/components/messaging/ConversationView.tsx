@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X, Trash2 } from 'lucide-react';
+import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X, Trash2, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import { Message, MessageCategory } from './InboxSection';
 import VoiceRecorder from './VoiceRecorder';
 import VoicePlayer from './VoicePlayer';
 import CallScreen from './CallScreen';
+import BlockReportDialog from './BlockReportDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const [showVoice, setShowVoice] = useState(false);
   const [activeCall, setActiveCall] = useState<{ type: 'audio' | 'video' } | null>(null);
   const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string } | null>(null);
+  const [showBlockReport, setShowBlockReport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -278,6 +280,10 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               </Button>
             </div>
           )}
+          {/* Block/Report menu */}
+          <Button variant="ghost" size="icon" onClick={() => setShowBlockReport(true)} className="h-10 w-10 rounded-xl touch-feedback">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* 1-hour inactivity notice */}
@@ -455,6 +461,14 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {/* Block/Report Dialog */}
+    <BlockReportDialog
+      isOpen={showBlockReport}
+      onClose={() => setShowBlockReport(false)}
+      targetUserId={otherUserId || ''}
+      targetName={otherName}
+    />
     </>
   );
 }

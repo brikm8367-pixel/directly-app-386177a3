@@ -97,14 +97,19 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     }
   };
 
-  const shareAnalysis = () => {
+  const shareAnalysis = async () => {
     if (!analysis) return;
-    const text = `${analysis.type}\n${analysis.description}\n\n${analysis.traits.join(' · ')}\n\n— Directly App`;
-    if (navigator.share) {
-      navigator.share({ title: 'My Communication Pattern', text }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(text);
-      toast.success(isRTL ? 'تم النسخ!' : 'Copied!');
+    const text = `✨ ${analysis.type}\n${analysis.description}\n\n${analysis.traits.join(' · ')}\n\n💡 ${analysis.advice}\n\n— Directly App`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'My Communication Pattern — Directly', text });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        toast.success(isRTL ? 'تم النسخ! شاركه في Story ✨' : 'Copied! Share it on your Story ✨');
+      }
+    } catch {
+      // User cancelled share — that's fine
     }
   };
 

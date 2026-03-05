@@ -10,7 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { toast } from 'sonner';
-import { Camera, User, Loader2, Check, Mail, AtSign, FileText, Shield, LogOut } from 'lucide-react';
+import { Camera, User, Loader2, Check, Mail, AtSign, FileText, Shield, LogOut, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Profile {
   id: string;
@@ -131,6 +135,18 @@ export default function ProfilePage() {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    try {
+      await supabase.rpc('delete_user_data', { _user_id: user.id });
+      await signOut();
+      toast.success(isRTL ? 'تم حذف حسابك بالكامل' : 'Your account has been deleted');
+      navigate('/');
+    } catch {
+      toast.error(isRTL ? 'فشل حذف الحساب' : 'Failed to delete account');
+    }
   };
 
   if (loading || isLoading) {
@@ -260,6 +276,32 @@ export default function ProfilePage() {
           <LogOut className="h-4 w-4 me-2" />
           {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
         </Button>
+
+        {/* Delete Account — GDPR compliance */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" className="w-full mt-1 h-12 text-destructive/60 rounded-xl text-xs">
+              <Trash2 className="h-3.5 w-3.5 me-2" />
+              {isRTL ? 'حذف الحساب نهائياً' : 'Delete Account Permanently'}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{isRTL ? 'حذف الحساب؟' : 'Delete Account?'}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {isRTL
+                  ? 'سيتم حذف جميع بياناتك ورسائلك نهائياً. هذا الإجراء غير قابل للتراجع.'
+                  : 'All your data and messages will be permanently deleted. This action cannot be undone.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-xl">{isRTL ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground rounded-xl">
+                {isRTL ? 'حذف نهائياً' : 'Delete Forever'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <p className="text-center text-xs text-muted-foreground mt-4 mb-2">Directly v1.0 · © 2026</p>
       </main>
