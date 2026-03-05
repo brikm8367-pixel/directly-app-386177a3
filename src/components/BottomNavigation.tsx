@@ -1,7 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Home, Search, Bell, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NavItem {
   id: string;
@@ -21,6 +24,32 @@ export function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread message count for badge
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
+      setUnreadCount(count || 0);
+    };
+    fetchUnread();
+
+    // Listen for new messages
+    const channel = supabase
+      .channel('nav-unread')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const isActive = (path: string) => {
     if (path.includes('?')) {
@@ -36,6 +65,7 @@ export function BottomNavigation() {
           {navItems.map((item) => {
             const active = isActive(item.path);
             const Icon = item.icon;
+            const showBadge = item.id === 'home' && unreadCount > 0;
             
             return (
               <button
@@ -47,13 +77,19 @@ export function BottomNavigation() {
                 )}
               >
                 <div className={cn(
-                  'flex items-center justify-center w-10 h-10 rounded-xl transition-all',
+                  'relative flex items-center justify-center w-10 h-10 rounded-xl transition-all',
                   active && 'bg-primary/10'
                 )}>
                   <Icon className={cn(
                     'h-6 w-6 transition-all',
                     active ? 'text-primary' : 'text-muted-foreground'
                   )} />
+                  {/* Badge count */}
+                  {showBadge && (
+                    <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </div>
                 <span className={cn(
                   'text-xs mt-0.5 font-medium transition-all',
