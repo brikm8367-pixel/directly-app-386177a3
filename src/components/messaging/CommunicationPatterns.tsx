@@ -276,9 +276,9 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
                 className="h-13 px-8 text-base rounded-2xl touch-feedback"
               >
                 {isAnalyzing ? (
-                  <><Loader2 className="h-5 w-5 animate-spin me-2" />{isRTL ? 'جاري التحليل...' : 'Analyzing...'}</>
+                  <><Loader2 className="h-5 w-5 animate-spin me-2" />{isRTL ? 'اكتشاف نمطك...' : 'Discovering your pattern...'}</>
                 ) : (
-                  <><Sparkles className="h-5 w-5 me-2" />{isRTL ? 'اكتشف' : 'Discover'}</>
+                  <><Sparkles className="h-5 w-5 me-2" />{isRTL ? 'اكتشف نمطك' : 'Discover Your Pattern'}</>
                 )}
               </Button>
             </div>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X, Trash2, MoreVertical } from 'lucide-react';
+import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X, Check, CheckCheck, Copy, Forward, Reply, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ import VoiceRecorder from './VoiceRecorder';
 import VoicePlayer from './VoicePlayer';
 import CallScreen from './CallScreen';
 import BlockReportDialog from './BlockReportDialog';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,21 +48,74 @@ interface ThreadMessage {
   media_type?: string | null;
 }
 
+interface Reaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  reaction: string;
+}
+
+const REACTIONS = ['❤️', '👍', '🔥', '😂', '👎'];
+const UNSEND_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+// Haptic feedback helper
+const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(style === 'light' ? 10 : style === 'medium' ? 20 : 40);
+  }
+};
+
+// Relative time formatter
+function relativeTime(dateStr: string, isRTL: boolean): string {
+  const now = Date.now();
+  const diff = now - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (mins < 1) return isRTL ? 'الآن' : 'Now';
+  if (mins < 60) return isRTL ? `منذ ${mins} د` : `${mins}m ago`;
+  if (hours < 24) return isRTL ? `منذ ${hours} س` : `${hours}h ago`;
+  if (days === 1) return isRTL ? 'أمس' : 'Yesterday';
+  if (days < 7) {
+    const dayNames = isRTL
+      ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return dayNames[new Date(dateStr).getDay()];
+  }
+  return new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { dateStyle: 'medium' }).format(new Date(dateStr));
+}
+
+// Date separator label
+function dateSeparator(dateStr: string, isRTL: boolean): string {
+  const now = new Date();
+  const d = new Date(dateStr);
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0) return isRTL ? 'اليوم' : 'Today';
+  if (diffDays === 1) return isRTL ? 'أمس' : 'Yesterday';
+  return new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { dateStyle: 'medium' }).format(d);
+}
+
 export default function ConversationView({ message, isOpen, onClose, onMessageRead, canCall }: ConversationViewProps) {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const [replyContent, setReplyContent] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [sendingMsgId, setSendingMsgId] = useState<string | null>(null);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; isMine: boolean } | null>(null);
-  const [deleteMode, setDeleteMode] = useState<'me' | 'both' | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; isMine: boolean; createdAt: string } | null>(null);
   const [showVoice, setShowVoice] = useState(false);
   const [activeCall, setActiveCall] = useState<{ type: 'audio' | 'video' } | null>(null);
   const [mediaPreview, setMediaPreview] = useState<{ file: File; url: string } | null>(null);
   const [showBlockReport, setShowBlockReport] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const [showReactions, setShowReactions] = useState<string | null>(null);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getRootId = (msg: Message | null): string | null => {
     if (!msg) return null;
@@ -74,6 +128,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     return (Date.now() - new Date(lastMsg.created_at).getTime()) / 3600000 >= 1;
   }, []);
 
+  // Load thread + reactions + deleted_messages
   useEffect(() => {
     const loadThread = async () => {
       if (!message || !user) return;
@@ -81,13 +136,16 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
       const rootId = getRootId(message);
       if (!rootId) return;
 
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`id.eq.${rootId},parent_id.eq.${rootId}`)
-        .order('created_at', { ascending: true });
+      const [{ data }, { data: rxns }, { data: delMsgs }] = await Promise.all([
+        supabase.from('messages').select('*').or(`id.eq.${rootId},parent_id.eq.${rootId}`).order('created_at', { ascending: true }),
+        supabase.from('message_reactions').select('*'),
+        supabase.from('deleted_messages').select('message_id').eq('user_id', user.id),
+      ]);
 
-      setThread((data as ThreadMessage[]) || []);
+      const deletedSet = new Set((delMsgs || []).map(d => d.message_id));
+      setDeletedIds(deletedSet);
+      setThread(((data as ThreadMessage[]) || []).filter(m => !deletedSet.has(m.id)));
+      setReactions((rxns as Reaction[]) || []);
       setIsLoading(false);
 
       if (data) {
@@ -124,9 +182,27 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     if (!message || (!text.trim() && !voiceUrl && !mediaPreview) || !user) return;
     setIsSending(true);
 
+    // Optimistic: create a temporary "sending" message
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg: ThreadMessage = {
+      id: tempId,
+      sender_id: user.id,
+      receiver_id: otherUserId!,
+      content: text || (voiceUrl ? '🎤' : '📷'),
+      created_at: new Date().toISOString(),
+      is_read: null,
+      category: message.category,
+      parent_id: getRootId(message),
+      voice_url: voiceUrl || null,
+      media_url: mediaPreview?.url || null,
+      media_type: mediaPreview?.file.type.startsWith('video/') ? 'video' : mediaPreview ? 'image' : null,
+    };
+    setSendingMsgId(tempId);
+    setThread(prev => [...prev, optimisticMsg]);
+    haptic('light');
+
     try {
       const rootId = getRootId(message);
-
       let mediaUrl: string | null = null;
       let mediaType: string | null = null;
 
@@ -137,41 +213,30 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         setMediaPreview(null);
       }
 
-      // 1-hour rule: only affects whether a credit is deducted from receiver's limit.
-      // The message always stays in the SAME conversation thread (same parent_id).
-      // It does NOT create a new conversation or move the message elsewhere.
       const shouldDeductCredit = isInactive;
-
       if (shouldDeductCredit) {
-        // Check if receiver's inbox can accept a new context
         const { data: canReceive } = await supabase.rpc('can_receive_message', {
           _user_id: otherUserId!, _category: message.category,
         });
         if (!canReceive) {
           toast.error(isRTL ? 'صندوق المستلم ممتلئ' : "Recipient's inbox is full");
+          setThread(prev => prev.filter(m => m.id !== tempId));
           setIsSending(false);
+          setSendingMsgId(null);
           return;
         }
       }
 
-      // AI re-classification: if after 1 hour, check if the new message's topic
-      // still matches the current category. If not, reclassify.
       let finalCategory = message.category;
       if (shouldDeductCredit && text.trim()) {
         try {
-          const { data: classData } = await supabase.functions.invoke('classify-message', {
-            body: { content: text },
-          });
-          if (classData?.category && classData.category !== 'direct') {
-            // Only reclassify between work/audience. Direct stays direct.
-            if (message.category !== 'direct') {
-              finalCategory = classData.category;
-            }
+          const { data: classData } = await supabase.functions.invoke('classify-message', { body: { content: text } });
+          if (classData?.category && classData.category !== 'direct' && message.category !== 'direct') {
+            finalCategory = classData.category;
           }
-        } catch { /* keep original category */ }
+        } catch { /* keep original */ }
       }
 
-      // Always reply in the same thread — the 1-hour rule only deducts credit
       const { error } = await supabase.from('messages').insert({
         sender_id: user.id,
         receiver_id: otherUserId!,
@@ -184,31 +249,28 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
       } as any);
       if (error) throw error;
 
-      // Trigger push notification
+      // Push notification
       const senderProfile = await supabase.from('profiles').select('display_name').eq('id', user.id).single();
       supabase.functions.invoke('send-push-notification', {
-        body: {
-          receiverId: otherUserId,
-          senderName: senderProfile.data?.display_name || 'Someone',
-          messageType: voiceUrl ? 'voice' : mediaType || 'text',
-          content: text,
-        },
+        body: { receiverId: otherUserId, senderName: senderProfile.data?.display_name || 'Someone', messageType: voiceUrl ? 'voice' : mediaType || 'text', content: text },
       }).catch(() => {});
 
       setReplyContent('');
       setShowVoice(false);
-      toast.success(isRTL ? 'تم الإرسال ✨' : 'Sent ✨');
+      haptic('medium');
 
+      // Refresh thread with real data
       if (rootId) {
-        const { data } = await supabase.from('messages').select('*')
-          .or(`id.eq.${rootId},parent_id.eq.${rootId}`)
-          .order('created_at', { ascending: true });
-        setThread((data as ThreadMessage[]) || []);
+        const { data } = await supabase.from('messages').select('*').or(`id.eq.${rootId},parent_id.eq.${rootId}`).order('created_at', { ascending: true });
+        setThread(((data as ThreadMessage[]) || []).filter(m => !deletedIds.has(m.id)));
       }
+      setSendingMsgId(null);
       onMessageRead?.();
     } catch (error) {
       console.error('Reply error:', error);
       toast.error(isRTL ? 'فشل الإرسال' : 'Send failed');
+      setThread(prev => prev.filter(m => m.id !== tempId));
+      setSendingMsgId(null);
     } finally {
       setIsSending(false);
     }
@@ -217,19 +279,64 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error(isRTL ? 'الحد الأقصى 25 ميغابايت' : 'Max 25MB');
-      return;
-    }
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-      toast.error(isRTL ? 'صور وفيديوهات فقط' : 'Images and videos only');
-      return;
-    }
+    if (file.size > 25 * 1024 * 1024) { toast.error(isRTL ? 'الحد الأقصى 25 ميغابايت' : 'Max 25MB'); return; }
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) { toast.error(isRTL ? 'صور وفيديوهات فقط' : 'Images and videos only'); return; }
     setMediaPreview({ file, url: URL.createObjectURL(file) });
   };
 
+  // Reactions
+  const toggleReaction = async (messageId: string, reaction: string) => {
+    if (!user) return;
+    const existing = reactions.find(r => r.message_id === messageId && r.user_id === user.id && r.reaction === reaction);
+    if (existing) {
+      await supabase.from('message_reactions').delete().eq('id', existing.id);
+      setReactions(prev => prev.filter(r => r.id !== existing.id));
+    } else {
+      const { data } = await supabase.from('message_reactions').insert({ message_id: messageId, user_id: user.id, reaction } as any).select().single();
+      if (data) setReactions(prev => [...prev, data as Reaction]);
+    }
+    haptic('light');
+    setShowReactions(null);
+  };
+
+  // Swipe handler
+  const handleSwipe = (msgId: string, info: PanInfo, isMine: boolean) => {
+    if (Math.abs(info.offset.x) < 60) return;
+    if ((!isRTL && info.offset.x > 60) || (isRTL && info.offset.x < -60)) {
+      // Swipe right = reply
+      setReplyContent(`> ${thread.find(m => m.id === msgId)?.content?.substring(0, 50) || ''}\n`);
+      haptic('light');
+    } else if ((!isRTL && info.offset.x < -60) || (isRTL && info.offset.x > 60)) {
+      // Swipe left = delete
+      const msg = thread.find(m => m.id === msgId);
+      if (msg) setDeleteTarget({ id: msgId, isMine, createdAt: msg.created_at });
+      haptic('medium');
+    }
+  };
+
+  // Long press
+  const handleTouchStart = (msgId: string, e: React.TouchEvent | React.MouseEvent) => {
+    longPressTimer.current = setTimeout(() => {
+      haptic('medium');
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      setContextMenu({ msgId, x: rect.left, y: rect.top - 120 });
+    }, 500);
+  };
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  };
+
+  // Copy message
+  const copyMessage = (msgId: string) => {
+    const msg = thread.find(m => m.id === msgId);
+    if (msg?.content) {
+      navigator.clipboard.writeText(msg.content);
+      toast.success(isRTL ? 'تم النسخ' : 'Copied');
+    }
+    setContextMenu(null);
+  };
+
   const fmtTime = (d: string) => new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { hour: '2-digit', minute: '2-digit' }).format(new Date(d));
-  const fmtDate = (d: string) => new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { dateStyle: 'medium' }).format(new Date(d));
 
   if (!message) return null;
   if (activeCall) {
@@ -247,9 +354,16 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const senderProfile = message.sender_profile;
   const otherName = senderProfile?.display_name || senderProfile?.username || (isRTL ? 'مجهول' : 'Unknown');
 
+  // Category color for message bubble
+  const categoryBubbleClass = message.category === 'work'
+    ? 'bg-[hsl(var(--work))] text-white'
+    : message.category === 'direct'
+    ? 'bg-primary text-primary-foreground'
+    : 'bg-[hsl(var(--audience))] text-white';
+
   return (
     <>
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={() => { setContextMenu(null); onClose(); }}>
       <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 rounded-3xl border-primary/10">
         {/* Header */}
         <div className="shrink-0 flex items-center gap-3 p-4 border-b border-border bg-card rounded-t-3xl">
@@ -269,7 +383,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                message.category === 'work' ? (isRTL ? 'العمل' : 'Work') : (isRTL ? 'العلاقات' : 'Relationships')}
             </p>
           </div>
-          {/* Call buttons — only for Private inbox with mutual access */}
           {canCall && message.category === 'direct' && (
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" onClick={() => setActiveCall({ type: 'audio' })} className="h-10 w-10 rounded-xl touch-feedback">
@@ -280,7 +393,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               </Button>
             </div>
           )}
-          {/* Block/Report menu */}
           <Button variant="ghost" size="icon" onClick={() => setShowBlockReport(true)} className="h-10 w-10 rounded-xl touch-feedback">
             <MoreVertical className="h-4 w-4" />
           </Button>
@@ -290,15 +402,13 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         {isInactive && thread.length > 0 && (
           <div className="mx-4 mt-3 flex items-center gap-2 p-3 rounded-xl bg-primary/5">
             <p className="text-xs text-muted-foreground">
-              {isRTL
-                ? 'مضت ساعة — رسالتك التالية ستُخصم من الرصيد'
-                : 'Over an hour passed — your next message will deduct a credit'}
+              {isRTL ? 'مضت ساعة — رسالتك التالية ستُخصم من الرصيد' : 'Over an hour passed — your next message will deduct a credit'}
             </p>
           </div>
         )}
 
         {/* Messages thread */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-1" onClick={() => { setContextMenu(null); setShowReactions(null); }}>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -306,61 +416,163 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
           ) : (
             thread.map((msg, i) => {
               const isMine = msg.sender_id === user?.id;
-              const showDate = i === 0 || fmtDate(msg.created_at) !== fmtDate(thread[i - 1].created_at);
+              const showDateSep = i === 0 || dateSeparator(msg.created_at, isRTL) !== dateSeparator(thread[i - 1].created_at, isRTL);
+              const isSendingThis = msg.id === sendingMsgId;
+              const msgReactions = reactions.filter(r => r.message_id === msg.id);
+              const canUnsend = isMine && (Date.now() - new Date(msg.created_at).getTime()) < UNSEND_WINDOW_MS;
+
+              // Read status for my messages
+              const readStatus = isMine ? (
+                isSendingThis ? (
+                  <Check className="h-3 w-3 text-primary-foreground/40" />
+                ) : msg.is_read ? (
+                  <CheckCheck className="h-3 w-3 text-blue-400" />
+                ) : (
+                  <CheckCheck className="h-3 w-3 text-primary-foreground/40" />
+                )
+              ) : null;
 
               return (
                 <div key={msg.id}>
-                  {showDate && (
-                    <div className="text-center my-3">
-                      <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                        {fmtDate(msg.created_at)}
+                  {/* Date separator */}
+                  {showDateSep && (
+                    <div className="text-center my-4">
+                      <span className="text-[11px] text-muted-foreground bg-muted/70 px-4 py-1 rounded-full font-medium">
+                        {dateSeparator(msg.created_at, isRTL)}
                       </span>
                     </div>
                   )}
-                  <div className={cn('flex group', isMine ? 'justify-end' : 'justify-start')}>
-                    {/* Delete button (appears on hover) */}
-                    {isMine && (
-                      <button
-                        onClick={() => setDeleteTarget({ id: msg.id, isMine })}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity self-center mx-1"
+                  {/* Swipeable message */}
+                  <motion.div
+                    drag="x"
+                    dragConstraints={{ left: -80, right: 80 }}
+                    dragElastic={0.3}
+                    onDragEnd={(_, info) => handleSwipe(msg.id, info, isMine)}
+                    className={cn('flex mb-0.5', isMine ? 'justify-end' : 'justify-start')}
+                    onTouchStart={(e) => handleTouchStart(msg.id, e)}
+                    onTouchEnd={handleTouchEnd}
+                    onMouseDown={(e) => handleTouchStart(msg.id, e)}
+                    onMouseUp={handleTouchEnd}
+                    onMouseLeave={handleTouchEnd}
+                  >
+                    <div className="relative max-w-[80%]">
+                      {/* Message bubble */}
+                      <div
+                        className={cn(
+                          'px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-colors duration-500',
+                          isSendingThis
+                            ? 'bg-muted text-muted-foreground' // Gray while sending
+                            : isMine
+                            ? `${categoryBubbleClass} rounded-ee-md`
+                            : 'bg-muted rounded-es-md'
+                        )}
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                      </button>
-                    )}
-                    <div className={cn(
-                      'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
-                      isMine ? 'bg-primary text-primary-foreground rounded-ee-md' : 'bg-muted rounded-es-md'
-                    )}>
-                      {msg.media_url && msg.media_type === 'image' && (
-                        <img src={msg.media_url} alt="" className="rounded-xl max-w-full mb-2 cursor-pointer" onClick={() => window.open(msg.media_url!, '_blank')} />
+                        {msg.media_url && msg.media_type === 'image' && (
+                          <img src={msg.media_url} alt="" className="rounded-xl max-w-full mb-2 cursor-pointer" onClick={() => window.open(msg.media_url!, '_blank')} />
+                        )}
+                        {msg.media_url && msg.media_type === 'video' && (
+                          <video src={msg.media_url} controls className="rounded-xl max-w-full mb-2" />
+                        )}
+                        {msg.voice_url ? (
+                          <VoicePlayer url={msg.voice_url} isMine={isMine} />
+                        ) : msg.content && !['📷', '🎥', '🎤'].includes(msg.content) ? (
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        ) : null}
+                        {/* Time + read status */}
+                        <div className={cn('flex items-center gap-1 mt-1', isMine ? 'justify-end' : '')}>
+                          <span className={cn('text-[10px]', isMine ? 'text-white/60' : 'text-muted-foreground')}>
+                            {relativeTime(msg.created_at, isRTL)}
+                          </span>
+                          {readStatus}
+                        </div>
+                      </div>
+
+                      {/* Reactions display */}
+                      {msgReactions.length > 0 && (
+                        <div className={cn('flex gap-0.5 mt-0.5', isMine ? 'justify-end' : 'justify-start')}>
+                          {[...new Set(msgReactions.map(r => r.reaction))].map(emoji => {
+                            const count = msgReactions.filter(r => r.reaction === emoji).length;
+                            return (
+                              <button
+                                key={emoji}
+                                onClick={() => toggleReaction(msg.id, emoji)}
+                                className="px-1.5 py-0.5 rounded-full bg-muted/80 text-xs flex items-center gap-0.5 hover:bg-muted transition-colors"
+                              >
+                                {emoji}{count > 1 && <span className="text-[10px] text-muted-foreground">{count}</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
-                      {msg.media_url && msg.media_type === 'video' && (
-                        <video src={msg.media_url} controls className="rounded-xl max-w-full mb-2" />
-                      )}
-                      {msg.voice_url ? (
-                        <VoicePlayer url={msg.voice_url} isMine={isMine} />
-                      ) : msg.content && msg.content !== '📷' && msg.content !== '🎥' && msg.content !== '🎤' ? (
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                      ) : null}
-                      <p className={cn('text-[10px] mt-1', isMine ? 'text-primary-foreground/60' : 'text-muted-foreground')}>
-                        {fmtTime(msg.created_at)}
-                      </p>
+
+                      {/* Quick reaction picker */}
+                      <AnimatePresence>
+                        {showReactions === msg.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className={cn('absolute -top-10 flex gap-1 bg-card rounded-full shadow-lg border border-border px-2 py-1 z-50', isMine ? 'end-0' : 'start-0')}
+                          >
+                            {REACTIONS.map(emoji => (
+                              <button
+                                key={emoji}
+                                onClick={(e) => { e.stopPropagation(); toggleReaction(msg.id, emoji); }}
+                                className="text-lg hover:scale-125 transition-transform p-0.5"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                    {/* Delete button for received messages */}
-                    {!isMine && (
-                      <button
-                        onClick={() => setDeleteTarget({ id: msg.id, isMine })}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity self-center mx-1"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                      </button>
-                    )}
-                  </div>
+                  </motion.div>
                 </div>
               );
             })
           )}
         </div>
+
+        {/* Context menu (long press) */}
+        <AnimatePresence>
+          {contextMenu && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed z-[100] bg-card rounded-2xl shadow-xl border border-border py-2 min-w-[180px]"
+              style={{ left: Math.min(contextMenu.x, window.innerWidth - 200), top: Math.max(contextMenu.y, 60) }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button onClick={() => { setShowReactions(contextMenu.msgId); setContextMenu(null); }} className="w-full px-4 py-2.5 text-sm text-start hover:bg-muted flex items-center gap-3">
+                <span className="text-base">❤️</span>
+                {isRTL ? 'تفاعل' : 'React'}
+              </button>
+              <button onClick={() => { setReplyContent(`> ${thread.find(m => m.id === contextMenu.msgId)?.content?.substring(0, 50) || ''}\n`); setContextMenu(null); }} className="w-full px-4 py-2.5 text-sm text-start hover:bg-muted flex items-center gap-3">
+                <Reply className="h-4 w-4" />
+                {isRTL ? 'رد' : 'Reply'}
+              </button>
+              <button onClick={() => copyMessage(contextMenu.msgId)} className="w-full px-4 py-2.5 text-sm text-start hover:bg-muted flex items-center gap-3">
+                <Copy className="h-4 w-4" />
+                {isRTL ? 'نسخ' : 'Copy'}
+              </button>
+              <div className="h-px bg-border mx-3 my-1" />
+              <button onClick={() => {
+                const msg = thread.find(m => m.id === contextMenu.msgId);
+                if (msg) setDeleteTarget({ id: msg.id, isMine: msg.sender_id === user?.id, createdAt: msg.created_at });
+                setContextMenu(null);
+              }} className="w-full px-4 py-2.5 text-sm text-start hover:bg-muted flex items-center gap-3 text-destructive">
+                <X className="h-4 w-4" />
+                {isRTL ? 'حذف' : 'Delete'}
+              </button>
+              {/* Exact timestamp */}
+              <div className="px-4 py-1.5 text-[10px] text-muted-foreground border-t border-border mt-1">
+                {new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(thread.find(m => m.id === contextMenu.msgId)?.created_at || ''))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Media preview */}
         {mediaPreview && (
@@ -380,10 +592,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         <div className="shrink-0 border-t border-border p-3 bg-card/50 rounded-b-3xl">
           <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileSelect} className="hidden" />
           {showVoice ? (
-            <VoiceRecorder
-              onRecordComplete={(url) => handleSendReply('🎤', url)}
-              onCancel={() => setShowVoice(false)}
-            />
+            <VoiceRecorder onRecordComplete={(url) => handleSendReply('🎤', url)} onCancel={() => setShowVoice(false)} />
           ) : (
             <div className="flex items-end gap-2">
               <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} className="h-12 w-12 rounded-xl shrink-0 touch-feedback">
@@ -393,18 +602,12 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                 <Mic className="h-5 w-5 text-muted-foreground" />
               </Button>
               <Textarea
-                placeholder={
-                  isInactive
-                    ? (isRTL ? 'رسالة جديدة...' : 'New message...')
-                    : (isRTL ? 'اكتب ردك...' : 'Reply...')
-                }
+                placeholder={isRTL ? 'اكتب رسالة...' : 'Write a message...'}
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 rows={1}
                 className="resize-none text-base rounded-2xl border-2 focus:border-primary flex-1 min-h-[48px] max-h-32"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(replyContent); }
-                }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(replyContent); } }}
               />
               <Button
                 onClick={() => handleSendReply(replyContent)}
@@ -430,7 +633,8 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-          {deleteTarget?.isMine && (
+          {/* Unsend for everyone — only if mine and within 5 minutes */}
+          {deleteTarget?.isMine && deleteTarget?.createdAt && (Date.now() - new Date(deleteTarget.createdAt).getTime()) < UNSEND_WINDOW_MS && (
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
               onClick={async () => {
@@ -438,6 +642,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                 await supabase.from('messages').delete().eq('id', deleteTarget.id);
                 setThread(prev => prev.filter(m => m.id !== deleteTarget.id));
                 setDeleteTarget(null);
+                haptic('medium');
                 toast.success(isRTL ? 'تم الحذف للجميع' : 'Deleted for everyone');
                 onMessageRead?.();
               }}
@@ -448,10 +653,13 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
           <AlertDialogAction
             className="bg-muted text-foreground hover:bg-muted/80 rounded-xl"
             onClick={async () => {
-              // "Delete for me" — we just remove from local view
-              if (!deleteTarget) return;
+              if (!deleteTarget || !user) return;
+              // Persist "delete for me" in DB
+              await supabase.from('deleted_messages').insert({ message_id: deleteTarget.id, user_id: user.id } as any);
               setThread(prev => prev.filter(m => m.id !== deleteTarget.id));
+              setDeletedIds(prev => new Set([...prev, deleteTarget.id]));
               setDeleteTarget(null);
+              haptic('light');
               toast.success(isRTL ? 'تم الحذف' : 'Deleted');
             }}
           >
@@ -463,12 +671,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     </AlertDialog>
 
     {/* Block/Report Dialog */}
-    <BlockReportDialog
-      isOpen={showBlockReport}
-      onClose={() => setShowBlockReport(false)}
-      targetUserId={otherUserId || ''}
-      targetName={otherName}
-    />
+    <BlockReportDialog isOpen={showBlockReport} onClose={() => setShowBlockReport(false)} targetUserId={otherUserId || ''} targetName={otherName} />
     </>
   );
 }
