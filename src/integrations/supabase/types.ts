@@ -35,6 +35,36 @@ export type Database = {
         }
         Relationships: []
       }
+      call_history: {
+        Row: {
+          call_type: string
+          caller_id: string
+          created_at: string
+          duration: number | null
+          id: string
+          receiver_id: string
+          status: string
+        }
+        Insert: {
+          call_type?: string
+          caller_id: string
+          created_at?: string
+          duration?: number | null
+          id?: string
+          receiver_id: string
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          created_at?: string
+          duration?: number | null
+          id?: string
+          receiver_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_id: string
@@ -335,6 +365,30 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      weekly_analysis: {
+        Row: {
+          analysis: Json
+          created_at: string
+          id: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          analysis: Json
+          created_at?: string
+          id?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          analysis?: Json
+          created_at?: string
+          id?: string
+          user_id?: string
+          week_start?: string
         }
         Relationships: []
       }

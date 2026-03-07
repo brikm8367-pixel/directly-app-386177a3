@@ -19,6 +19,7 @@ const AdminStats = lazy(() => import("./pages/AdminStats"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,6 +75,7 @@ const App = () => {
                     <Route path="/admin" element={<AdminStats />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
                     <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/@:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

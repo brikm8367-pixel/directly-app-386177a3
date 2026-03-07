@@ -12,6 +12,8 @@ const ICE_SERVERS = [
   { urls: 'stun:stun1.l.google.com:19302' },
 ];
 
+const RING_TIMEOUT_MS = 30000; // 30 seconds — auto-end if no answer
+
 interface CallScreenProps {
   recipientId: string;
   recipientName: string;
@@ -38,11 +40,25 @@ export default function CallScreen({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const channelRef = useRef<any>(null);
   const timerRef = useRef<number | null>(null);
+  const ringTimeoutRef = useRef<number | null>(null);
+  const callStartRef = useRef<number | null>(null);
 
   const channelName = [user?.id, recipientId].sort().join('-');
 
+  const saveCallHistory = useCallback(async (callStatus: string, callDuration: number = 0) => {
+    if (!user) return;
+    await supabase.from('call_history').insert({
+      caller_id: isIncoming ? recipientId : user.id,
+      receiver_id: isIncoming ? user.id : recipientId,
+      call_type: callType,
+      status: callStatus,
+      duration: callDuration,
+    } as any);
+  }, [user, recipientId, callType, isIncoming]);
+
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
     stopRingingSound();
     stopRingtone();
     localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -69,10 +85,11 @@ export default function CallScreen({
 
     pc.ontrack = (e) => {
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
-      // Call connected — stop all ring sounds
       stopRingingSound();
       stopRingtone();
+      if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
       setStatus('active');
+      callStartRef.current = Date.now();
       timerRef.current = window.setInterval(() => setDuration(d => d + 1), 1000);
     };
 
@@ -102,8 +119,8 @@ export default function CallScreen({
         .on('broadcast', { event: 'answer' }, async ({ payload }) => {
           if (payload.from !== user.id) {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
-            // Answer received — stop ringing for caller
             stopRingingSound();
+            if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
           }
         })
         .on('broadcast', { event: 'offer' }, async ({ payload }) => {
@@ -120,23 +137,34 @@ export default function CallScreen({
           }
         })
         .on('broadcast', { event: 'end-call' }, ({ payload }) => {
-          if (payload.from !== user.id) { cleanup(); onEnd(); }
+          if (payload.from !== user.id) {
+            const dur = callStartRef.current ? Math.floor((Date.now() - callStartRef.current) / 1000) : 0;
+            saveCallHistory(dur > 0 ? 'completed' : 'missed', dur);
+            cleanup();
+            onEnd();
+          }
         })
         .subscribe(async (s) => {
           if (s === 'SUBSCRIBED') {
             if (isIncoming && offer) {
-              // I'm answering — stop ringtone
               stopRingtone();
               await pc.setRemoteDescription(new RTCSessionDescription(offer));
               const answer = await pc.createAnswer();
               await pc.setLocalDescription(answer);
               channel.send({ type: 'broadcast', event: 'answer', payload: { answer, from: user.id } });
+              saveCallHistory('answered');
             } else {
-              // I'm calling — play ringing sound for myself
               setStatus('ringing');
               startRingingSound();
 
-              // Send push notification to recipient for incoming call
+              // Auto-end after 30s if no answer
+              ringTimeoutRef.current = window.setTimeout(() => {
+                saveCallHistory('missed');
+                channel.send({ type: 'broadcast', event: 'end-call', payload: { from: user.id } });
+                cleanup();
+                onEnd();
+              }, RING_TIMEOUT_MS);
+
               const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', user.id).single();
               supabase.functions.invoke('send-push-notification', {
                 body: {
@@ -163,6 +191,8 @@ export default function CallScreen({
   }, []);
 
   const endCall = () => {
+    const dur = callStartRef.current ? Math.floor((Date.now() - callStartRef.current) / 1000) : 0;
+    saveCallHistory(dur > 0 ? 'completed' : 'cancelled', dur);
     channelRef.current?.send({ type: 'broadcast', event: 'end-call', payload: { from: user?.id } });
     cleanup();
     onEnd();
@@ -200,7 +230,6 @@ export default function CallScreen({
               {status === 'active' && fmt(duration)}
               {status === 'ended' && (isRTL ? 'انتهت المكالمة' : 'Call ended')}
             </p>
-            {/* Pulsing animation while ringing */}
             {(status === 'ringing' || status === 'connecting') && (
               <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
             )}
