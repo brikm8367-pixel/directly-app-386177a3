@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Crown, Mail, Send, Clock, Heart, Briefcase, Users, Sparkles, Brain, Loader2, Share2 } from 'lucide-react';
+import { Crown, Mail, Send, Clock, Heart, Briefcase, Users, Sparkles, Brain, Loader2, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useMood, moodConfigs } from '@/hooks/useMood';
@@ -25,31 +24,61 @@ interface PersonalityAnalysis {
   insight?: string;
 }
 
+function getWeekStart(date: Date = new Date()): string {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().split('T')[0];
+}
+
 export default function CommunicationPatterns({ userId }: { userId: string }) {
   const { isRTL } = useLanguage();
   const { mood, setMood } = useMood();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [period, setPeriod] = useState<'week' | 'month'>('month');
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<PersonalityAnalysis | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last week, etc.
+
+  const currentWeekStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + weekOffset * 7);
+    return getWeekStart(d);
+  }, [weekOffset]);
+
+  // Load cached analysis from DB
+  useEffect(() => {
+    const loadCachedAnalysis = async () => {
+      const { data } = await supabase
+        .from('weekly_analysis')
+        .select('analysis')
+        .eq('user_id', userId)
+        .eq('week_start', currentWeekStart)
+        .single();
+      if (data?.analysis) {
+        setAnalysis(data.analysis as unknown as PersonalityAnalysis);
+      } else {
+        setAnalysis(null);
+      }
+    };
+    if (userId) loadCachedAnalysis();
+  }, [userId, currentWeekStart]);
 
   useEffect(() => {
     const fetch = async () => {
       setIsLoading(true);
-      const days = period === 'week' ? 7 : 30;
-      const start = new Date();
-      start.setDate(start.getDate() - days);
+      const weekStart = new Date(currentWeekStart);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
 
       const [{ data: recv }, { data: sent }] = await Promise.all([
-        supabase.from('messages').select('id, category, created_at, sender_id, receiver_id').eq('receiver_id', userId).gte('created_at', start.toISOString()),
-        supabase.from('messages').select('id, category, created_at, sender_id, receiver_id').eq('sender_id', userId).gte('created_at', start.toISOString()),
+        supabase.from('messages').select('id, category, created_at, sender_id, receiver_id').eq('receiver_id', userId).gte('created_at', weekStart.toISOString()).lt('created_at', weekEnd.toISOString()),
+        supabase.from('messages').select('id, category, created_at, sender_id, receiver_id').eq('sender_id', userId).gte('created_at', weekStart.toISOString()).lt('created_at', weekEnd.toISOString()),
       ]);
       setMessages([...(recv || []), ...(sent || [])] as Message[]);
       setIsLoading(false);
     };
     if (userId) fetch();
-  }, [userId, period]);
+  }, [userId, currentWeekStart]);
 
   const stats = useMemo(() => {
     const recv = messages.filter(m => m.receiver_id === userId);
@@ -82,14 +111,24 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
             workCount: stats.byCategory.work, audienceCount: stats.byCategory.audience, directCount: stats.byCategory.direct,
             workRatio: stats.workPct, audienceRatio: stats.audiencePct, directRatio: stats.directPct,
             responseRate: stats.received > 0 ? Math.round(stats.sent / stats.received * 100) : 0,
-            mostActiveHour: stats.peakHour, period,
+            mostActiveHour: stats.peakHour, period: 'week',
           },
           language: isRTL ? 'ar' : 'en',
         },
       });
       if (error) throw error;
-      if (data?.type) setAnalysis(data as PersonalityAnalysis);
-      else toast.error(isRTL ? 'تعذر التحليل' : 'Analysis unavailable');
+      if (data?.type) {
+        const analysisData = data as PersonalityAnalysis;
+        setAnalysis(analysisData);
+        // Cache in DB
+        await supabase.from('weekly_analysis').upsert({
+          user_id: userId,
+          week_start: currentWeekStart,
+          analysis: analysisData as any,
+        }, { onConflict: 'user_id,week_start' });
+      } else {
+        toast.error(isRTL ? 'تعذر التحليل' : 'Analysis unavailable');
+      }
     } catch {
       toast.error(isRTL ? 'تعذر التحليل' : 'Analysis failed');
     } finally {
@@ -99,7 +138,10 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
 
   const shareAnalysis = async () => {
     if (!analysis) return;
-    const text = `✨ ${analysis.type}\n${analysis.description}\n\n${analysis.traits.join(' · ')}\n\n💡 ${analysis.advice}\n\n— Directly App`;
+    // Get username for the share link
+    const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single();
+    const profileUrl = profile?.username ? `${window.location.origin}/@${profile.username}` : '';
+    const text = `✨ ${analysis.type}\n${analysis.description}\n\n${analysis.traits.join(' · ')}\n\n💡 ${analysis.advice}\n\n${profileUrl}\n— Directly App`;
     
     try {
       if (navigator.share) {
@@ -108,14 +150,20 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         await navigator.clipboard.writeText(text);
         toast.success(isRTL ? 'تم النسخ! شاركه في Story ✨' : 'Copied! Share it on your Story ✨');
       }
-    } catch {
-      // User cancelled share — that's fine
-    }
+    } catch { /* cancelled */ }
   };
 
   const fmtHour = (h: number) => isRTL
     ? (h < 12 ? `${h || 12} ص` : `${h - 12 || 12} م`)
     : (h < 12 ? `${h || 12} AM` : `${h - 12 || 12} PM`);
+
+  const weekLabel = useMemo(() => {
+    const start = new Date(currentWeekStart);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const fmt = new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { month: 'short', day: 'numeric' });
+    return `${fmt.format(start)} – ${fmt.format(end)}`;
+  }, [currentWeekStart, isRTL]);
 
   if (isLoading) {
     return (
@@ -152,7 +200,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* Period + Title */}
+      {/* Week navigation */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-primary/10">
@@ -160,18 +208,18 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
           </div>
           <h2 className="font-bold text-lg">{isRTL ? 'نمط تواصلك' : 'Your Pattern'}</h2>
         </div>
-        <Select value={period} onValueChange={(v: 'week' | 'month') => { setPeriod(v); setAnalysis(null); }}>
-          <SelectTrigger className="w-28 h-10 rounded-xl border-primary/20 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">{isRTL ? 'أسبوع' : 'Week'}</SelectItem>
-            <SelectItem value="month">{isRTL ? 'شهر' : 'Month'}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={() => setWeekOffset(w => w - 1)} className="h-8 w-8 rounded-lg">
+            {isRTL ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+          <span className="text-xs text-muted-foreground font-medium min-w-[100px] text-center">{weekLabel}</span>
+          <Button variant="ghost" size="icon" onClick={() => setWeekOffset(w => Math.min(w + 1, 0))} disabled={weekOffset >= 0} className="h-8 w-8 rounded-lg">
+            {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
-      {/* Stats — compact */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { icon: Mail, label: isRTL ? 'مستلمة' : 'Received', value: stats.received },
@@ -188,7 +236,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         ))}
       </div>
 
-      {/* Distribution — minimal */}
+      {/* Distribution */}
       <Card className="p-4 border-primary/10">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -196,9 +244,9 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         </h3>
         <div className="space-y-3">
           {[
-            { icon: Heart, label: isRTL ? 'الخاص' : 'Private', count: stats.byCategory.direct, pct: stats.directPct, color: 'bg-[hsl(var(--others))]' },
-            { icon: Briefcase, label: isRTL ? 'العمل' : 'Work', count: stats.byCategory.work, pct: stats.workPct, color: 'bg-[hsl(var(--work))]' },
-            { icon: Users, label: isRTL ? 'العلاقات' : 'Audience', count: stats.byCategory.audience, pct: stats.audiencePct, color: 'bg-[hsl(var(--audience))]' },
+            { icon: Heart, label: isRTL ? 'الخاص' : 'Private', pct: stats.directPct, color: 'bg-[hsl(var(--others))]' },
+            { icon: Briefcase, label: isRTL ? 'العمل' : 'Work', pct: stats.workPct, color: 'bg-[hsl(var(--work))]' },
+            { icon: Users, label: isRTL ? 'العلاقات' : 'Audience', pct: stats.audiencePct, color: 'bg-[hsl(var(--audience))]' },
           ].map((item, i) => (
             <div key={i} className="space-y-1">
               <div className="flex items-center justify-between">
@@ -216,22 +264,19 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         </div>
       </Card>
 
-      {/* AI Personality — THE EGO CARD */}
+      {/* AI Personality — weekly cached */}
       <Card className="border-primary/15 overflow-hidden" style={{ background: 'var(--gradient-gold-soft)' }}>
         <CardContent className="p-5">
           {analysis ? (
             <div className="space-y-4 animate-fade-in-up">
-              {/* Crown title — shareable */}
               <div className="text-center p-5 bg-card rounded-2xl border border-primary/15 relative">
                 <p className="text-2xl font-bold mb-1">{analysis.type}</p>
                 <p className="text-sm text-muted-foreground">{analysis.description}</p>
-                {/* Share button next to title */}
                 <button onClick={shareAnalysis} className="absolute top-3 end-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                   <Share2 className="h-4 w-4 text-muted-foreground" />
                 </button>
               </div>
 
-              {/* Traits — shareable badges */}
               <div className="flex flex-wrap gap-2 justify-center">
                 {analysis.traits.map((t, i) => (
                   <span key={i} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary font-semibold text-xs border border-primary/15">
@@ -240,25 +285,17 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
                 ))}
               </div>
 
-              {/* Advice — one line */}
-              <p className="text-sm text-center text-muted-foreground italic">
-                💡 {analysis.advice}
-              </p>
+              <p className="text-sm text-center text-muted-foreground italic">💡 {analysis.advice}</p>
 
-              {/* Insight — one line */}
               {analysis.insight && (
-                <p className="text-xs text-center text-muted-foreground/70">
-                  🧠 {analysis.insight}
-                </p>
+                <p className="text-xs text-center text-muted-foreground/70">🧠 {analysis.insight}</p>
               )}
 
-              <Button
-                variant="ghost"
-                onClick={() => { setAnalysis(null); analyzePersonality(); }}
-                className="w-full text-sm text-muted-foreground"
-              >
-                {isRTL ? '🔄 تحليل جديد' : '🔄 New Analysis'}
-              </Button>
+              {weekOffset === 0 && (
+                <Button variant="ghost" onClick={() => { setAnalysis(null); analyzePersonality(); }} className="w-full text-sm text-muted-foreground">
+                  {isRTL ? '🔄 تحليل جديد' : '🔄 New Analysis'}
+                </Button>
+              )}
             </div>
           ) : (
             <div className="text-center py-6">
@@ -271,7 +308,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
               </p>
               <Button
                 onClick={analyzePersonality}
-                disabled={isAnalyzing}
+                disabled={isAnalyzing || weekOffset !== 0}
                 size="lg"
                 className="h-13 px-8 text-base rounded-2xl touch-feedback"
               >

@@ -74,6 +74,7 @@ const App = () => {
                     <Route path="/admin" element={<AdminStats />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
                     <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/@:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
