@@ -195,6 +195,14 @@ export default function ProfilePage() {
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
           </div>
           <p className="text-xs text-muted-foreground mt-2">{isRTL ? 'اضغط لتغيير الصورة' : 'Tap to change photo'}</p>
+          {username && (
+            <button
+              onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/@${username}`); toast.success(isRTL ? 'تم نسخ رابطك' : 'Your link copied!'); }}
+              className="mt-1 text-xs text-primary font-medium hover:underline"
+            >
+              directly.app/@{username}
+            </button>
+          )}
         </div>
 
         {/* Form */}
@@ -212,7 +220,7 @@ export default function ProfilePage() {
               <AtSign className="h-3.5 w-3.5 text-primary" />
               {isRTL ? 'اسم المستخدم' : 'Username'}
             </Label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="username" className="h-12 text-base rounded-xl" dir="ltr" />
+            <Input value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="username" className="h-12 text-base rounded-xl" dir="ltr" maxLength={20} />
           </div>
 
           <div className="space-y-1.5">
