@@ -245,7 +245,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         media_url: mediaUrl,
         media_type: mediaType,
         category: finalCategory,
-        parent_id: shouldDeductCredit ? null : rootId,
+        parent_id: rootId,
       } as any);
       if (error) throw error;
 
@@ -370,19 +370,26 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
           <Button variant="ghost" size="icon" onClick={onClose} className="h-11 w-11 rounded-xl touch-feedback">
             {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
           </Button>
-          <Avatar className="h-11 w-11 ring-2 ring-primary/10">
-            <AvatarImage src={senderProfile?.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary">
-              {otherName[0] || <User className="h-5 w-5" />}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-base truncate">{otherName}</p>
-            <p className="text-xs text-muted-foreground">
-              {message.category === 'direct' ? (isRTL ? 'الخاص' : 'Private') :
-               message.category === 'work' ? (isRTL ? 'العمل' : 'Work') : (isRTL ? 'العلاقات' : 'Relationships')}
-            </p>
-          </div>
+          <button
+            onClick={() => { if (senderProfile?.username) { onClose(); window.location.href = `/@${senderProfile.username}`; } }}
+            className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+          >
+            <Avatar className="h-11 w-11 ring-2 ring-primary/10">
+              <AvatarImage src={senderProfile?.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {otherName[0] || <User className="h-5 w-5" />}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-start min-w-0">
+              <p className="font-bold text-base truncate">{otherName}</p>
+              <p className="text-xs text-muted-foreground">
+                {senderProfile?.username ? `@${senderProfile.username}` : ''}
+                {' · '}
+                {message.category === 'direct' ? (isRTL ? 'الخاص' : 'Private') :
+                 message.category === 'work' ? (isRTL ? 'العمل' : 'Work') : (isRTL ? 'العلاقات' : 'Relationships')}
+              </p>
+            </div>
+          </button>
           {canCall && message.category === 'direct' && (
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" onClick={() => setActiveCall({ type: 'audio' })} className="h-10 w-10 rounded-xl touch-feedback">
