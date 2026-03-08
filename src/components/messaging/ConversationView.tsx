@@ -524,14 +524,24 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               const msgReactions = reactions.filter(r => r.message_id === msg.id);
               const canUnsend = isMine && (Date.now() - new Date(msg.created_at).getTime()) < UNSEND_WINDOW_MS;
 
-              // Read status for my messages
+              // Read status for my messages: ✓ Sending → ✓✓ Delivered → ✓✓ blue Seen
               const readStatus = isMine ? (
                 isSendingThis ? (
-                  <Check className="h-3 w-3 text-primary-foreground/40" />
+                  <span className="flex items-center gap-0.5 text-[10px] text-primary-foreground/40">
+                    <Check className="h-3 w-3" />
+                  </span>
                 ) : msg.is_read ? (
-                  <CheckCheck className="h-3 w-3 text-blue-400" />
+                  <span className={cn(
+                    'flex items-center gap-0.5 text-[10px]',
+                    message.category === 'work' ? 'text-blue-400' : 'text-muted-foreground/50'
+                  )}>
+                    <CheckCheck className="h-3 w-3" />
+                    <span className="text-[9px]">{isRTL ? 'شوهد' : 'Seen'}</span>
+                  </span>
                 ) : (
-                  <CheckCheck className="h-3 w-3 text-primary-foreground/40" />
+                  <span className="flex items-center gap-0.5 text-[10px] text-primary-foreground/40">
+                    <CheckCheck className="h-3 w-3" />
+                  </span>
                 )
               ) : null;
 
@@ -728,7 +738,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               <Textarea
                 placeholder={isRTL ? 'اكتب رسالة...' : 'Write a message...'}
                 value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
+                onChange={(e) => { setReplyContent(e.target.value); broadcastTyping(); }}
                 rows={1}
                 className="resize-none text-base rounded-2xl border-2 focus:border-primary flex-1 min-h-[48px] max-h-32"
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(replyContent); } }}
