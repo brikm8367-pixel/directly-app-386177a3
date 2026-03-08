@@ -6,7 +6,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Send, User, Loader2, ArrowLeft, Share2, Copy, Sparkles, MessageCircle } from 'lucide-react';
+import { Send, User, Loader2, ArrowLeft, Share2, Copy, Sparkles, MessageCircle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
 
@@ -19,16 +19,22 @@ interface Profile {
   is_public: boolean | null;
 }
 
+interface PersonalityData {
+  type?: string;
+  description?: string;
+  traits?: string[];
+}
+
 export default function PublicProfile() {
   const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
-  const [personalityType, setPersonalityType] = useState<string | null>(null);
+  const [personality, setPersonality] = useState<PersonalityData | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -55,7 +61,11 @@ export default function PublicProfile() {
             .limit(1);
           if (analysis?.[0]?.analysis) {
             const a = analysis[0].analysis as any;
-            setPersonalityType(a.type || a.personality_type || a.summary || null);
+            setPersonality({
+              type: a.type || null,
+              description: a.description || null,
+              traits: a.traits || [],
+            });
           }
         }
       }
@@ -71,7 +81,7 @@ export default function PublicProfile() {
         await navigator.share({ title: `${profile?.display_name} — Directly`, url });
       } else {
         await navigator.clipboard.writeText(url);
-        toast.success('Link copied');
+        toast.success(isRTL ? 'تم نسخ الرابط' : 'Link copied');
       }
     } catch { /* cancelled */ }
   };
@@ -80,6 +90,19 @@ export default function PublicProfile() {
     await navigator.clipboard.writeText(`@${profile?.username}`);
     toast.success(isRTL ? 'تم نسخ اسم المستخدم' : 'Username copied');
   };
+
+  const getLocalizedLabels = () => {
+    const labels: Record<string, { sendMessage: string; talkTo: string; signIn: string; goBack: string; privateProfile: string; userNotFound: string; commStyle: string }> = {
+      ar: { sendMessage: 'إرسال رسالة', talkTo: 'تحدث مع', signIn: 'سجل دخولك لإرسال رسالة', goBack: 'العودة', privateProfile: 'هذا الملف خاص', userNotFound: 'المستخدم غير موجود', commStyle: 'نمط التواصل' },
+      en: { sendMessage: 'Send Message', talkTo: 'Talk to', signIn: 'Sign in to message', goBack: 'Go back', privateProfile: 'This profile is private', userNotFound: 'User not found', commStyle: 'Communication Style' },
+      fr: { sendMessage: 'Envoyer un message', talkTo: 'Parler à', signIn: 'Connectez-vous pour écrire', goBack: 'Retour', privateProfile: 'Ce profil est privé', userNotFound: 'Utilisateur introuvable', commStyle: 'Style de communication' },
+      es: { sendMessage: 'Enviar mensaje', talkTo: 'Hablar con', signIn: 'Inicia sesión para escribir', goBack: 'Volver', privateProfile: 'Este perfil es privado', userNotFound: 'Usuario no encontrado', commStyle: 'Estilo de comunicación' },
+    };
+    return labels[language] || labels.en;
+  };
+
+  const labels = getLocalizedLabels();
+  const firstName = profile?.display_name?.split(' ')[0] || '';
 
   if (isLoading) {
     return (
@@ -95,11 +118,11 @@ export default function PublicProfile() {
         <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
           <User className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">User not found</h1>
+        <h1 className="text-2xl font-bold mb-2">{labels.userNotFound}</h1>
         <p className="text-muted-foreground mb-6">@{username?.replace(/^@/, '')}</p>
         <Button onClick={() => navigate('/')} variant="outline" className="rounded-xl">
           <ArrowLeft className="h-4 w-4 me-2" />
-          Go back
+          {labels.goBack}
         </Button>
       </div>
     );
@@ -109,13 +132,13 @@ export default function PublicProfile() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
-          <User className="h-10 w-10 text-muted-foreground" />
+          <Lock className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h1 className="text-xl font-bold mb-2">{isRTL ? 'هذا الملف خاص' : 'This profile is private'}</h1>
+        <h1 className="text-xl font-bold mb-2">{labels.privateProfile}</h1>
         <p className="text-muted-foreground mb-6">@{profile.username}</p>
         <Button onClick={() => navigate('/')} variant="outline" className="rounded-xl">
           <ArrowLeft className="h-4 w-4 me-2" />
-          {isRTL ? 'العودة' : 'Go back'}
+          {labels.goBack}
         </Button>
       </div>
     );
@@ -145,16 +168,26 @@ export default function PublicProfile() {
             <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">{profile.bio}</p>
           )}
 
-          {/* Personality snippet */}
-          {personalityType && (
-            <div className="mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/10">
-              <div className="flex items-center justify-center gap-2 mb-1">
+          {/* Personality snippet — positive only */}
+          {personality?.type && (
+            <div className="mb-6 p-5 rounded-2xl bg-primary/5 border border-primary/10">
+              <div className="flex items-center justify-center gap-2 mb-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">
-                  {isRTL ? 'نمط التواصل' : 'Communication Style'}
-                </span>
+                <span className="text-sm font-semibold text-primary">{labels.commStyle}</span>
               </div>
-              <p className="text-sm text-foreground">{personalityType}</p>
+              <p className="text-lg font-bold text-foreground mb-1">{personality.type}</p>
+              {personality.description && (
+                <p className="text-sm text-muted-foreground mb-3">{personality.description}</p>
+              )}
+              {personality.traits && personality.traits.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {personality.traits.slice(0, 4).map((t, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/15">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -163,20 +196,20 @@ export default function PublicProfile() {
               <>
                 <Button onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-6 text-base">
                   <Send className="h-5 w-5 me-2" />
-                  {isRTL ? 'إرسال رسالة' : 'Send Message'}
+                  {labels.sendMessage}
                 </Button>
-                {personalityType && (
+                {personality?.type && (
                   <Button variant="outline" onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-5 text-sm">
                     <MessageCircle className="h-4 w-4 me-2" />
-                    {isRTL ? `تحدث مع ${profile?.display_name?.split(' ')[0]}` : `Talk to ${profile?.display_name?.split(' ')[0]}`}
+                    {`${labels.talkTo} ${firstName}`}
                   </Button>
                 )}
               </>
             )}
             {!user && (
-              <Button onClick={() => navigate('/auth')} className="rounded-xl h-12 px-6 text-base">
+              <Button onClick={() => navigate('/')} className="rounded-xl h-12 px-6 text-base">
                 <Send className="h-5 w-5 me-2" />
-                {isRTL ? 'سجل دخولك لإرسال رسالة' : 'Sign in to message'}
+                {labels.signIn}
               </Button>
             )}
             <Button variant="outline" size="icon" onClick={shareProfile} className="h-12 w-12 rounded-xl">
