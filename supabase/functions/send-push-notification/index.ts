@@ -12,13 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { receiverId, senderName, messageType, content, notificationType } = await req.json();
+    const { receiverId, senderName, messageType, content, notificationType, conversationId, callId, senderId } = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get push subscriptions for receiver
     const { data: subscriptions } = await supabase
       .from('push_subscriptions')
       .select('*')
@@ -33,49 +32,33 @@ serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
-    // ── Smart notification builder based on type ──
     let title = senderName || 'Directly';
     let body = content || '';
     let tag = `directly-${receiverId}`;
     let requireInteraction = false;
     let silent = false;
 
-    // BANNED notifications (never send these):
-    // ❌ "someone liked your profile"
-    // ❌ "someone viewed your profile"  
-    // ❌ "X joined Directly"
-    // ❌ "remind your friend to share"
-
     switch (notificationType || messageType) {
-      // ── Work inbox: "The Money Notification" ──
       case 'work_message':
         title = `💼 ${senderName}`;
         body = content ? `${content.substring(0, 60)}...` : 'New work message';
         tag = `directly-work-${receiverId}`;
         break;
-
-      // ── Private inbox: "The Safe Haven" ──  
       case 'direct_message':
         title = senderName || 'Directly';
-        body = '📩 New private message'; // Hide content for privacy on lock screen
+        body = '📩 New private message';
         tag = `directly-direct-${receiverId}`;
         break;
-
-      // ── Audience inbox ──
       case 'audience_message':
         title = 'Directly';
         body = `${senderName}: ${(content || '').substring(0, 40)}`;
         tag = `directly-audience-${receiverId}`;
         break;
-
-      // ── Direct Access: someone added you ──
       case 'direct_access_added':
         title = '⭐ Directly';
         body = `${senderName} added you to their private circle`;
         tag = `directly-access-${receiverId}`;
         break;
-
-      // ── Calls ──
       case 'call_audio':
         title = `📞 ${senderName}`;
         body = 'Incoming call';
@@ -88,8 +71,6 @@ serve(async (req) => {
         tag = `directly-call-${receiverId}`;
         requireInteraction = true;
         break;
-
-      // ── Media messages ──
       case 'voice':
         body = '🎤 Voice message';
         break;
@@ -99,15 +80,17 @@ serve(async (req) => {
       case 'video':
         body = '🎥 Video';
         break;
-
-      // ── Weekly pattern report ──
       case 'pattern_report':
         title = '✨ Directly';
-        body = 'Your weekly personality report is ready!';
+        body = 'Your weekly communication pattern is ready!';
         tag = `directly-pattern-${receiverId}`;
-        silent = true; // Gentle, no sound
+        silent = true;
         break;
-
+      case 'inbox_full':
+        title = '📬 Directly';
+        body = content || 'Your inbox has reached its limit';
+        tag = `directly-limit-${receiverId}`;
+        break;
       default:
         if (body.length > 50) body = body.substring(0, 50) + '...';
     }
@@ -122,7 +105,11 @@ serve(async (req) => {
       requireInteraction,
       silent,
       vibrate: silent ? [] : [200, 100, 200, 100, 200],
-      data: { url: '/home' },
+      url: '/home',
+      conversationId: conversationId || null,
+      callId: callId || null,
+      notificationType: notificationType || messageType || 'message',
+      senderId: senderId || null,
     });
 
     let sentCount = 0;
@@ -148,7 +135,6 @@ serve(async (req) => {
           if (response.ok || response.status === 201) {
             sentCount++;
           } else if (response.status === 410 || response.status === 404) {
-            // Remove invalid subscription
             await supabase.from('push_subscriptions').delete().eq('id', sub.id);
           }
         } catch (e) {
