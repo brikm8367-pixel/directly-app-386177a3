@@ -29,7 +29,7 @@ interface Profile {
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isOnline, canCall } = usePresence(user?.id);
@@ -255,9 +255,9 @@ export default function Dashboard() {
       <main className="max-w-lg mx-auto pt-16 pb-20 px-4">
         <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-4">
           {[
-            { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : 'Inbox' },
-            { id: 'search', icon: Search, label: isRTL ? 'بحث' : 'Search' },
-            { id: 'patterns', icon: TrendingUp, label: isRTL ? 'نمطك' : 'Pattern' },
+            { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : language === 'fr' ? 'Boîte' : language === 'es' ? 'Bandeja' : 'Inbox' },
+            { id: 'search', icon: Search, label: isRTL ? 'بحث' : language === 'fr' ? 'Recherche' : language === 'es' ? 'Buscar' : 'Search' },
+            { id: 'patterns', icon: TrendingUp, label: isRTL ? 'نمطك' : language === 'fr' ? 'Schéma' : language === 'es' ? 'Patrón' : 'Pattern' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -314,16 +314,18 @@ export default function Dashboard() {
                 ) : (
                   searchResults.map((profile) => (
                     <div key={profile.id} className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border touch-feedback">
-                      <Avatar className="h-12 w-12 ring-2 ring-primary/10">
-                        <AvatarImage src={profile.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {profile.display_name?.[0] || <User className="h-5 w-5" />}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{profile.display_name || profile.username}</p>
-                        {profile.username && <p className="text-sm text-muted-foreground">@{profile.username}</p>}
-                      </div>
+                      <button onClick={() => profile.username && navigate(`/@${profile.username}`)} className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar className="h-12 w-12 ring-2 ring-primary/10">
+                          <AvatarImage src={profile.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {profile.display_name?.[0] || <User className="h-5 w-5" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0 text-start">
+                          <p className="font-semibold truncate">{profile.display_name || profile.username}</p>
+                          {profile.username && <p className="text-sm text-muted-foreground">@{profile.username}</p>}
+                        </div>
+                      </button>
                       <Button size="icon" onClick={() => setComposeRecipient(profile)} className="h-11 w-11 rounded-xl touch-feedback">
                         <Send className="h-5 w-5" />
                       </Button>
