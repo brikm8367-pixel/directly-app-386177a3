@@ -62,9 +62,8 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
 
   // Re-analyze when language changes — clear cached analysis and force fresh one
   useEffect(() => {
-    if (weekOffset === 0 && userId) {
+    if (userId) {
       setAnalysis(null);
-      // Small delay to let state clear, then re-analyze
       const timer = setTimeout(() => analyzePersonality(), 300);
       return () => clearTimeout(timer);
     }
