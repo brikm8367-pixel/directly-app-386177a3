@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
-import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +15,7 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/),
+  username: z.string().min(3).max(15).regex(/^[a-zA-Z0-9_]+$/),
   displayName: z.string().min(2).max(50),
 });
 
@@ -31,8 +30,9 @@ export default function Auth() {
   const [error, setError] = useState('');
   
   const { signIn, signUp, user, loading } = useAuth();
-  const { isRTL } = useLanguage();
   const navigate = useNavigate();
+  // Auth pages always render in English
+  const isRTL = false;
 
   useEffect(() => {
     if (!loading && user) {
@@ -67,7 +67,7 @@ export default function Auth() {
         if (!validation.success) {
           const firstError = validation.error.errors[0];
           if (firstError?.path[0] === 'username') {
-            setError(isRTL ? 'اسم المستخدم يجب أن يكون 3-30 حرف (أحرف وأرقام و _ فقط)' : 'Username must be 3-30 characters (letters, numbers, _ only)');
+            setError('Username must be 3-15 characters (letters, numbers, _ only)');
           } else if (firstError?.path[0] === 'displayName') {
             setError(isRTL ? 'الاسم يجب أن يكون حرفين على الأقل' : 'Display name must be at least 2 characters');
           } else if (firstError?.path[0] === 'email') {
