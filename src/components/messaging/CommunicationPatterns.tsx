@@ -38,8 +38,11 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<PersonalityAnalysis | null>(null);
 
-  const currentWeekStart = useMemo(() => {
-    return getWeekStart(new Date());
+  // Use LAST completed week (previous week), not current week
+  const lastWeekStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7); // go back 7 days to land in previous week
+    return getWeekStart(d);
   }, []);
 
   // Load cached analysis from DB
