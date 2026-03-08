@@ -639,6 +639,23 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               );
             })
           )}
+          {/* Typing indicator */}
+          {isTyping && (
+            <div className="flex justify-start mb-1">
+              <div className="px-4 py-2.5 rounded-2xl rounded-es-md bg-muted">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {otherName}
+                  </span>
+                  <div className="flex gap-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Context menu (long press) */}
