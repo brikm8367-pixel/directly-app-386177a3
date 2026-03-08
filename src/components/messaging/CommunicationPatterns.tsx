@@ -31,7 +31,7 @@ function getWeekStart(date: Date = new Date()): string {
 }
 
 export default function CommunicationPatterns({ userId }: { userId: string }) {
-  const { isRTL } = useLanguage();
+  const { isRTL, language } = useLanguage();
   const { mood, setMood } = useMood();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,6 +62,14 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     };
     if (userId) loadCachedAnalysis();
   }, [userId, currentWeekStart]);
+
+  // Re-analyze when language changes (if analysis exists but was in different language)
+  useEffect(() => {
+    if (analysis && weekOffset === 0 && userId) {
+      analyzePersonality();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -113,7 +121,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
             responseRate: stats.received > 0 ? Math.round(stats.sent / stats.received * 100) : 0,
             mostActiveHour: stats.peakHour, period: 'week',
           },
-          language: isRTL ? 'ar' : 'en',
+          language,
         },
       });
       if (error) throw error;

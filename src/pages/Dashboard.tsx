@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart } from 'lucide-react';
+import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare } from 'lucide-react';
 import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -346,6 +346,15 @@ export default function Dashboard() {
         {activeTab === 'patterns' && user && <CommunicationPatterns userId={user.id} />}
       </main>
 
+      {/* WhatsApp-style Compose FAB */}
+      <button
+        onClick={() => setComposeRecipient({} as any)}
+        className="fixed z-40 bottom-20 end-5 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center touch-feedback hover:scale-105 active:scale-95 transition-transform"
+        aria-label={isRTL ? 'إنشاء رسالة' : 'New message'}
+      >
+        <PenSquare className="h-6 w-6" />
+      </button>
+
       <BottomNavigation />
 
       {/* Incoming call overlay */}
@@ -394,7 +403,7 @@ export default function Dashboard() {
         onMessageRead={fetchMessages}
         canCall={selectedMessage ? canCall(selectedMessage.sender_profile?.id || selectedMessage.sender_id) : false}
       />
-      <MessageComposer isOpen={!!composeRecipient} onClose={() => setComposeRecipient(null)} recipient={composeRecipient} onMessageSent={fetchMessages} />
+      <MessageComposer isOpen={!!composeRecipient} onClose={() => setComposeRecipient(null)} recipient={composeRecipient?.id ? composeRecipient : null} onMessageSent={fetchMessages} />
       <DirectAccessManager isOpen={isDirectAccessOpen} onClose={() => setIsDirectAccessOpen(false)} />
     </div>
   );

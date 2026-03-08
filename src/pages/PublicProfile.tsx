@@ -55,7 +55,7 @@ export default function PublicProfile() {
             .limit(1);
           if (analysis?.[0]?.analysis) {
             const a = analysis[0].analysis as any;
-            setPersonalityType(a.personality_type || a.summary || null);
+            setPersonalityType(a.type || a.personality_type || a.summary || null);
           }
         }
       }
