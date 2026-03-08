@@ -63,10 +63,13 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     if (userId) loadCachedAnalysis();
   }, [userId, currentWeekStart]);
 
-  // Re-analyze when language changes (if analysis exists but was in different language)
+  // Re-analyze when language changes — clear cached analysis and force fresh one
   useEffect(() => {
-    if (analysis && weekOffset === 0 && userId) {
-      analyzePersonality();
+    if (weekOffset === 0 && userId) {
+      setAnalysis(null);
+      // Small delay to let state clear, then re-analyze
+      const timer = setTimeout(() => analyzePersonality(), 300);
+      return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
@@ -202,7 +205,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
               )}
             >
               <span className="text-2xl">{m.emoji}</span>
-              <span className="text-xs font-semibold">{m.label[isRTL ? 'ar' : 'en']}</span>
+              <span className="text-xs font-semibold">{m.label[language] || m.label.en}</span>
             </button>
           ))}
         </div>
