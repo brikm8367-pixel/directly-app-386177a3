@@ -73,6 +73,7 @@ export default function InboxSection({
   isOnline,
 }: InboxSectionProps) {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const [tempLimit, setTempLimit] = useState(messageLimit);
   const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
 
