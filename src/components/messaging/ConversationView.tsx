@@ -245,7 +245,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         media_url: mediaUrl,
         media_type: mediaType,
         category: finalCategory,
-        parent_id: shouldDeductCredit ? null : rootId,
+        parent_id: rootId,
       } as any);
       if (error) throw error;
 

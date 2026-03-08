@@ -152,6 +152,7 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
       }
 
       // Smart routing
+      // Find any existing thread between these two users in this category
       const { data: roots } = await supabase
         .from('messages')
         .select('id, created_at')
@@ -162,9 +163,13 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
         .limit(1);
 
       let parentId: string | null = null;
-      let isNewContext = true;
+      let shouldDeductCredit = true;
 
       if (roots && roots.length > 0) {
+        // Always keep in same thread
+        parentId = roots[0].id;
+
+        // Check if last message was within 1 hour — if so, no credit deduction
         const { data: lastMsg } = await supabase
           .from('messages')
           .select('created_at')
@@ -176,8 +181,7 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
         if (lastTime) {
           const hoursSince = (Date.now() - new Date(lastTime).getTime()) / 3600000;
           if (hoursSince < 1) {
-            parentId = roots[0].id;
-            isNewContext = false;
+            shouldDeductCredit = false;
           }
         }
       }
