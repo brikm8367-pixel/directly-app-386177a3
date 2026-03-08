@@ -478,11 +478,18 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
             </Avatar>
             <div className="text-start min-w-0">
               <p className="font-bold text-base truncate">{otherName}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                {senderProfile?.username ? `@${senderProfile.username}` : ''}
-                {' · '}
-                <Shield className="h-3 w-3 text-emerald-500 inline" />
-                <span className="text-emerald-600 dark:text-emerald-400">E2E</span>
+              {isTyping ? (
+                <p className="text-xs text-primary font-medium animate-pulse">
+                  {isRTL ? 'يكتب...' : 'typing...'}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  {senderProfile?.username ? `@${senderProfile.username}` : ''}
+                  {' · '}
+                  <Shield className="h-3 w-3 text-emerald-500 inline" />
+                  <span className="text-emerald-600 dark:text-emerald-400">E2E</span>
+                </p>
+              )}
               </p>
             </div>
           </button>
