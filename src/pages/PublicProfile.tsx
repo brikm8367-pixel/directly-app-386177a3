@@ -179,7 +179,7 @@ export default function PublicProfile() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto px-4 py-8">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mb-6 h-11 w-11 rounded-xl">
+        <Button variant="ghost" size="icon" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/home')} className="mb-6 h-11 w-11 rounded-xl">
           <ArrowLeft className="h-5 w-5" />
         </Button>
 
