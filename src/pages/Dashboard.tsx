@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -252,7 +252,28 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto pt-16 pb-20 px-4">
+      <main className="max-w-lg mx-auto pt-16 pb-20 px-4"
+        onTouchStart={(e) => {
+          const touch = e.touches[0];
+          (e.currentTarget as any)._swipeStartX = touch.clientX;
+          (e.currentTarget as any)._swipeStartY = touch.clientY;
+        }}
+        onTouchEnd={(e) => {
+          const startX = (e.currentTarget as any)._swipeStartX;
+          const startY = (e.currentTarget as any)._swipeStartY;
+          if (startX == null) return;
+          const touch = e.changedTouches[0];
+          const dx = touch.clientX - startX;
+          const dy = touch.clientY - startY;
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            const tabs: ('inbox' | 'search' | 'patterns')[] = ['inbox', 'search', 'patterns'];
+            const idx = tabs.indexOf(activeTab);
+            const swipeRight = isRTL ? dx > 0 : dx < 0;
+            const next = swipeRight ? idx + 1 : idx - 1;
+            if (next >= 0 && next < tabs.length) setActiveTab(tabs[next]);
+          }
+        }}
+      >
         <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-4">
           {[
             { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : language === 'fr' ? 'Boîte' : language === 'es' ? 'Bandeja' : 'Inbox' },

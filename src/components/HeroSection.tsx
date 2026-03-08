@@ -10,17 +10,25 @@ export function HeroSection() {
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-  // 🧠 رسالة قوية تخاطب التحكم في الوصول - Steven Cravotta style
   const headline = {
-    ar: "قرر من يصل إليك",
-    en: "Decide who gets access to you",
-    fr: "Décidez qui a accès à vous"
+    ar: "تحكم بمن يصل إليك",
+    en: "Control who reaches you",
+    fr: "Contrôlez qui vous contacte",
+    es: "Controla quién te contacta"
   };
 
   const subheadline = {
-    ar: "ليس كل شخص يستحق انتباهك.",
-    en: "Not everyone deserves your attention.",
-    fr: "Tout le monde ne mérite pas votre attention."
+    ar: "ودع رسائلك تصل دائمًا إلى مكانها الصحيح.",
+    en: "Let your messages always land where they belong.",
+    fr: "Vos messages arrivent toujours au bon endroit.",
+    es: "Tus mensajes siempre llegan donde deben."
+  };
+
+  const tagline = {
+    ar: "ادعُ فقط من تريد التواصل معه، ودع الباقي على Directly.",
+    en: "Invite only who you want to connect with. Let Directly handle the rest.",
+    fr: "Invitez seulement ceux que vous voulez. Directly s'occupe du reste.",
+    es: "Invita solo a quienes quieres. Directly se encarga del resto."
   };
 
   return (
@@ -52,9 +60,14 @@ export function HeroSection() {
             <span className="text-gradient-premium">{headline[language]}</span>
           </h1>
 
-          {/* نقطة الألم - جملة واحدة */}
-          <p className="mb-10 text-xl md:text-2xl text-muted-foreground max-w-lg mx-auto leading-relaxed opacity-0 animate-fade-in-up animation-delay-200 font-medium">
-            {subheadline[language]}
+          {/* Sub headline */}
+          <p className="mb-4 text-xl md:text-2xl text-muted-foreground max-w-lg mx-auto leading-relaxed opacity-0 animate-fade-in-up animation-delay-200 font-medium">
+            {subheadline[language] || subheadline.en}
+          </p>
+
+          {/* Tagline - Apple style */}
+          <p className="mb-10 text-base md:text-lg text-muted-foreground/80 max-w-md mx-auto leading-relaxed opacity-0 animate-fade-in-up animation-delay-250 italic">
+            {tagline[language] || tagline.en}
           </p>
 
           {/* CTA واحد قوي */}
