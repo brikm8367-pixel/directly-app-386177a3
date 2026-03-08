@@ -6,7 +6,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Send, User, Loader2, ArrowLeft, Share2, Copy, Sparkles, MessageCircle, Lock, Clock, Zap, Brain } from 'lucide-react';
+import { Send, User, Loader2, ArrowLeft, Share2, Copy, Sparkles, MessageCircle, Lock, Brain, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
 
@@ -36,11 +36,13 @@ const LABELS: Record<string, Record<string, string>> = {
     privateProfile: 'هذا الملف خاص',
     userNotFound: 'المستخدم غير موجود',
     commStyle: 'نمط التواصل',
-    shareProfile: 'شارك الملف الشخصي',
-    linkCopied: 'تم نسخ الرابط',
+    shareProfile: 'شارك الملف',
+    linkCopied: 'تم نسخ الرابط!',
     usernameCopied: 'تم نسخ اسم المستخدم',
-    bestWay: 'أفضل طريقة للتواصل',
+    bestWay: 'أفضل طريقة للتواصل مع',
     responsePattern: 'نمط الاستجابة',
+    joinDirectly: 'انضم إلى Directly',
+    discoverStyle: 'اكتشف نمط تواصلك',
   },
   en: {
     sendMessage: 'Send Message',
@@ -51,10 +53,12 @@ const LABELS: Record<string, Record<string, string>> = {
     userNotFound: 'User not found',
     commStyle: 'Communication Style',
     shareProfile: 'Share Profile',
-    linkCopied: 'Link copied',
+    linkCopied: 'Link copied!',
     usernameCopied: 'Username copied',
     bestWay: 'Best way to reach',
     responsePattern: 'Response Pattern',
+    joinDirectly: 'Join Directly',
+    discoverStyle: 'Discover your communication style',
   },
   fr: {
     sendMessage: 'Envoyer un message',
@@ -65,10 +69,12 @@ const LABELS: Record<string, Record<string, string>> = {
     userNotFound: 'Utilisateur introuvable',
     commStyle: 'Style de communication',
     shareProfile: 'Partager le profil',
-    linkCopied: 'Lien copié',
+    linkCopied: 'Lien copié!',
     usernameCopied: 'Nom copié',
     bestWay: 'Meilleure façon de contacter',
     responsePattern: 'Schéma de réponse',
+    joinDirectly: 'Rejoindre Directly',
+    discoverStyle: 'Découvrez votre style de communication',
   },
   es: {
     sendMessage: 'Enviar mensaje',
@@ -79,10 +85,12 @@ const LABELS: Record<string, Record<string, string>> = {
     userNotFound: 'Usuario no encontrado',
     commStyle: 'Estilo de comunicación',
     shareProfile: 'Compartir perfil',
-    linkCopied: 'Enlace copiado',
+    linkCopied: 'Enlace copiado!',
     usernameCopied: 'Usuario copiado',
     bestWay: 'Mejor forma de contactar',
     responsePattern: 'Patrón de respuesta',
+    joinDirectly: 'Unirse a Directly',
+    discoverStyle: 'Descubre tu estilo de comunicación',
   },
 };
 
@@ -105,6 +113,7 @@ export default function PublicProfile() {
       setIsLoading(true);
       const cleanUsername = username.replace(/^@/, '');
 
+      // Use anon-accessible query for public profiles
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, bio, is_public')
@@ -119,12 +128,23 @@ export default function PublicProfile() {
 
       setProfile(data as Profile);
 
-      // Update OG meta tags dynamically
-      document.title = `${data.display_name || cleanUsername} — Directly`;
+      // OG meta tags
+      const displayName = data.display_name || cleanUsername;
+      document.title = `${displayName} — Directly`;
       const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute('content', `${data.display_name}'s communication profile on Directly`);
+      if (metaDesc) metaDesc.setAttribute('content', `${displayName}'s communication profile on Directly`);
 
-      // Load personality for public profiles (no auth required)
+      // Update OG tags dynamically for in-app sharing
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', `${displayName} — Directly`);
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute('content', `${displayName}'s communication profile on Directly`);
+      if (data.avatar_url) {
+        const ogImg = document.querySelector('meta[property="og:image"]');
+        if (ogImg) ogImg.setAttribute('content', data.avatar_url);
+      }
+
+      // Load personality analysis for public profiles
       if (data.is_public) {
         const { data: analysis } = await supabase
           .from('weekly_analysis')
@@ -142,6 +162,14 @@ export default function PublicProfile() {
             advice: a.advice || null,
             insight: a.insight || null,
           });
+
+          // Update OG with personality
+          if (a.type || a.personalityType) {
+            const pType = a.type || a.personalityType;
+            document.title = `${displayName} — "${pType}" | Directly`;
+            const ogT = document.querySelector('meta[property="og:title"]');
+            if (ogT) ogT.setAttribute('content', `${displayName} — "${pType}" | Directly`);
+          }
         }
       }
       setIsLoading(false);
@@ -149,19 +177,17 @@ export default function PublicProfile() {
     fetchProfile();
   }, [username]);
 
+  const profileUrl = `${window.location.origin}/@${profile?.username}`;
+
   const shareProfile = async () => {
-    const url = `${window.location.origin}/@${profile?.username}`;
+    const shareText = personality?.type
+      ? `${profile?.display_name} is a "${personality.type}" communicator on Directly ✨`
+      : `Check out ${profile?.display_name} on Directly`;
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: `${profile?.display_name} — Directly`,
-          text: personality?.type
-            ? `${profile?.display_name} is a "${personality.type}" communicator on Directly`
-            : `Check out ${profile?.display_name} on Directly`,
-          url,
-        });
+        await navigator.share({ title: `${profile?.display_name} — Directly`, text: shareText, url: profileUrl });
       } else {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(profileUrl);
         toast.success(l.linkCopied);
       }
     } catch { /* cancelled */ }
@@ -238,10 +264,9 @@ export default function PublicProfile() {
             <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">{profile.bio}</p>
           )}
 
-          {/* Full personality analysis — visible to everyone */}
+          {/* Personality analysis — visible to everyone on public profiles */}
           {personality?.type && (
             <div className="mb-6 space-y-3">
-              {/* Main personality card */}
               <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -262,7 +287,6 @@ export default function PublicProfile() {
                 )}
               </div>
 
-              {/* Insight & advice cards */}
               {personality.advice && (
                 <div className="p-4 rounded-2xl bg-accent/50 border border-accent text-start">
                   <div className="flex items-center gap-2 mb-2">
@@ -272,6 +296,7 @@ export default function PublicProfile() {
                   <p className="text-sm text-foreground">{personality.advice}</p>
                 </div>
               )}
+
               {personality.insight && (
                 <div className="p-4 rounded-2xl bg-muted/50 border border-border text-start">
                   <div className="flex items-center gap-2 mb-2">
@@ -287,23 +312,17 @@ export default function PublicProfile() {
           {/* Action buttons */}
           <div className="flex gap-3 justify-center flex-wrap">
             {user && user.id !== profile?.id && (
-              <>
-                <Button onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-6 text-base">
-                  <Send className="h-5 w-5 me-2" />
-                  {l.sendMessage}
-                </Button>
-                {personality?.type && (
-                  <Button variant="outline" onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-5 text-sm">
-                    <MessageCircle className="h-4 w-4 me-2" />
-                    {`${l.talkTo} ${firstName}`}
-                  </Button>
-                )}
-              </>
+              <Button onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-6 text-base">
+                <Send className="h-5 w-5 me-2" />
+                {personality?.type
+                  ? `${l.talkTo} "${personality.type.split(' ')[0]}"`
+                  : l.sendMessage}
+              </Button>
             )}
             {!user && (
               <Button onClick={() => navigate('/')} className="rounded-xl h-12 px-6 text-base">
-                <Send className="h-5 w-5 me-2" />
-                {l.signIn}
+                <MessageCircle className="h-5 w-5 me-2" />
+                {l.joinDirectly}
               </Button>
             )}
             <Button variant="outline" onClick={shareProfile} className="rounded-xl h-12 px-5 text-sm">
@@ -315,6 +334,17 @@ export default function PublicProfile() {
             </Button>
           </div>
         </Card>
+
+        {/* CTA for non-logged-in visitors */}
+        {!user && (
+          <Card className="mt-4 p-5 text-center border-primary/10 bg-primary/5">
+            <Sparkles className="h-6 w-6 text-primary mx-auto mb-2" />
+            <p className="text-sm font-semibold mb-2">{l.discoverStyle}</p>
+            <Button onClick={() => navigate('/')} size="sm" className="rounded-xl">
+              {l.joinDirectly}
+            </Button>
+          </Card>
+        )}
 
         <p className="text-center text-xs text-muted-foreground mt-8">
           Directly — Smart Communication
