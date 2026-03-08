@@ -200,7 +200,7 @@ export default function ProfilePage() {
               onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/@${username}`); toast.success(isRTL ? 'تم نسخ رابطك' : 'Your link copied!'); }}
               className="mt-1 text-xs text-primary font-medium hover:underline"
             >
-              directly.app/@{username}
+              @{username}
             </button>
           )}
         </div>
