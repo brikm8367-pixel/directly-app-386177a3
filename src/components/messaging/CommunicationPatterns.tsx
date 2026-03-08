@@ -52,7 +52,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         .from('weekly_analysis')
         .select('analysis')
         .eq('user_id', userId)
-        .eq('week_start', currentWeekStart)
+        .eq('week_start', lastWeekStart)
         .single();
       if (data?.analysis) {
         setAnalysis(data.analysis as unknown as PersonalityAnalysis);
@@ -61,7 +61,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
       }
     };
     if (userId) loadCachedAnalysis();
-  }, [userId, currentWeekStart]);
+  }, [userId, lastWeekStart]);
 
   // Re-analyze when language changes — clear cached analysis and force fresh one
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
   useEffect(() => {
     const fetch = async () => {
       setIsLoading(true);
-      const weekStart = new Date(currentWeekStart);
+      const weekStart = new Date(lastWeekStart);
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
@@ -88,7 +88,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
       setIsLoading(false);
     };
     if (userId) fetch();
-  }, [userId, currentWeekStart]);
+  }, [userId, lastWeekStart]);
 
   const stats = useMemo(() => {
     const recv = messages.filter(m => m.receiver_id === userId);
@@ -133,7 +133,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         // Cache in DB
         await supabase.from('weekly_analysis').upsert({
           user_id: userId,
-          week_start: currentWeekStart,
+          week_start: lastWeekStart,
           analysis: analysisData as any,
         }, { onConflict: 'user_id,week_start' });
       } else {
@@ -168,12 +168,12 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     : (h < 12 ? `${h || 12} AM` : `${h - 12 || 12} PM`);
 
   const weekLabel = useMemo(() => {
-    const start = new Date(currentWeekStart);
+    const start = new Date(lastWeekStart);
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
     const fmt = new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { month: 'short', day: 'numeric' });
     return `${fmt.format(start)} – ${fmt.format(end)}`;
-  }, [currentWeekStart, isRTL]);
+  }, [lastWeekStart, isRTL]);
 
   if (isLoading) {
     return (
