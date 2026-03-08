@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -99,6 +100,7 @@ function dateSeparator(dateStr: string, isRTL: boolean): string {
 export default function ConversationView({ message, isOpen, onClose, onMessageRead, canCall }: ConversationViewProps) {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [replyContent, setReplyContent] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [sendingMsgId, setSendingMsgId] = useState<string | null>(null);
@@ -371,7 +373,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
             {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
           </Button>
           <button
-            onClick={() => { if (senderProfile?.username) { onClose(); window.location.href = `/@${senderProfile.username}`; } }}
+            onClick={() => { if (senderProfile?.username) { onClose(); navigate(`/@${senderProfile.username}`); } }}
             className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
           >
             <Avatar className="h-11 w-11 ring-2 ring-primary/10">
