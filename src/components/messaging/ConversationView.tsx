@@ -490,7 +490,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                   <span className="text-emerald-600 dark:text-emerald-400">E2E</span>
                 </p>
               )}
-              </p>
             </div>
           </button>
           {canCall && message.category === 'direct' && (
