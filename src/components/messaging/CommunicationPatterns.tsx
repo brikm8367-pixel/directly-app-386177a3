@@ -30,6 +30,38 @@ function getWeekStart(date: Date = new Date()): string {
   return d.toISOString().split('T')[0];
 }
 
+// Multi-language labels
+const L: Record<string, Record<string, string>> = {
+  ar: {
+    yourMode: 'نمطك الحالي', yourPattern: 'نمط تواصلك', received: 'مستلمة', sent: 'مرسلة',
+    peak: 'الذروة', distribution: 'التوزيع', private: 'الخاص', work: 'العمل',
+    audience: 'العلاقات', discoverPattern: 'اكتشف نمطك', whatDoesYourComm: 'ماذا يقول تواصلك عن شخصيتك؟',
+    discovering: 'اكتشاف نمطك...', discoverBtn: 'اكتشف نمطك', newAnalysis: '🔄 تحليل جديد',
+    analysisFailed: 'تعذر التحليل', copied: 'تم النسخ! شاركه في Story ✨',
+  },
+  en: {
+    yourMode: 'Your Mode', yourPattern: 'Your Pattern', received: 'Received', sent: 'Sent',
+    peak: 'Peak', distribution: 'Distribution', private: 'Private', work: 'Work',
+    audience: 'Audience', discoverPattern: 'Discover Your Pattern', whatDoesYourComm: 'What does your communication say about you?',
+    discovering: 'Discovering your pattern...', discoverBtn: 'Discover Your Pattern', newAnalysis: '🔄 New Analysis',
+    analysisFailed: 'Analysis failed', copied: 'Copied! Share it on your Story ✨',
+  },
+  fr: {
+    yourMode: 'Votre mode', yourPattern: 'Votre schéma', received: 'Reçus', sent: 'Envoyés',
+    peak: 'Pic', distribution: 'Répartition', private: 'Privé', work: 'Travail',
+    audience: 'Public', discoverPattern: 'Découvrez votre schéma', whatDoesYourComm: 'Que dit votre communication sur vous ?',
+    discovering: 'Découverte en cours...', discoverBtn: 'Découvrez votre schéma', newAnalysis: '🔄 Nouvelle analyse',
+    analysisFailed: 'Analyse échouée', copied: 'Copié ! Partagez-le dans votre Story ✨',
+  },
+  es: {
+    yourMode: 'Tu modo', yourPattern: 'Tu patrón', received: 'Recibidos', sent: 'Enviados',
+    peak: 'Pico', distribution: 'Distribución', private: 'Privado', work: 'Trabajo',
+    audience: 'Audiencia', discoverPattern: 'Descubre tu patrón', whatDoesYourComm: '¿Qué dice tu comunicación sobre ti?',
+    discovering: 'Descubriendo tu patrón...', discoverBtn: 'Descubre tu patrón', newAnalysis: '🔄 Nuevo análisis',
+    analysisFailed: 'Análisis fallido', copied: '¡Copiado! Compártelo en tu Story ✨',
+  },
+};
+
 export default function CommunicationPatterns({ userId }: { userId: string }) {
   const { isRTL, language } = useLanguage();
   const { mood, setMood } = useMood();
@@ -37,11 +69,12 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<PersonalityAnalysis | null>(null);
+  const l = L[language] || L.en;
 
   // Use LAST completed week (previous week), not current week
   const lastWeekStart = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 7); // go back 7 days to land in previous week
+    d.setDate(d.getDate() - 7);
     return getWeekStart(d);
   }, []);
 
@@ -63,7 +96,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     if (userId) loadCachedAnalysis();
   }, [userId, lastWeekStart]);
 
-  // Re-analyze when language changes — clear cached analysis and force fresh one
+  // Re-analyze when language changes
   useEffect(() => {
     if (userId) {
       setAnalysis(null);
@@ -130,17 +163,16 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
       if (data?.type) {
         const analysisData = data as PersonalityAnalysis;
         setAnalysis(analysisData);
-        // Cache in DB
         await supabase.from('weekly_analysis').upsert({
           user_id: userId,
           week_start: lastWeekStart,
           analysis: analysisData as any,
         }, { onConflict: 'user_id,week_start' });
       } else {
-        toast.error(isRTL ? 'تعذر التحليل' : 'Analysis unavailable');
+        toast.error(l.analysisFailed);
       }
     } catch {
-      toast.error(isRTL ? 'تعذر التحليل' : 'Analysis failed');
+      toast.error(l.analysisFailed);
     } finally {
       setIsAnalyzing(false);
     }
@@ -151,11 +183,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single();
     const profileUrl = profile?.username ? `${window.location.origin}/@${profile.username}` : '';
     const { shareAnalysisText } = await import('@/utils/sharing');
-    await shareAnalysisText(
-      analysis,
-      profileUrl,
-      isRTL ? 'تم النسخ! شاركه في Story ✨' : 'Copied! Share it on your Story ✨'
-    );
+    await shareAnalysisText(analysis, profileUrl, l.copied);
   };
 
   const fmtHour = (h: number) => isRTL
@@ -166,9 +194,9 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     const start = new Date(lastWeekStart);
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
-    const fmt = new Intl.DateTimeFormat(isRTL ? 'ar' : 'en', { month: 'short', day: 'numeric' });
+    const fmt = new Intl.DateTimeFormat(language === 'ar' ? 'ar' : language, { month: 'short', day: 'numeric' });
     return `${fmt.format(start)} – ${fmt.format(end)}`;
-  }, [lastWeekStart, isRTL]);
+  }, [lastWeekStart, language]);
 
   if (isLoading) {
     return (
@@ -185,7 +213,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
     <div className="space-y-5">
       {/* Mood Selector */}
       <div className="space-y-3">
-        <h3 className="text-base font-semibold text-muted-foreground">{isRTL ? 'نمطك الحالي' : 'Your Mode'}</h3>
+        <h3 className="text-base font-semibold text-muted-foreground">{l.yourMode}</h3>
         <div className="grid grid-cols-4 gap-2">
           {moodConfigs.map((m) => (
             <button
@@ -211,7 +239,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
           <div className="p-2.5 rounded-xl bg-primary/10">
             <Crown className="h-5 w-5 text-primary" />
           </div>
-          <h2 className="font-bold text-lg">{isRTL ? 'نمط تواصلك' : language === 'fr' ? 'Votre schéma' : language === 'es' ? 'Tu patrón' : 'Your Pattern'}</h2>
+          <h2 className="font-bold text-lg">{l.yourPattern}</h2>
         </div>
         <span className="text-xs text-muted-foreground font-medium">{weekLabel}</span>
       </div>
@@ -219,9 +247,9 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: Mail, label: isRTL ? 'مستلمة' : 'Received', value: stats.received },
-          { icon: Send, label: isRTL ? 'مرسلة' : 'Sent', value: stats.sent },
-          { icon: Clock, label: isRTL ? 'الذروة' : 'Peak', value: fmtHour(stats.peakHour) },
+          { icon: Mail, label: l.received, value: stats.received },
+          { icon: Send, label: l.sent, value: stats.sent },
+          { icon: Clock, label: l.peak, value: fmtHour(stats.peakHour) },
         ].map((item, i) => (
           <Card key={i} className="p-3 border-primary/10">
             <div className="flex items-center gap-1.5 mb-1">
@@ -237,13 +265,13 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
       <Card className="p-4 border-primary/10">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          {isRTL ? 'التوزيع' : 'Distribution'}
+          {l.distribution}
         </h3>
         <div className="space-y-3">
           {[
-            { icon: Heart, label: isRTL ? 'الخاص' : 'Private', pct: stats.directPct, color: 'bg-[hsl(var(--others))]' },
-            { icon: Briefcase, label: isRTL ? 'العمل' : 'Work', pct: stats.workPct, color: 'bg-[hsl(var(--work))]' },
-            { icon: Users, label: isRTL ? 'العلاقات' : 'Audience', pct: stats.audiencePct, color: 'bg-[hsl(var(--audience))]' },
+            { icon: Heart, label: l.private, pct: stats.directPct, color: 'bg-[hsl(var(--others))]' },
+            { icon: Briefcase, label: l.work, pct: stats.workPct, color: 'bg-[hsl(var(--work))]' },
+            { icon: Users, label: l.audience, pct: stats.audiencePct, color: 'bg-[hsl(var(--audience))]' },
           ].map((item, i) => (
             <div key={i} className="space-y-1">
               <div className="flex items-center justify-between">
@@ -289,17 +317,17 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
               )}
 
               <Button variant="ghost" onClick={() => { setAnalysis(null); analyzePersonality(); }} className="w-full text-sm text-muted-foreground">
-                {isRTL ? '🔄 تحليل جديد' : language === 'fr' ? '🔄 Nouvelle analyse' : language === 'es' ? '🔄 Nuevo análisis' : '🔄 New Analysis'}
+                {l.newAnalysis}
               </Button>
             </div>
           ) : (
             <div className="text-center py-6">
               <Brain className="h-10 w-10 text-primary mx-auto mb-3 animate-crown" />
               <p className="text-lg font-bold mb-1">
-                {isRTL ? 'اكتشف نمطك' : 'Discover Your Pattern'}
+                {l.discoverPattern}
               </p>
               <p className="text-sm text-muted-foreground mb-5">
-                {isRTL ? 'ماذا يقول تواصلك عن شخصيتك؟' : 'What does your communication say about you?'}
+                {l.whatDoesYourComm}
               </p>
               <Button
                 onClick={analyzePersonality}
@@ -308,9 +336,9 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
                 className="h-13 px-8 text-base rounded-2xl touch-feedback"
               >
                 {isAnalyzing ? (
-                  <><Loader2 className="h-5 w-5 animate-spin me-2" />{isRTL ? 'اكتشاف نمطك...' : language === 'fr' ? 'Découverte...' : language === 'es' ? 'Descubriendo...' : 'Discovering your pattern...'}</>
+                  <><Loader2 className="h-5 w-5 animate-spin me-2" />{l.discovering}</>
                 ) : (
-                  <><Sparkles className="h-5 w-5 me-2" />{isRTL ? 'اكتشف نمطك' : language === 'fr' ? 'Découvrez votre schéma' : language === 'es' ? 'Descubre tu patrón' : 'Discover Your Pattern'}</>
+                  <><Sparkles className="h-5 w-5 me-2" />{l.discoverBtn}</>
                 )}
               </Button>
             </div>

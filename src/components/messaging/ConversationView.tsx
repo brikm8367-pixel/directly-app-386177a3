@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X, Check, CheckCheck, Copy, Forward, Reply, MoreVertical } from 'lucide-react';
+import { Send, Loader2, User, ArrowLeft, ArrowRight, Mic, Phone, Video, Image as ImageIcon, X, Check, CheckCheck, Copy, Forward, Reply, MoreVertical, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ import VoicePlayer from './VoicePlayer';
 import CallScreen from './CallScreen';
 import BlockReportDialog from './BlockReportDialog';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { encryptForRecipient, decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,6 +131,22 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     return (Date.now() - new Date(lastMsg.created_at).getTime()) / 3600000 >= 1;
   }, []);
 
+  // Decrypt thread messages
+  const decryptThread = async (msgs: ThreadMessage[]): Promise<ThreadMessage[]> => {
+    if (!user) return msgs;
+    const decrypted = await Promise.all(
+      msgs.map(async (msg) => {
+        if (isEncryptedMessage(msg.content)) {
+          const senderId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+          const plaintext = await decryptFromSender(msg.content, msg.sender_id === user.id ? msg.receiver_id : msg.sender_id);
+          return { ...msg, content: plaintext };
+        }
+        return msg;
+      })
+    );
+    return decrypted;
+  };
+
   // Load thread + reactions + deleted_messages
   useEffect(() => {
     const loadThread = async () => {
@@ -146,7 +163,11 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
 
       const deletedSet = new Set((delMsgs || []).map(d => d.message_id));
       setDeletedIds(deletedSet);
-      setThread(((data as ThreadMessage[]) || []).filter(m => !deletedSet.has(m.id)));
+      const filtered = ((data as ThreadMessage[]) || []).filter(m => !deletedSet.has(m.id));
+      
+      // Decrypt messages
+      const decrypted = await decryptThread(filtered);
+      setThread(decrypted);
       setReactions((rxns as Reaction[]) || []);
       setIsLoading(false);
 
@@ -239,10 +260,14 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
         } catch { /* keep original */ }
       }
 
+      // Encrypt the message content
+      const contentToSend = text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤');
+      const encryptedContent = await encryptForRecipient(contentToSend, otherUserId!);
+
       const { error } = await supabase.from('messages').insert({
         sender_id: user.id,
         receiver_id: otherUserId!,
-        content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
+        content: encryptedContent,
         voice_url: voiceUrl || null,
         media_url: mediaUrl,
         media_type: mediaType,
@@ -264,7 +289,9 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
       // Refresh thread with real data
       if (rootId) {
         const { data } = await supabase.from('messages').select('*').or(`id.eq.${rootId},parent_id.eq.${rootId}`).order('created_at', { ascending: true });
-        setThread(((data as ThreadMessage[]) || []).filter(m => !deletedIds.has(m.id)));
+        const filtered = ((data as ThreadMessage[]) || []).filter(m => !deletedIds.has(m.id));
+        const decrypted = await decryptThread(filtered);
+        setThread(decrypted);
       }
       setSendingMsgId(null);
       onMessageRead?.();
@@ -305,11 +332,9 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const handleSwipe = (msgId: string, info: PanInfo, isMine: boolean) => {
     if (Math.abs(info.offset.x) < 60) return;
     if ((!isRTL && info.offset.x > 60) || (isRTL && info.offset.x < -60)) {
-      // Swipe right = reply
       setReplyContent(`> ${thread.find(m => m.id === msgId)?.content?.substring(0, 50) || ''}\n`);
       haptic('light');
     } else if ((!isRTL && info.offset.x < -60) || (isRTL && info.offset.x > 60)) {
-      // Swipe left = delete
       const msg = thread.find(m => m.id === msgId);
       if (msg) setDeleteTarget({ id: msgId, isMine, createdAt: msg.created_at });
       haptic('medium');
@@ -384,11 +409,11 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
             </Avatar>
             <div className="text-start min-w-0">
               <p className="font-bold text-base truncate">{otherName}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
                 {senderProfile?.username ? `@${senderProfile.username}` : ''}
                 {' · '}
-                {message.category === 'direct' ? (isRTL ? 'الخاص' : 'Private') :
-                 message.category === 'work' ? (isRTL ? 'العمل' : 'Work') : (isRTL ? 'العلاقات' : 'Relationships')}
+                <Shield className="h-3 w-3 text-emerald-500 inline" />
+                <span className="text-emerald-600 dark:text-emerald-400">E2E</span>
               </p>
             </div>
           </button>
@@ -485,7 +510,11 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
                         {msg.voice_url ? (
                           <VoicePlayer url={msg.voice_url} isMine={isMine} />
                         ) : msg.content && !['📷', '🎥', '🎤'].includes(msg.content) ? (
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          <p className="whitespace-pre-wrap">{msg.content === '🔒' ? (
+                            <span className="flex items-center gap-1 text-muted-foreground italic">
+                              <Shield className="h-3 w-3" /> {isRTL ? 'رسالة مشفرة' : 'Encrypted message'}
+                            </span>
+                          ) : msg.content}</p>
                         ) : null}
                         {/* Time + read status */}
                         <div className={cn('flex items-center gap-1 mt-1', isMine ? 'justify-end' : '')}>
@@ -663,7 +692,6 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
             className="bg-muted text-foreground hover:bg-muted/80 rounded-xl"
             onClick={async () => {
               if (!deleteTarget || !user) return;
-              // Persist "delete for me" in DB
               await supabase.from('deleted_messages').insert({ message_id: deleteTarget.id, user_id: user.id } as any);
               setThread(prev => prev.filter(m => m.id !== deleteTarget.id));
               setDeletedIds(prev => new Set([...prev, deleteTarget.id]));
