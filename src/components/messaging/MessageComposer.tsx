@@ -81,11 +81,11 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
     if (usernameQuery.length < 2) { setSearchResults([]); return; }
     const timer = setTimeout(async () => {
       setIsSearching(true);
-      const clean = usernameQuery.replace(/^@/, '');
+      const clean = usernameQuery.replace(/^@/, '').toLowerCase();
       const { data } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, bio')
-        .or(`username.ilike.%${clean}%,display_name.ilike.%${clean}%`)
+        .ilike('username', `%${clean}%`)
         .eq('is_public', true)
         .limit(8);
       setSearchResults(data || []);
@@ -262,9 +262,9 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
               <div className="relative">
                 <AtSign className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder={isRTL ? 'ابحث بـ username...' : 'Search by username...'}
+                  placeholder={isRTL ? 'أدخل @username...' : 'Enter @username...'}
                   value={usernameQuery}
-                  onChange={(e) => setUsernameQuery(e.target.value)}
+                  onChange={(e) => setUsernameQuery(e.target.value.replace(/[^a-z0-9_@]/gi, ''))}
                   className="ps-10 h-12 text-base rounded-xl border-2 focus:border-primary"
                   autoFocus
                 />
