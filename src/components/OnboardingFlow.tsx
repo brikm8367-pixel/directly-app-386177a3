@@ -32,7 +32,7 @@ const steps = [
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const { isRTL } = useLanguage();
   const [step, setStep] = useState(0);
-  const lang = isRTL ? 'ar' : 'en';
+  const lang = 'en'; // Always English for onboarding
   const current = steps[step];
   const Icon = current.icon;
 
@@ -100,9 +100,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           onClick={next}
           className="w-full h-14 text-lg rounded-2xl touch-feedback font-semibold"
         >
-          {step === steps.length - 1
-            ? (isRTL ? 'ابدأ الآن' : 'Get Started')
-            : (isRTL ? 'التالي' : 'Next')}
+          {step === steps.length - 1 ? 'Get Started' : 'Next'}
         </Button>
 
         {step < steps.length - 1 && (
@@ -110,7 +108,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             onClick={() => { localStorage.setItem('directly_onboarded', 'true'); onComplete(); }}
             className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            {isRTL ? 'تخطي' : 'Skip'}
+            Skip
           </button>
         )}
       </div>
