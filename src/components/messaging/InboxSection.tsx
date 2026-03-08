@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Settings2, Mail, MailOpen } from 'lucide-react';
+import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,7 @@ export default function InboxSection({
   isOnline,
 }: InboxSectionProps) {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const [tempLimit, setTempLimit] = useState(messageLimit);
   const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
 
@@ -193,7 +195,12 @@ export default function InboxSection({
                       )}
                       <span className="text-xs text-muted-foreground ms-auto">{formatTime(message.created_at)}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
+                      {message.sender_id === user?.id && (
+                        message.is_read
+                          ? <CheckCheck className="h-3 w-3 text-blue-400 shrink-0" />
+                          : <Check className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                      )}
                       {message.voice_url ? (isRTL ? '🎤 رسالة صوتية' : '🎤 Voice message') : message.content}
                     </p>
                   </div>

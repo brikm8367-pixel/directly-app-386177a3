@@ -116,6 +116,8 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -181,6 +183,73 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     };
     if (isOpen && message) loadThread();
   }, [isOpen, message?.id]);
+
+  // Realtime: listen for new messages in this thread + typing indicator
+  useEffect(() => {
+    if (!isOpen || !message || !user) return;
+    const rootId = getRootId(message);
+    if (!rootId) return;
+
+    // Typing indicator channel
+    const typingChannel = supabase.channel(`typing-${rootId}`);
+    typingChannel
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.userId !== user.id) {
+          setIsTyping(true);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+        }
+      })
+      .subscribe();
+
+    // Realtime message updates (new messages + read status changes)
+    const msgChannel = supabase
+      .channel(`thread-${rootId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+      }, async (payload) => {
+        const msg = payload.new as any;
+        if (msg && (msg.id === rootId || msg.parent_id === rootId)) {
+          // Reload thread
+          const { data } = await supabase.from('messages').select('*').or(`id.eq.${rootId},parent_id.eq.${rootId}`).order('created_at', { ascending: true });
+          const filtered = ((data as ThreadMessage[]) || []).filter(m => !deletedIds.has(m.id));
+          const decrypted = await decryptThread(filtered);
+          setThread(decrypted);
+
+          // Mark unread as read
+          if (data) {
+            const unreadIds = data.filter(m => m.receiver_id === user.id && !m.is_read).map(m => m.id);
+            if (unreadIds.length > 0) {
+              await supabase.from('messages').update({ is_read: true }).in('id', unreadIds);
+              onMessageRead?.();
+            }
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(typingChannel);
+      supabase.removeChannel(msgChannel);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      setIsTyping(false);
+    };
+  }, [isOpen, message?.id, user?.id]);
+
+  // Broadcast typing event
+  const broadcastTyping = useCallback(() => {
+    if (!message || !user) return;
+    const rootId = getRootId(message);
+    if (!rootId) return;
+    const channel = supabase.channel(`typing-${rootId}`);
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({ type: 'broadcast', event: 'typing', payload: { userId: user.id } });
+      }
+    });
+  }, [message?.id, user?.id]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -409,12 +478,18 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
             </Avatar>
             <div className="text-start min-w-0">
               <p className="font-bold text-base truncate">{otherName}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                {senderProfile?.username ? `@${senderProfile.username}` : ''}
-                {' · '}
-                <Shield className="h-3 w-3 text-emerald-500 inline" />
-                <span className="text-emerald-600 dark:text-emerald-400">E2E</span>
-              </p>
+              {isTyping ? (
+                <p className="text-xs text-primary font-medium animate-pulse">
+                  {isRTL ? 'يكتب...' : 'typing...'}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  {senderProfile?.username ? `@${senderProfile.username}` : ''}
+                  {' · '}
+                  <Shield className="h-3 w-3 text-emerald-500 inline" />
+                  <span className="text-emerald-600 dark:text-emerald-400">E2E</span>
+                </p>
+              )}
             </div>
           </button>
           {canCall && message.category === 'direct' && (
@@ -455,14 +530,24 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               const msgReactions = reactions.filter(r => r.message_id === msg.id);
               const canUnsend = isMine && (Date.now() - new Date(msg.created_at).getTime()) < UNSEND_WINDOW_MS;
 
-              // Read status for my messages
+              // Read status for my messages: ✓ Sending → ✓✓ Delivered → ✓✓ blue Seen
               const readStatus = isMine ? (
                 isSendingThis ? (
-                  <Check className="h-3 w-3 text-primary-foreground/40" />
+                  <span className="flex items-center gap-0.5 text-[10px] text-primary-foreground/40">
+                    <Check className="h-3 w-3" />
+                  </span>
                 ) : msg.is_read ? (
-                  <CheckCheck className="h-3 w-3 text-blue-400" />
+                  <span className={cn(
+                    'flex items-center gap-0.5 text-[10px]',
+                    message.category === 'work' ? 'text-blue-400' : 'text-muted-foreground/50'
+                  )}>
+                    <CheckCheck className="h-3 w-3" />
+                    <span className="text-[9px]">{isRTL ? 'شوهد' : 'Seen'}</span>
+                  </span>
                 ) : (
-                  <CheckCheck className="h-3 w-3 text-primary-foreground/40" />
+                  <span className="flex items-center gap-0.5 text-[10px] text-primary-foreground/40">
+                    <CheckCheck className="h-3 w-3" />
+                  </span>
                 )
               ) : null;
 
@@ -570,6 +655,23 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               );
             })
           )}
+          {/* Typing indicator */}
+          {isTyping && (
+            <div className="flex justify-start mb-1">
+              <div className="px-4 py-2.5 rounded-2xl rounded-es-md bg-muted">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {otherName}
+                  </span>
+                  <div className="flex gap-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Context menu (long press) */}
@@ -642,7 +744,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
               <Textarea
                 placeholder={isRTL ? 'اكتب رسالة...' : 'Write a message...'}
                 value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
+                onChange={(e) => { setReplyContent(e.target.value); broadcastTyping(); }}
                 rows={1}
                 className="resize-none text-base rounded-2xl border-2 focus:border-primary flex-1 min-h-[48px] max-h-32"
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(replyContent); } }}
