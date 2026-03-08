@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Settings2, Mail, MailOpen } from 'lucide-react';
+import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
