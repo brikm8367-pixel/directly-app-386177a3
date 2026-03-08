@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { initE2EKeys } from '@/utils/e2eManager';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        // Initialize E2E encryption keys on login
+        if (session?.user?.id) {
+          setTimeout(() => initE2EKeys(session.user.id), 500);
+        }
       }
     );
 
