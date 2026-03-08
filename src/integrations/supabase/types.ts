@@ -262,6 +262,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_public: boolean | null
+          public_key: string | null
           updated_at: string | null
           username: string | null
         }
@@ -272,6 +273,7 @@ export type Database = {
           display_name?: string | null
           id: string
           is_public?: boolean | null
+          public_key?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -282,6 +284,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_public?: boolean | null
+          public_key?: string | null
           updated_at?: string | null
           username?: string | null
         }
