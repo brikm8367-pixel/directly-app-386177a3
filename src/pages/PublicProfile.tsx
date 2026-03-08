@@ -6,10 +6,10 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera } from 'lucide-react';
+import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
-import { getProfileUrl, copyUsername } from '@/utils/sharing';
+import { shareProfile, copyUsername } from '@/utils/sharing';
 
 interface Profile {
   id: string;
@@ -22,10 +22,7 @@ interface Profile {
 
 interface PersonalitySummary {
   type?: string;
-  description?: string;
   traits?: string[];
-  advice?: string;
-  responsePattern?: string;
 }
 
 const LABELS: Record<string, Record<string, string>> = {
@@ -33,37 +30,33 @@ const LABELS: Record<string, Record<string, string>> = {
     sendMessage: 'إرسال رسالة', talkTo: 'تحدث مع', goBack: 'العودة',
     privateProfile: 'هذا الملف خاص', userNotFound: 'لم يتم العثور على هذا المستخدم',
     commStyle: 'نمط التواصل', shareProfile: 'شارك', linkCopied: 'تم نسخ الرابط!',
-    usernameCopied: 'تم نسخ اسم المستخدم', bestWay: 'أفضل طريقة للتواصل مع',
-    responsePattern: 'نمط الاستجابة', joinDirectly: 'انضم إلى Directly',
-    discoverStyle: 'اكتشف نمط تواصلك', traits: 'السمات البارزة',
+    usernameCopied: 'تم نسخ اسم المستخدم', joinDirectly: 'انضم إلى Directly',
     changeAvatar: 'تغيير الصورة', removeAvatar: 'إزالة الصورة',
+    encrypted: 'مشفّر من طرف إلى طرف',
   },
   en: {
     sendMessage: 'Send Message', talkTo: 'Talk to', goBack: 'Go back',
     privateProfile: 'This profile is private', userNotFound: 'User not found',
     commStyle: 'Communication Style', shareProfile: 'Share', linkCopied: 'Link copied!',
-    usernameCopied: 'Username copied', bestWay: 'Best way to reach',
-    responsePattern: 'Response Pattern', joinDirectly: 'Join Directly',
-    discoverStyle: 'Discover your communication style', traits: 'Key Traits',
+    usernameCopied: 'Username copied', joinDirectly: 'Join Directly',
     changeAvatar: 'Change Photo', removeAvatar: 'Remove Photo',
+    encrypted: 'End-to-end encrypted',
   },
   fr: {
     sendMessage: 'Envoyer un message', talkTo: 'Parler à', goBack: 'Retour',
     privateProfile: 'Ce profil est privé', userNotFound: 'Utilisateur introuvable',
     commStyle: 'Style de communication', shareProfile: 'Partager', linkCopied: 'Lien copié!',
-    usernameCopied: 'Nom copié', bestWay: 'Meilleure façon de contacter',
-    responsePattern: 'Schéma de réponse', joinDirectly: 'Rejoindre Directly',
-    discoverStyle: 'Découvrez votre style', traits: 'Traits clés',
+    usernameCopied: 'Nom copié', joinDirectly: 'Rejoindre Directly',
     changeAvatar: 'Changer la photo', removeAvatar: 'Supprimer la photo',
+    encrypted: 'Chiffré de bout en bout',
   },
   es: {
     sendMessage: 'Enviar mensaje', talkTo: 'Hablar con', goBack: 'Volver',
     privateProfile: 'Este perfil es privado', userNotFound: 'Usuario no encontrado',
     commStyle: 'Estilo de comunicación', shareProfile: 'Compartir', linkCopied: 'Enlace copiado!',
-    usernameCopied: 'Usuario copiado', bestWay: 'Mejor forma de contactar',
-    responsePattern: 'Patrón de respuesta', joinDirectly: 'Unirse a Directly',
-    discoverStyle: 'Descubre tu estilo', traits: 'Rasgos clave',
+    usernameCopied: 'Usuario copiado', joinDirectly: 'Unirse a Directly',
     changeAvatar: 'Cambiar foto', removeAvatar: 'Eliminar foto',
+    encrypted: 'Cifrado de extremo a extremo',
   },
 };
 
@@ -110,7 +103,7 @@ export default function PublicProfile() {
       const displayName = data.display_name || cleanUsername;
       document.title = `${displayName} — Directly`;
 
-      // Load personality for public profiles — get LAST COMPLETED week (not current)
+      // Load personality summary for public profiles (type + traits only)
       if (data.is_public) {
         const { data: analysis } = await supabase
           .from('weekly_analysis')
@@ -123,10 +116,7 @@ export default function PublicProfile() {
           const a = analysis[0].analysis as any;
           const pd: PersonalitySummary = {
             type: a.type || undefined,
-            description: a.description || undefined,
-            traits: a.traits || [],
-            advice: a.advice || undefined,
-            responsePattern: a.insight || undefined,
+            traits: (a.traits || []).slice(0, 3),
           };
           setPersonality(pd);
           if (pd.type) {
@@ -139,30 +129,10 @@ export default function PublicProfile() {
     fetchProfile();
   }, [username]);
 
-  const handleShare = async () => {
+  const handleShare = () => {
     if (!profile?.username) return;
-    const url = getProfileUrl(profile.username);
     const displayName = profile.display_name || profile.username;
-    const shareText = personality?.type
-      ? `${displayName} is a "${personality.type}" communicator on Directly ✨`
-      : `Check out ${displayName} on Directly`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: `${displayName} — Directly`, text: shareText, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        toast.success(l.linkCopied);
-      }
-    } catch (err: any) {
-      // If share was cancelled, ignore. Otherwise copy to clipboard as fallback.
-      if (err?.name !== 'AbortError') {
-        try {
-          await navigator.clipboard.writeText(url);
-          toast.success(l.linkCopied);
-        } catch { /* ignore */ }
-      }
-    }
+    shareProfile(displayName, profile.username, personality?.type, l.linkCopied);
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,8 +222,6 @@ export default function PublicProfile() {
     );
   }
 
-  const firstName = profile?.display_name?.split(' ')[0] || '';
-
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto px-4 py-8">
@@ -263,7 +231,7 @@ export default function PublicProfile() {
         </Button>
 
         <Card className="p-8 text-center border-primary/10">
-          {/* §1 — Basic Info (visible to everyone) */}
+          {/* §1 — Basic Info */}
           <div className="relative inline-block mb-4">
             <Avatar className="h-24 w-24 mx-auto ring-4 ring-primary/10">
               <AvatarImage src={profile?.avatar_url || undefined} />
@@ -301,44 +269,31 @@ export default function PublicProfile() {
             <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">{profile.bio}</p>
           )}
 
-          {/* §2 — Personality Summary (public profiles only, third-person, positive) */}
+          {/* §2 — Mini Personality Card (type + 3 traits only) */}
           {personality?.type && profile?.is_public && (
-            <div className="mb-6 space-y-3 text-start">
-              <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-primary">{l.commStyle}</span>
-                </div>
-                <p className="text-xl font-bold text-foreground mb-2 text-center">{personality.type}</p>
-                {personality.description && (
-                  <p className="text-sm text-muted-foreground mb-3 text-center">{personality.description}</p>
-                )}
-                {personality.traits && personality.traits.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 justify-center">
-                    {personality.traits.slice(0, 5).map((t, i) => (
-                      <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/15">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
+            <div className="mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">{l.commStyle}</span>
               </div>
-
-              {personality.advice && (
-                <div className="p-4 rounded-2xl bg-accent/50 border border-accent">
-                  <span className="text-xs font-semibold text-primary block mb-1">💡 {l.bestWay} {firstName}</span>
-                  <p className="text-sm text-foreground">{personality.advice}</p>
-                </div>
-              )}
-
-              {personality.responsePattern && (
-                <div className="p-4 rounded-2xl bg-muted/50 border border-border">
-                  <span className="text-xs font-semibold text-primary block mb-1">🧠 {l.responsePattern}</span>
-                  <p className="text-sm text-foreground">{personality.responsePattern}</p>
+              <p className="text-lg font-bold text-foreground mb-2">{personality.type}</p>
+              {personality.traits && personality.traits.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {personality.traits.map((t, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/15">
+                      {t}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
           )}
+
+          {/* E2E badge */}
+          <div className="flex items-center justify-center gap-1.5 mb-4 text-muted-foreground">
+            <Shield className="h-3.5 w-3.5" />
+            <span className="text-xs">{l.encrypted}</span>
+          </div>
 
           {/* §3 — Action Buttons */}
           <div className="flex gap-3 justify-center flex-wrap">
@@ -370,7 +325,9 @@ export default function PublicProfile() {
         {!user && (
           <Card className="mt-4 p-5 text-center border-primary/10 bg-primary/5">
             <Sparkles className="h-6 w-6 text-primary mx-auto mb-2" />
-            <p className="text-sm font-semibold mb-2">{l.discoverStyle}</p>
+            <p className="text-sm font-semibold mb-2">
+              {language === 'ar' ? 'اكتشف نمط تواصلك' : 'Discover your communication style'}
+            </p>
             <Button onClick={() => navigate('/')} size="sm" className="rounded-xl">
               {l.joinDirectly}
             </Button>

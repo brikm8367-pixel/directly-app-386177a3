@@ -148,19 +148,14 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
 
   const shareAnalysis = async () => {
     if (!analysis) return;
-    // Get username for the share link
     const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single();
     const profileUrl = profile?.username ? `${window.location.origin}/@${profile.username}` : '';
-    const text = `✨ ${analysis.type}\n${analysis.description}\n\n${analysis.traits.join(' · ')}\n\n💡 ${analysis.advice}\n\n${profileUrl}\n— Directly App`;
-    
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'My Communication Pattern — Directly', text });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        toast.success(isRTL ? 'تم النسخ! شاركه في Story ✨' : 'Copied! Share it on your Story ✨');
-      }
-    } catch { /* cancelled */ }
+    const { shareAnalysisText } = await import('@/utils/sharing');
+    await shareAnalysisText(
+      analysis,
+      profileUrl,
+      isRTL ? 'تم النسخ! شاركه في Story ✨' : 'Copied! Share it on your Story ✨'
+    );
   };
 
   const fmtHour = (h: number) => isRTL
