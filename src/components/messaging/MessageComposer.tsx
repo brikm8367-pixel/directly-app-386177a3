@@ -186,7 +186,7 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
         }
       }
 
-      if (isNewContext) {
+      if (shouldDeductCredit) {
         const { data: canReceive } = await supabase.rpc('can_receive_message', {
           _user_id: recipient.id, _category: category,
         });
