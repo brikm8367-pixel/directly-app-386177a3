@@ -116,6 +116,8 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
