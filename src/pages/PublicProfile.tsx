@@ -73,6 +73,14 @@ export default function PublicProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!username) return;
+      
+      // Only handle @username routes
+      if (!username.startsWith('@')) {
+        setNotFound(true);
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       const cleanUsername = username.replace(/^@/, '');
 

@@ -4,137 +4,224 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { Bell, Check, Loader2, Settings, Briefcase, Users, Heart, Trash2 } from 'lucide-react';
+import { Bell, Loader2, Briefcase, Users, Heart, MessageSquare, User } from 'lucide-react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 type FilterTab = 'all' | 'work' | 'audience' | 'direct';
 
-interface Notification {
+interface NotificationItem {
   id: string;
-  type: 'inbox_full' | 'direct_access' | 'pattern_ready' | 'missed_call';
+  type: 'message' | 'inbox_warning' | 'direct_access';
   title: string;
-  message: string;
+  description: string;
   category?: string;
-  icon: string;
-  color: string;
-  actionLabel?: string;
-  actionPath?: string;
-  createdAt: Date;
+  avatar_url?: string | null;
+  username?: string | null;
+  timestamp: string;
+  isRead: boolean;
 }
 
-interface MessageLimits {
-  work: { current: number; max: number };
-  audience: { current: number; max: number };
-  direct: { current: number; max: number };
-}
+const LABELS: Record<string, Record<string, string>> = {
+  ar: {
+    notifications: 'الإشعارات', all: 'الكل', work: 'العمل', audience: 'العلاقات',
+    private: 'الخاص', noNotifications: 'لا توجد إشعارات', sentYou: 'أرسل لك',
+    message: 'رسالة', voiceMessage: 'رسالة صوتية', media: 'وسائط',
+    inboxAlmostFull: 'صندوقك يقترب من الامتلاء', inboxFull: 'صندوقك ممتلئ',
+    adjustLimit: 'تعديل الحد', gaveAccess: 'منحك وصول خاص',
+  },
+  en: {
+    notifications: 'Notifications', all: 'All', work: 'Work', audience: 'Audience',
+    private: 'Private', noNotifications: 'No notifications', sentYou: 'sent you a',
+    message: 'message', voiceMessage: 'voice message', media: 'media',
+    inboxAlmostFull: 'Your inbox is almost full', inboxFull: 'Your inbox is full',
+    adjustLimit: 'Adjust Limit', gaveAccess: 'gave you private access',
+  },
+  fr: {
+    notifications: 'Notifications', all: 'Tout', work: 'Travail', audience: 'Audience',
+    private: 'Privé', noNotifications: 'Aucune notification', sentYou: 'vous a envoyé un',
+    message: 'message', voiceMessage: 'message vocal', media: 'média',
+    inboxAlmostFull: 'Votre boîte est presque pleine', inboxFull: 'Votre boîte est pleine',
+    adjustLimit: 'Ajuster la limite', gaveAccess: 'vous a donné un accès privé',
+  },
+  es: {
+    notifications: 'Notificaciones', all: 'Todo', work: 'Trabajo', audience: 'Audiencia',
+    private: 'Privado', noNotifications: 'Sin notificaciones', sentYou: 'te envió un',
+    message: 'mensaje', voiceMessage: 'mensaje de voz', media: 'multimedia',
+    inboxAlmostFull: 'Tu bandeja está casi llena', inboxFull: 'Tu bandeja está llena',
+    adjustLimit: 'Ajustar límite', gaveAccess: 'te dio acceso privado',
+  },
+};
 
 export default function NotificationsPage() {
   const { user, loading } = useAuth();
-  const { isRTL } = useLanguage();
+  const { language } = useLanguage();
   const navigate = useNavigate();
+  const isRTL = language === 'ar';
+  const l = LABELS[language] || LABELS.en;
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-  const [limits, setLimits] = useState<MessageLimits>({
-    work: { current: 0, max: 100 },
-    audience: { current: 0, max: 100 },
-    direct: { current: 0, max: 100 },
-  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => { if (!loading && !user) navigate('/'); }, [user, loading, navigate]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchNotifications = async () => {
       if (!user) return;
 
-      const [{ data: messages }, { data: limitsData }] = await Promise.all([
-        supabase.from('messages').select('category').eq('receiver_id', user.id),
-        supabase.from('message_limits').select('category, max_messages').eq('user_id', user.id),
+      // Fetch recent messages (last 7 days) as notifications
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [{ data: messages }, { data: limits }, { data: directAccess }] = await Promise.all([
+        supabase.from('messages')
+          .select('id, sender_id, category, content, voice_url, media_url, created_at, is_read')
+          .eq('receiver_id', user.id)
+          .is('parent_id', null)
+          .gte('created_at', weekAgo)
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase.from('message_limits')
+          .select('category, max_messages')
+          .eq('user_id', user.id),
+        supabase.from('direct_access')
+          .select('allowed_user_id, created_at')
+          .eq('owner_id', user.id)
+          .gte('created_at', weekAgo)
+          .order('created_at', { ascending: false }),
       ]);
 
-      const newLimits: MessageLimits = {
-        work: { current: 0, max: 100 },
-        audience: { current: 0, max: 100 },
-        direct: { current: 0, max: 100 },
-      };
+      // Get sender profiles
+      const senderIds = [...new Set([
+        ...(messages || []).map(m => m.sender_id),
+        ...(directAccess || []).map(d => d.allowed_user_id),
+      ])];
+      const { data: profiles } = senderIds.length > 0
+        ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', senderIds)
+        : { data: [] };
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
 
-      if (messages) {
-        messages.forEach(m => {
-          if (m.category === 'work') newLimits.work.current++;
-          if (m.category === 'audience') newLimits.audience.current++;
-          if (m.category === 'direct') newLimits.direct.current++;
+      const items: NotificationItem[] = [];
+
+      // Message notifications
+      (messages || []).forEach(msg => {
+        const sender = profileMap.get(msg.sender_id);
+        const msgType = msg.voice_url ? l.voiceMessage : msg.media_url ? l.media : l.message;
+        const categoryLabel = msg.category === 'work' ? `💼 ${l.work}` : msg.category === 'direct' ? `⭐ ${l.private}` : `👥 ${l.audience}`;
+        items.push({
+          id: `msg-${msg.id}`,
+          type: 'message',
+          title: sender?.display_name || sender?.username || '?',
+          description: `${l.sentYou} ${msgType} · ${categoryLabel}`,
+          category: msg.category,
+          avatar_url: sender?.avatar_url,
+          username: sender?.username,
+          timestamp: msg.created_at,
+          isRead: !!msg.is_read,
         });
-      }
-      if (limitsData) {
-        limitsData.forEach(l => {
-          if (l.category === 'work') newLimits.work.max = l.max_messages || 100;
-          if (l.category === 'audience') newLimits.audience.max = l.max_messages || 100;
-          if (l.category === 'direct') newLimits.direct.max = l.max_messages || 100;
-        });
-      }
-      setLimits(newLimits);
-
-      const newNotifications: Notification[] = [];
-      const categoryMeta = {
-        work: { name: isRTL ? 'العمل' : 'Work', icon: '💼', color: 'bg-blue-500/10 text-blue-600', filter: 'work' as FilterTab },
-        audience: { name: isRTL ? 'العلاقات' : 'Audience', icon: '👥', color: 'bg-orange-500/10 text-orange-600', filter: 'audience' as FilterTab },
-        direct: { name: isRTL ? 'الخاص' : 'Private', icon: '⭐', color: 'bg-pink-500/10 text-pink-600', filter: 'direct' as FilterTab },
-      };
-
-      (['work', 'audience', 'direct'] as const).forEach(category => {
-        const { current, max } = newLimits[category];
-        const meta = categoryMeta[category];
-        if (current >= max) {
-          newNotifications.push({
-            id: `full-${category}`, type: 'inbox_full',
-            title: isRTL ? `صندوق ${meta.name} امتلأ` : `${meta.name} inbox is full`,
-            message: isRTL ? 'يمكنك زيادة الحد لاستقبال رسائل جديدة' : 'Increase the limit to receive new messages',
-            category, icon: meta.icon, color: meta.color,
-            actionLabel: isRTL ? 'تعديل الحد' : 'Adjust Limit', actionPath: '/home',
-            createdAt: new Date(),
-          });
-        } else if (current >= max * 0.8) {
-          newNotifications.push({
-            id: `warn-${category}`, type: 'inbox_full',
-            title: isRTL ? `صندوق ${meta.name} يقترب من الامتلاء` : `${meta.name} inbox almost full`,
-            message: isRTL ? `${current}/${max} رسالة` : `${current}/${max} messages`,
-            category, icon: meta.icon, color: meta.color, createdAt: new Date(),
-          });
-        }
       });
 
-      setNotifications(newNotifications);
+      // Direct access notifications
+      (directAccess || []).forEach(da => {
+        const sender = profileMap.get(da.allowed_user_id);
+        items.push({
+          id: `da-${da.allowed_user_id}`,
+          type: 'direct_access',
+          title: sender?.display_name || sender?.username || '?',
+          description: l.gaveAccess,
+          category: 'direct',
+          avatar_url: sender?.avatar_url,
+          username: sender?.username,
+          timestamp: da.created_at,
+          isRead: true,
+        });
+      });
+
+      // Inbox limit warnings
+      if (limits) {
+        for (const lim of limits) {
+          const { count } = await supabase
+            .from('messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('receiver_id', user.id)
+            .eq('category', lim.category);
+          const current = count || 0;
+          const max = lim.max_messages || 100;
+          if (current >= max) {
+            items.push({
+              id: `full-${lim.category}`,
+              type: 'inbox_warning',
+              title: l.inboxFull,
+              description: `${current}/${max} · ${lim.category === 'work' ? l.work : lim.category === 'direct' ? l.private : l.audience}`,
+              category: lim.category,
+              timestamp: new Date().toISOString(),
+              isRead: false,
+            });
+          } else if (current >= max * 0.8) {
+            items.push({
+              id: `warn-${lim.category}`,
+              type: 'inbox_warning',
+              title: l.inboxAlmostFull,
+              description: `${current}/${max} · ${lim.category === 'work' ? l.work : lim.category === 'direct' ? l.private : l.audience}`,
+              category: lim.category,
+              timestamp: new Date().toISOString(),
+              isRead: false,
+            });
+          }
+        }
+      }
+
+      // Sort by timestamp desc
+      items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setNotifications(items);
       setIsLoading(false);
     };
-    if (user) fetchData();
-  }, [user, isRTL]);
+
+    if (user) fetchNotifications();
+  }, [user, language]);
 
   const filteredNotifications = (activeFilter === 'all'
     ? notifications
     : notifications.filter(n => n.category === activeFilter)
   ).filter(n => !dismissedIds.has(n.id));
 
+  const unreadCount = filteredNotifications.filter(n => !n.isRead).length;
+
   const handleSwipeDismiss = (id: string, info: PanInfo) => {
     if (Math.abs(info.offset.x) > 100) {
       setDismissedIds(prev => new Set([...prev, id]));
-      toast.success(isRTL ? 'تم التجاهل' : 'Dismissed');
     }
   };
 
-  const clearAll = () => {
-    setDismissedIds(new Set(notifications.map(n => n.id)));
-    toast.success(isRTL ? 'تم مسح الكل' : 'All cleared');
+  const handleNotificationClick = (n: NotificationItem) => {
+    if (n.type === 'message' && n.username) {
+      navigate('/home?tab=inbox');
+    } else if (n.type === 'direct_access' && n.username) {
+      navigate(`/@${n.username}`);
+    } else if (n.type === 'inbox_warning') {
+      navigate('/home');
+    }
+  };
+
+  const relativeTime = (ts: string) => {
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return isRTL ? 'الآن' : 'now';
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(diff / 3600000);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(diff / 86400000);
+    if (days < 7) return `${days}d`;
+    return `${Math.floor(days / 7)}w`;
   };
 
   const filterTabs: { id: FilterTab; label: string; icon: typeof Bell }[] = [
-    { id: 'all', label: isRTL ? 'الكل' : 'All', icon: Bell },
-    { id: 'work', label: isRTL ? 'العمل' : 'Work', icon: Briefcase },
-    { id: 'audience', label: isRTL ? 'العلاقات' : 'Audience', icon: Users },
-    { id: 'direct', label: isRTL ? 'الخاص' : 'Private', icon: Heart },
+    { id: 'all', label: l.all, icon: Bell },
+    { id: 'work', label: l.work, icon: Briefcase },
+    { id: 'audience', label: l.audience, icon: Users },
+    { id: 'direct', label: l.private, icon: Heart },
   ];
 
   if (loading || isLoading) {
@@ -145,27 +232,19 @@ export default function NotificationsPage() {
     );
   }
 
-  const emptyMessages: Record<FilterTab, { ar: string; en: string }> = {
-    all: { ar: 'كل شيء منظم ✨', en: 'Everything organized ✨' },
-    work: { ar: 'صندوق العمل هادئ — استغل وقتك للإنتاجية', en: 'Work inbox is quiet — focus on productivity' },
-    audience: { ar: 'صندوق العلاقات هادئ', en: 'Audience inbox is quiet' },
-    direct: { ar: 'صندوقك الخاص هادئ — استمتع بالوقت مع نفسك', en: 'Your private inbox is quiet — enjoy your time' },
-  };
-
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
         <div className="max-w-lg mx-auto flex h-14 items-center justify-between px-4">
           <h1 className="font-bold text-lg flex items-center gap-2">
             <Bell className="h-5 w-5 text-primary" />
-            {isRTL ? 'الإشعارات' : 'Notifications'}
+            {l.notifications}
+            {unreadCount > 0 && (
+              <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold px-1.5">
+                {unreadCount}
+              </span>
+            )}
           </h1>
-          {filteredNotifications.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs text-muted-foreground">
-              <Trash2 className="h-3.5 w-3.5 me-1" />
-              {isRTL ? 'مسح الكل' : 'Clear All'}
-            </Button>
-          )}
         </div>
       </header>
 
@@ -190,75 +269,67 @@ export default function NotificationsPage() {
           })}
         </div>
 
-        {/* Inbox Status Cards */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {(['work', 'audience', 'direct'] as const).map(category => {
-            const { current, max } = limits[category];
-            const percentage = Math.min((current / max) * 100, 100);
-            const icons = { work: '💼', audience: '👥', direct: '⭐' };
-            const names = { work: isRTL ? 'العمل' : 'Work', audience: isRTL ? 'العلاقات' : 'Audience', direct: isRTL ? 'الخاص' : 'Private' };
-            return (
-              <div key={category} className="p-3 rounded-2xl bg-card border border-border text-center">
-                <div className="text-xl mb-1">{icons[category]}</div>
-                <p className="text-xs text-muted-foreground">{names[category]}</p>
-                <p className="font-bold text-lg">{current}<span className="text-xs text-muted-foreground font-normal">/{max}</span></p>
-                <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={cn('h-full transition-all rounded-full', percentage >= 100 ? 'bg-destructive' : percentage >= 80 ? 'bg-yellow-500' : 'bg-primary')}
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Notifications List with swipe */}
+        {/* Notification List — Instagram-style */}
         <AnimatePresence>
           {filteredNotifications.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <Check className="h-8 w-8 text-primary" />
+                <Bell className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-lg font-semibold mb-1">
-                {isRTL ? emptyMessages[activeFilter].ar : emptyMessages[activeFilter].en}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {isRTL ? 'لا توجد إشعارات حالياً' : 'No notifications right now'}
-              </p>
+              <p className="text-muted-foreground">{l.noNotifications}</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredNotifications.map(notification => (
+            <div className="space-y-0.5">
+              {filteredNotifications.map(n => (
                 <motion.div
-                  key={notification.id}
+                  key={n.id}
                   layout
                   drag="x"
                   dragConstraints={{ left: -120, right: 120 }}
                   dragElastic={0.3}
-                  onDragEnd={(_, info) => handleSwipeDismiss(notification.id, info)}
+                  onDragEnd={(_, info) => handleSwipeDismiss(n.id, info)}
                   exit={{ opacity: 0, x: isRTL ? 300 : -300, transition: { duration: 0.3 } }}
-                  className="p-4 rounded-2xl bg-card border border-border cursor-grab active:cursor-grabbing"
+                  onClick={() => handleNotificationClick(n)}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors',
+                    !n.isRead ? 'bg-primary/5' : 'hover:bg-muted/50'
+                  )}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={cn('h-10 w-10 rounded-xl flex items-center justify-center shrink-0 text-lg', notification.color)}>
-                      {notification.icon}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{notification.title}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">{notification.message}</p>
-                      {notification.actionLabel && notification.actionPath && (
-                        <Button
-                          size="sm" variant="outline"
-                          onClick={() => navigate(notification.actionPath!)}
-                          className="mt-3 h-9 rounded-xl text-xs"
-                        >
-                          <Settings className="h-3.5 w-3.5 me-1.5" />
-                          {notification.actionLabel}
-                        </Button>
+                  {/* Avatar or Icon */}
+                  {n.avatar_url || n.username ? (
+                    <Avatar className="h-11 w-11 shrink-0">
+                      <AvatarImage src={n.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {n.title[0] || <User className="h-5 w-5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <div className={cn(
+                      'h-11 w-11 rounded-full flex items-center justify-center shrink-0',
+                      n.type === 'inbox_warning' ? 'bg-destructive/10' : 'bg-primary/10'
+                    )}>
+                      {n.type === 'inbox_warning' ? (
+                        <MessageSquare className="h-5 w-5 text-destructive" />
+                      ) : (
+                        <Bell className="h-5 w-5 text-primary" />
                       )}
                     </div>
+                  )}
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                      <span className="font-semibold">{n.title}</span>
+                      {' '}
+                      <span className="text-muted-foreground">{n.description}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{relativeTime(n.timestamp)}</p>
                   </div>
+
+                  {/* Unread dot */}
+                  {!n.isRead && (
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary shrink-0" />
+                  )}
                 </motion.div>
               ))}
             </div>

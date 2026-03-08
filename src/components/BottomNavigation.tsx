@@ -9,21 +9,21 @@ import { supabase } from '@/integrations/supabase/client';
 interface NavItem {
   id: string;
   icon: React.ComponentType<{ className?: string }>;
-  label: { ar: string; en: string };
+  label: { ar: string; en: string; fr: string; es: string };
   path: string;
 }
 
 const navItems: NavItem[] = [
-  { id: 'home', icon: Home, label: { ar: 'الرئيسية', en: 'Home' }, path: '/home' },
-  { id: 'search', icon: Search, label: { ar: 'بحث', en: 'Search' }, path: '/home?tab=search' },
-  { id: 'notifications', icon: Bell, label: { ar: 'إشعارات', en: 'Alerts' }, path: '/notifications' },
-  { id: 'profile', icon: User, label: { ar: 'حسابي', en: 'Profile' }, path: '/profile' },
+  { id: 'home', icon: Home, label: { ar: 'الرئيسية', en: 'Home', fr: 'Accueil', es: 'Inicio' }, path: '/home' },
+  { id: 'search', icon: Search, label: { ar: 'بحث', en: 'Search', fr: 'Recherche', es: 'Buscar' }, path: '/home?tab=search' },
+  { id: 'notifications', icon: Bell, label: { ar: 'إشعارات', en: 'Alerts', fr: 'Alertes', es: 'Alertas' }, path: '/notifications' },
+  { id: 'profile', icon: User, label: { ar: 'حسابي', en: 'Profile', fr: 'Profil', es: 'Perfil' }, path: '/profile' },
 ];
 
 export function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isRTL } = useLanguage();
+  const { language } = useLanguage();
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -95,7 +95,7 @@ export function BottomNavigation() {
                   'text-xs mt-0.5 font-medium transition-all',
                   active ? 'text-primary' : 'text-muted-foreground'
                 )}>
-                  {isRTL ? item.label.ar : item.label.en}
+                  {item.label[language] || item.label.en}
                 </span>
               </button>
             );
