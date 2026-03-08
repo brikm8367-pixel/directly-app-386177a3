@@ -1,16 +1,17 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Shield, Zap, Brain, Users, ArrowRight, Star, Lock, Globe, Sparkles } from 'lucide-react';
+import { Shield, Zap, Brain, Users, ArrowRight, Star, Lock, Globe, Sparkles, CheckCircle2, MessageCircle, Eye } from 'lucide-react';
 
 const FEATURES = [
-  { icon: Brain, title: 'AI-Powered Inbox', desc: 'Messages auto-sorted into Work, Audience & Direct' },
-  { icon: Shield, title: 'E2E Encrypted', desc: 'Every message encrypted with AES-256-GCM + ECDH' },
-  { icon: Sparkles, title: 'Personality Analytics', desc: 'Weekly AI analysis of your communication style' },
+  { icon: Brain, title: 'AI-Powered Inbox', desc: 'Messages auto-sorted into Work, Audience & Direct using AI classification' },
+  { icon: Shield, title: 'E2E Encrypted', desc: 'Every message encrypted with AES-256-GCM + ECDH key exchange' },
+  { icon: Sparkles, title: 'Personality Analytics', desc: 'Weekly AI analysis of your communication style — shareable cards' },
   { icon: Lock, title: 'Access Control', desc: 'You decide who gets your attention — not algorithms' },
-  { icon: Zap, title: 'Instant & Lightweight', desc: 'PWA — no download needed, works on any device' },
-  { icon: Globe, title: '4 Languages', desc: 'English, Arabic, French & Spanish — fully localized' },
+  { icon: Zap, title: 'Instant & Lightweight', desc: 'PWA — no download needed, works on any device instantly' },
+  { icon: Globe, title: '4 Languages', desc: 'English, Arabic, French & Spanish — fully localized with RTL' },
 ];
 
 const TESTIMONIALS = [
@@ -19,9 +20,22 @@ const TESTIMONIALS = [
   { name: 'Emily R.', role: 'Content Creator', text: '"My audience can reach me without flooding my personal inbox. Brilliant."', rating: 5 },
 ];
 
+const COMPARISON = [
+  { feature: 'AI Message Sorting', directly: true, whatsapp: false, telegram: false },
+  { feature: 'E2E Encryption', directly: true, whatsapp: true, telegram: false },
+  { feature: 'Access Control Levels', directly: true, whatsapp: false, telegram: false },
+  { feature: 'Personality Analytics', directly: true, whatsapp: false, telegram: false },
+  { feature: 'No Phone Number Required', directly: true, whatsapp: false, telegram: false },
+  { feature: 'Open Web (PWA)', directly: true, whatsapp: false, telegram: true },
+];
+
 export default function Launch() {
   const navigate = useNavigate();
   const { language } = useLanguage();
+
+  useEffect(() => {
+    document.title = 'Directly — Your Inbox, Your Rules | Product Hunt Launch';
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,7 +76,7 @@ export default function Launch() {
           {/* Trust badges */}
           <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground flex-wrap">
             <div className="flex items-center gap-1.5">
-              <Shield className="h-4 w-4 text-primary" />
+              <Shield className="h-4 w-4 text-emerald-500" />
               <span>E2E Encrypted</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -72,6 +86,10 @@ export default function Launch() {
             <div className="flex items-center gap-1.5">
               <Globe className="h-4 w-4 text-primary" />
               <span>4 Languages</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Eye className="h-4 w-4 text-primary" />
+              <span>Open & Transparent</span>
             </div>
           </div>
         </div>
@@ -95,15 +113,51 @@ export default function Launch() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* Comparison Table */}
       <section className="bg-muted/30 py-16">
+        <div className="max-w-3xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-4">Why Directly?</h2>
+          <p className="text-center text-muted-foreground mb-8">See how we compare to other messaging platforms</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-start py-3 px-4 font-semibold">Feature</th>
+                  <th className="text-center py-3 px-4 font-bold text-primary">Directly</th>
+                  <th className="text-center py-3 px-4 text-muted-foreground">WhatsApp</th>
+                  <th className="text-center py-3 px-4 text-muted-foreground">Telegram</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON.map((row, i) => (
+                  <tr key={i} className="border-b border-border/50">
+                    <td className="py-3 px-4">{row.feature}</td>
+                    <td className="text-center py-3 px-4">
+                      {row.directly ? <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto" /> : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      {row.whatsapp ? <CheckCircle2 className="h-5 w-5 text-muted-foreground mx-auto" /> : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      {row.telegram ? <CheckCircle2 className="h-5 w-5 text-muted-foreground mx-auto" /> : <span className="text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
           <div className="grid sm:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Sign Up', desc: 'Create your account in seconds. No phone number required.' },
-              { step: '02', title: 'Share Your Link', desc: 'Share directly.app/@you with the world. Anyone can message you.' },
-              { step: '03', title: 'AI Does the Rest', desc: 'Messages are auto-sorted. You decide who gets your real attention.' },
+              { step: '01', title: 'Sign Up', desc: 'Create your account in seconds. No phone number required — just email.' },
+              { step: '02', title: 'Share Your Link', desc: 'Share directly.app/@you with anyone. They can message you instantly.' },
+              { step: '03', title: 'AI Does the Rest', desc: 'Messages are auto-sorted by AI. You decide who gets your real attention.' },
             ].map((item, i) => (
               <div key={i} className="text-center">
                 <div className="text-4xl font-black text-primary/20 mb-3">{item.step}</div>
@@ -136,6 +190,31 @@ export default function Launch() {
         </div>
       </section>
 
+      {/* Privacy & Security Section */}
+      <section className="bg-muted/30 py-16">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <Shield className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-4">Privacy First. Always.</h2>
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+            Every message is encrypted end-to-end using AES-256-GCM with ECDH key exchange. 
+            We can't read your messages. Nobody can — except you and your recipient.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-6">
+            {[
+              { icon: Lock, title: 'Zero-Knowledge', desc: 'We never see your message content' },
+              { icon: Shield, title: 'AES-256-GCM', desc: 'Military-grade encryption standard' },
+              { icon: MessageCircle, title: 'No Metadata Tracking', desc: 'Your conversations stay private' },
+            ].map((item, i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <item.icon className="h-8 w-8 text-primary" />
+                <h3 className="font-bold">{item.title}</h3>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="py-16 text-center bg-gradient-to-t from-primary/5 to-transparent">
         <div className="max-w-2xl mx-auto px-4">
@@ -158,8 +237,8 @@ export default function Launch() {
           © {new Date().getFullYear()} Directly. Smart Communication for Everyone.
         </p>
         <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
-          <a href="/privacy" className="hover:text-foreground">Privacy</a>
-          <a href="/terms" className="hover:text-foreground">Terms</a>
+          <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
         </div>
       </footer>
     </div>

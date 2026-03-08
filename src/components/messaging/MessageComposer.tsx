@@ -5,10 +5,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Send, Loader2, User, Mic, Image as ImageIcon, X, Search, AtSign, Sparkles } from 'lucide-react';
+import { Send, Loader2, User, Mic, Image as ImageIcon, X, Search, AtSign, Sparkles, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VoiceRecorder from './VoiceRecorder';
+import { encryptForRecipient } from '@/utils/e2eManager';
 
 interface Profile {
   id: string;
@@ -152,7 +153,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
       }
 
       // Smart routing
-      // Find any existing thread between these two users in this category
       const { data: roots } = await supabase
         .from('messages')
         .select('id, created_at')
@@ -166,10 +166,7 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
       let shouldDeductCredit = true;
 
       if (roots && roots.length > 0) {
-        // Always keep in same thread
         parentId = roots[0].id;
-
-        // Check if last message was within 1 hour — if so, no credit deduction
         const { data: lastMsg } = await supabase
           .from('messages')
           .select('created_at')
@@ -197,10 +194,14 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
         }
       }
 
+      // Encrypt the message content
+      const contentToSend = text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤');
+      const encryptedContent = await encryptForRecipient(contentToSend, recipient.id);
+
       const { data: insertedMsg, error } = await supabase.from('messages').insert({
         sender_id: senderId,
         receiver_id: recipient.id,
-        content: text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤'),
+        content: encryptedContent,
         voice_url: voiceUrl || null,
         media_url: mediaUrl,
         media_type: mediaType,
@@ -401,8 +402,10 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
                 </>
               )}
 
-              <p className="text-xs text-muted-foreground text-center">
-                {isRTL ? '✨ يتم تصنيف رسالتك تلقائياً' : '✨ Auto-classified by AI'}
+              {/* E2E badge */}
+              <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5">
+                <Shield className="h-3 w-3 text-emerald-500" />
+                {isRTL ? 'مشفّر من طرف إلى طرف' : 'End-to-end encrypted'}
               </p>
             </>
           )}

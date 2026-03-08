@@ -64,29 +64,56 @@ serve(async (req) => {
     : `${displayName} | Directly`;
   const ogDescription = description
     || (traits.length > 0 ? traits.join(' · ') : `${displayName}'s communication profile on Directly`);
+  
+  const ogImage = profile.avatar_url || 'https://ddirectly-com.lovable.app/pwa-512x512.png';
+  const profileUrl = `https://ddirectly-com.lovable.app/@${username}`;
 
   // Return HTML with proper OG tags for crawlers
   const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
 <head>
   <meta charset="UTF-8" />
   <title>${ogTitle}</title>
   <meta name="description" content="${ogDescription}" />
+  
+  <!-- Open Graph -->
   <meta property="og:title" content="${ogTitle}" />
   <meta property="og:description" content="${ogDescription}" />
   <meta property="og:type" content="profile" />
-  <meta property="og:url" content="https://ddirectly-com.lovable.app/@${username}" />
-  <meta property="og:image" content="${profile.avatar_url || 'https://ddirectly-com.lovable.app/pwa-512x512.png'}" />
+  <meta property="og:url" content="${profileUrl}" />
+  <meta property="og:image" content="${ogImage}" />
   <meta property="og:image:width" content="512" />
   <meta property="og:image:height" content="512" />
+  <meta property="og:site_name" content="Directly" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="ar_SA" />
+  <meta property="og:locale:alternate" content="fr_FR" />
+  <meta property="og:locale:alternate" content="es_ES" />
+  
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="${ogTitle}" />
   <meta name="twitter:description" content="${ogDescription}" />
-  <meta name="twitter:image" content="${profile.avatar_url || 'https://ddirectly-com.lovable.app/pwa-512x512.png'}" />
-  <meta http-equiv="refresh" content="0;url=https://ddirectly-com.lovable.app/@${username}" />
+  <meta name="twitter:image" content="${ogImage}" />
+  <meta name="twitter:site" content="@DirectlyApp" />
+  
+  <!-- Profile structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "${displayName}",
+    "url": "${profileUrl}",
+    "image": "${ogImage}",
+    ${profile.bio ? `"description": "${profile.bio.replace(/"/g, '\\"')}",` : ''}
+    "sameAs": ["${profileUrl}"]
+  }
+  </script>
+  
+  <meta http-equiv="refresh" content="0;url=${profileUrl}" />
 </head>
 <body>
-  <p>Redirecting to <a href="https://ddirectly-com.lovable.app/@${username}">${displayName}'s profile</a>...</p>
+  <p>Redirecting to <a href="${profileUrl}">${displayName}'s profile</a>...</p>
 </body>
 </html>`;
 

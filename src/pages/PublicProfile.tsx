@@ -29,10 +29,11 @@ const LABELS: Record<string, Record<string, string>> = {
   ar: {
     sendMessage: 'إرسال رسالة', talkTo: 'تحدث مع', goBack: 'العودة',
     privateProfile: 'هذا الملف خاص', userNotFound: 'لم يتم العثور على هذا المستخدم',
-    commStyle: 'نمط التواصل', shareProfile: 'شارك', linkCopied: 'تم نسخ الرابط!',
+    commStyle: 'نمط التواصل', shareProfile: 'مشاركة', linkCopied: 'تم نسخ الرابط!',
     usernameCopied: 'تم نسخ اسم المستخدم', joinDirectly: 'انضم إلى Directly',
     changeAvatar: 'تغيير الصورة', removeAvatar: 'إزالة الصورة',
     encrypted: 'مشفّر من طرف إلى طرف',
+    discoverStyle: 'اكتشف نمط تواصلك',
   },
   en: {
     sendMessage: 'Send Message', talkTo: 'Talk to', goBack: 'Go back',
@@ -41,6 +42,7 @@ const LABELS: Record<string, Record<string, string>> = {
     usernameCopied: 'Username copied', joinDirectly: 'Join Directly',
     changeAvatar: 'Change Photo', removeAvatar: 'Remove Photo',
     encrypted: 'End-to-end encrypted',
+    discoverStyle: 'Discover your communication style',
   },
   fr: {
     sendMessage: 'Envoyer un message', talkTo: 'Parler à', goBack: 'Retour',
@@ -49,6 +51,7 @@ const LABELS: Record<string, Record<string, string>> = {
     usernameCopied: 'Nom copié', joinDirectly: 'Rejoindre Directly',
     changeAvatar: 'Changer la photo', removeAvatar: 'Supprimer la photo',
     encrypted: 'Chiffré de bout en bout',
+    discoverStyle: 'Découvrez votre style de communication',
   },
   es: {
     sendMessage: 'Enviar mensaje', talkTo: 'Hablar con', goBack: 'Volver',
@@ -57,6 +60,7 @@ const LABELS: Record<string, Record<string, string>> = {
     usernameCopied: 'Usuario copiado', joinDirectly: 'Unirse a Directly',
     changeAvatar: 'Cambiar foto', removeAvatar: 'Eliminar foto',
     encrypted: 'Cifrado de extremo a extremo',
+    discoverStyle: 'Descubre tu estilo de comunicación',
   },
 };
 
@@ -291,7 +295,7 @@ export default function PublicProfile() {
 
           {/* E2E badge */}
           <div className="flex items-center justify-center gap-1.5 mb-4 text-muted-foreground">
-            <Shield className="h-3.5 w-3.5" />
+            <Shield className="h-3.5 w-3.5 text-emerald-500" />
             <span className="text-xs">{l.encrypted}</span>
           </div>
 
@@ -326,7 +330,7 @@ export default function PublicProfile() {
           <Card className="mt-4 p-5 text-center border-primary/10 bg-primary/5">
             <Sparkles className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-sm font-semibold mb-2">
-              {language === 'ar' ? 'اكتشف نمط تواصلك' : 'Discover your communication style'}
+              {l.discoverStyle}
             </p>
             <Button onClick={() => navigate('/')} size="sm" className="rounded-xl">
               {l.joinDirectly}
