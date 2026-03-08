@@ -184,6 +184,73 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     if (isOpen && message) loadThread();
   }, [isOpen, message?.id]);
 
+  // Realtime: listen for new messages in this thread + typing indicator
+  useEffect(() => {
+    if (!isOpen || !message || !user) return;
+    const rootId = getRootId(message);
+    if (!rootId) return;
+
+    // Typing indicator channel
+    const typingChannel = supabase.channel(`typing-${rootId}`);
+    typingChannel
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.userId !== user.id) {
+          setIsTyping(true);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+        }
+      })
+      .subscribe();
+
+    // Realtime message updates (new messages + read status changes)
+    const msgChannel = supabase
+      .channel(`thread-${rootId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+      }, async (payload) => {
+        const msg = payload.new as any;
+        if (msg && (msg.id === rootId || msg.parent_id === rootId)) {
+          // Reload thread
+          const { data } = await supabase.from('messages').select('*').or(`id.eq.${rootId},parent_id.eq.${rootId}`).order('created_at', { ascending: true });
+          const filtered = ((data as ThreadMessage[]) || []).filter(m => !deletedIds.has(m.id));
+          const decrypted = await decryptThread(filtered);
+          setThread(decrypted);
+
+          // Mark unread as read
+          if (data) {
+            const unreadIds = data.filter(m => m.receiver_id === user.id && !m.is_read).map(m => m.id);
+            if (unreadIds.length > 0) {
+              await supabase.from('messages').update({ is_read: true }).in('id', unreadIds);
+              onMessageRead?.();
+            }
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(typingChannel);
+      supabase.removeChannel(msgChannel);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      setIsTyping(false);
+    };
+  }, [isOpen, message?.id, user?.id]);
+
+  // Broadcast typing event
+  const broadcastTyping = useCallback(() => {
+    if (!message || !user) return;
+    const rootId = getRootId(message);
+    if (!rootId) return;
+    const channel = supabase.channel(`typing-${rootId}`);
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({ type: 'broadcast', event: 'typing', payload: { userId: user.id } });
+      }
+    });
+  }, [message?.id, user?.id]);
+
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [thread]);
