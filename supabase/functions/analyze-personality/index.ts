@@ -13,35 +13,40 @@ serve(async (req) => {
   try {
     const { stats, language } = await req.json();
     const isArabic = language === 'ar';
+    const isFrench = language === 'fr';
+    const isSpanish = language === 'es';
 
-    // Simplified, psychologically-driven prompt that produces SHORT, ego-boosting output
-    const prompt = `You are a world-class communication psychologist. Analyze this user's messaging data and create a SHORT, psychologically powerful personality card.
+    const langName = isArabic ? 'ARABIC' : isFrench ? 'FRENCH' : isSpanish ? 'SPANISH' : 'ENGLISH';
 
-DATA:
+    // Third-person prompt — the analysis describes the user to OTHERS
+    const prompt = `You are a world-class communication psychologist. Analyze this user's LAST WEEK messaging data and create a SHORT, positive, third-person personality card that OTHER people will see on this user's public profile.
+
+DATA (from last week):
 - Received: ${stats.totalReceived} | Sent: ${stats.totalSent}
 - Work: ${stats.workCount} (${stats.workRatio}%) | Audience: ${stats.audienceCount} (${stats.audienceRatio}%) | Private: ${stats.directCount} (${stats.directRatio}%)
 - Response rate: ${stats.responseRate}%
 - Peak hour: ${stats.mostActiveHour}
-- Period: ${stats.period}
 
-RESPOND IN ${isArabic ? 'ARABIC' : 'ENGLISH'}. Return ONLY raw JSON (no markdown):
+RESPOND IN ${langName}. Return ONLY raw JSON (no markdown):
 {
-  "type": "emoji + powerful 2-3 word title that makes the user feel special and understood",
-  "description": "ONE sentence (max 15 words) — make the user feel seen, validated, and proud. Be specific to their data.",
+  "type": "emoji + powerful 2-3 word title (e.g. 🎯 Strategic Leader)",
+  "description": "ONE sentence (max 15 words) describing this person's communication style IN THIRD PERSON. e.g. 'They communicate with precision and strategic clarity.'",
   "traits": ["trait1", "trait2", "trait3"],
-  "advice": "ONE short actionable sentence (max 12 words). Challenge or encourage based on real data.",
-  "insight": "ONE surprising psychological observation (max 15 words). Make them think 'wow, that's true about me'."
+  "advice": "ONE sentence (max 15 words) telling others HOW to best communicate with this person. e.g. 'Be direct and get to the point quickly.'",
+  "insight": "ONE sentence (max 15 words) about their response pattern that others should know. e.g. 'Responds fastest during morning hours.'"
 }
 
-PSYCHOLOGY RULES:
-- This is an EGO TOOL — users will SHARE this on Instagram Stories
-- The "type" title is their CROWN — make it memorable and unique (not generic like "Good Communicator")
-- Keep EVERYTHING ultra-short — like a premium fortune card, not a report
-- Be HONEST but frame truths positively (low activity = "selective", not "inactive")
+CRITICAL RULES:
+- Write EVERYTHING in THIRD PERSON — this is seen by OTHER people visiting their profile
+- Keep it POSITIVE and flattering — this is their public identity card
+- The "type" is their crown title — make it memorable and unique
+- "advice" is guidance for people who want to talk to this person
+- "insight" is about HOW this person responds (pattern)
+- traits should be 1-2 words each, punchy
+- Frame low activity positively ("selective" not "inactive")
 - If data is minimal (< 5 messages), still give a compelling micro-analysis
-- NEVER use more than 15 words per field
-- traits should be 1-2 words each, punchy and shareable
-- Make the user want to screenshot this immediately`;
+- NEVER use first-person or second-person (no "your", "you", "أنت", "تواصلك")
+- This is an EGO TOOL — users will share this on Instagram Stories`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
