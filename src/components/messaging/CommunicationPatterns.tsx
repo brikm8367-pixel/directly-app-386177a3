@@ -37,13 +37,10 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<PersonalityAnalysis | null>(null);
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last week, etc.
 
   const currentWeekStart = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + weekOffset * 7);
-    return getWeekStart(d);
-  }, [weekOffset]);
+    return getWeekStart(new Date());
+  }, []);
 
   // Load cached analysis from DB
   useEffect(() => {
@@ -211,23 +208,15 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* Week navigation */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-primary/10">
             <Crown className="h-5 w-5 text-primary" />
           </div>
-          <h2 className="font-bold text-lg">{isRTL ? 'نمط تواصلك' : 'Your Pattern'}</h2>
+          <h2 className="font-bold text-lg">{isRTL ? 'نمط تواصلك' : language === 'fr' ? 'Votre schéma' : language === 'es' ? 'Tu patrón' : 'Your Pattern'}</h2>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => setWeekOffset(w => w - 1)} className="h-8 w-8 rounded-lg">
-            {isRTL ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-          <span className="text-xs text-muted-foreground font-medium min-w-[100px] text-center">{weekLabel}</span>
-          <Button variant="ghost" size="icon" onClick={() => setWeekOffset(w => Math.min(w + 1, 0))} disabled={weekOffset >= 0} className="h-8 w-8 rounded-lg">
-            {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </div>
+        <span className="text-xs text-muted-foreground font-medium">{weekLabel}</span>
       </div>
 
       {/* Stats */}
@@ -302,11 +291,9 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
                 <p className="text-xs text-center text-muted-foreground/70">🧠 {analysis.insight}</p>
               )}
 
-              {weekOffset === 0 && (
-                <Button variant="ghost" onClick={() => { setAnalysis(null); analyzePersonality(); }} className="w-full text-sm text-muted-foreground">
-                  {isRTL ? '🔄 تحليل جديد' : '🔄 New Analysis'}
-                </Button>
-              )}
+              <Button variant="ghost" onClick={() => { setAnalysis(null); analyzePersonality(); }} className="w-full text-sm text-muted-foreground">
+                {isRTL ? '🔄 تحليل جديد' : language === 'fr' ? '🔄 Nouvelle analyse' : language === 'es' ? '🔄 Nuevo análisis' : '🔄 New Analysis'}
+              </Button>
             </div>
           ) : (
             <div className="text-center py-6">
@@ -319,14 +306,14 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
               </p>
               <Button
                 onClick={analyzePersonality}
-                disabled={isAnalyzing || weekOffset !== 0}
+                disabled={isAnalyzing}
                 size="lg"
                 className="h-13 px-8 text-base rounded-2xl touch-feedback"
               >
                 {isAnalyzing ? (
-                  <><Loader2 className="h-5 w-5 animate-spin me-2" />{isRTL ? 'اكتشاف نمطك...' : 'Discovering your pattern...'}</>
+                  <><Loader2 className="h-5 w-5 animate-spin me-2" />{isRTL ? 'اكتشاف نمطك...' : language === 'fr' ? 'Découverte...' : language === 'es' ? 'Descubriendo...' : 'Discovering your pattern...'}</>
                 ) : (
-                  <><Sparkles className="h-5 w-5 me-2" />{isRTL ? 'اكتشف نمطك' : 'Discover Your Pattern'}</>
+                  <><Sparkles className="h-5 w-5 me-2" />{isRTL ? 'اكتشف نمطك' : language === 'fr' ? 'Découvrez votre schéma' : language === 'es' ? 'Descubre tu patrón' : 'Discover Your Pattern'}</>
                 )}
               </Button>
             </div>
