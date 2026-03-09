@@ -51,93 +51,82 @@ export function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-16">
-      {/* Clean radial background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--accent)/0.04)_0%,_transparent_70%)]" />
+    <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-16">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,_hsl(var(--primary)/0.04)_0%,_transparent_70%)]" />
       
-      {/* Geometric shapes */}
-      <div className="absolute top-20 right-[15%] h-64 w-64 rounded-full border border-primary/5 animate-pulse-subtle" />
-      <div className="absolute bottom-32 left-[10%] h-40 w-40 rounded-full border border-accent/10 animate-pulse-subtle animation-delay-300" />
-      
-      {/* Access level dots */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-work/30 animate-float" />
-        <div className="absolute top-1/3 right-1/3 w-2 h-2 rounded-full bg-audience/30 animate-float animation-delay-200" />
-        <div className="absolute bottom-1/3 left-1/2 w-2 h-2 rounded-full bg-others/30 animate-float animation-delay-400" />
-      </div>
-
-      <div className="container relative z-10 px-4 py-12">
-        <div className="mx-auto max-w-3xl text-center">
+      <div className="container relative z-10 px-4 py-16">
+        <div className="mx-auto max-w-2xl text-center">
           
-          {/* Gateway icon */}
+          {/* Minimal lock icon */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="mb-8 inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg"
+            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="mb-10 inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 text-primary"
           >
-            <Lock className="h-10 w-10" />
+            <Lock className="h-7 w-7" />
           </motion.div>
 
-          {/* Main headline */}
+          {/* Main headline — Apple-style large type */}
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-4 text-4xl font-bold leading-tight text-foreground sm:text-5xl md:text-6xl"
+            transition={{ duration: 0.7, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="mb-5 text-4xl font-bold leading-[1.15] tracking-tight text-foreground sm:text-5xl md:text-6xl"
           >
-            <span className="text-gradient-premium">{headline[language]}</span>
+            {headline[language]}
           </motion.h1>
 
-          {/* Sub headline */}
+          {/* Sub headline — value proposition */}
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-4 text-xl md:text-2xl text-muted-foreground max-w-lg mx-auto leading-relaxed font-medium"
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="mb-3 text-lg md:text-xl text-muted-foreground max-w-md mx-auto leading-relaxed"
           >
-            {subheadline[language] || subheadline.en}
+            {subheadline[language]}
           </motion.p>
 
-          {/* Tagline */}
+          {/* Tagline — emotional closer */}
           <motion.p 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="mb-10 text-base md:text-lg text-muted-foreground/80 max-w-md mx-auto leading-relaxed italic"
+            transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="mb-12 text-base text-muted-foreground/70 max-w-sm mx-auto leading-relaxed"
           >
-            {tagline[language] || tagline.en}
+            {tagline[language]}
           </motion.p>
 
           {/* CTA */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14"
+            transition={{ duration: 0.6, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="mb-16"
           >
             <Button 
               variant="hero" 
               size="xl" 
               onClick={() => setShowDemo(true)} 
-              className="shadow-lg hover:shadow-xl transition-shadow"
+              className="shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {t.hero.cta1}
               <ArrowIcon className="h-5 w-5 mx-2" />
             </Button>
           </motion.div>
 
-          {/* Trust signals — privacy-first badges */}
+          {/* Trust signals — clean, minimal */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="flex flex-wrap items-center justify-center gap-6"
+            transition={{ duration: 1, delay: 0.6 }}
+            className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
           >
             {trustItems.map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-muted-foreground">
-                <item.icon className={`h-5 w-5 ${item.color}`} />
-                <span className="text-sm font-medium">{item.label[language] || item.label.en}</span>
+              <div key={i} className="flex items-center gap-2 text-muted-foreground/80">
+                <item.icon className={`h-4 w-4 ${item.color}`} />
+                <span className="text-xs font-medium tracking-wide uppercase">{item.label[language] || item.label.en}</span>
               </div>
             ))}
           </motion.div>
@@ -145,7 +134,7 @@ export function HeroSection() {
       </div>
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
 
       <DemoPersonaModal open={showDemo} onOpenChange={setShowDemo} />
     </section>
