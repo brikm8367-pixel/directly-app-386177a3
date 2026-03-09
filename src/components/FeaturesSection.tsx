@@ -4,7 +4,9 @@ import {
   Filter, 
   Shield, 
   Lock, 
-  Bell 
+  Bell,
+  ShieldCheck,
+  Eye 
 } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -103,6 +105,22 @@ export function FeaturesSection() {
                 title={t.features.feature4.title}
                 description={t.features.feature4.description}
                 delay={500}
+              />
+              <FeatureItem
+                icon={ShieldCheck}
+                title={language === 'ar' ? "تشفير من طرف لطرف" : "End-to-End Encryption"}
+                description={language === 'ar' 
+                  ? "كل رسالة مشفرة بتقنية AES-256 + ECDH — لا أحد يستطيع قراءتها سوى أنت والمستلم." 
+                  : "Every message is encrypted with AES-256 + ECDH — only you and the recipient can read it."}
+                delay={600}
+              />
+              <FeatureItem
+                icon={Eye}
+                title={language === 'ar' ? "لا تتبع · لا إعلانات" : "No Tracking · No Ads"}
+                description={language === 'ar' 
+                  ? "لا نبيع بياناتك. لا نتتبعك. خصوصيتك ليست منتجاً." 
+                  : "We don't sell your data. We don't track you. Your privacy is not a product."}
+                delay={700}
               />
             </div>
           </div>

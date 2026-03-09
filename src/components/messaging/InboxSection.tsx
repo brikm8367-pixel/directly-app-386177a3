@@ -3,7 +3,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck } from 'lucide-react';
+import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -122,7 +122,13 @@ export default function InboxSection({
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">{messages.length}/{messageLimit}</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              {messages.length}/{messageLimit}
+              <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="h-3 w-3" />
+                <span className="text-[10px] font-medium">E2E</span>
+              </span>
+            </p>
           </div>
         </div>
 
