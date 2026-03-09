@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { toast } from 'sonner';
-import { Camera, User, Loader2, Check, Mail, AtSign, FileText, Shield, LogOut, Trash2 } from 'lucide-react';
+import { Camera, User, Loader2, Check, Mail, AtSign, FileText, Shield, LogOut, Trash2, Share2, ShieldCheck, Copy } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -74,23 +74,26 @@ export default function ProfilePage() {
       toast.error(isRTL ? 'يرجى اختيار صورة' : 'Please select an image');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(isRTL ? 'الصورة كبيرة جداً (الحد 5 ميغابايت)' : 'Image too large (max 5MB)');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(isRTL ? 'الصورة كبيرة جداً (الحد 10 ميغابايت)' : 'Image too large (max 10MB)');
       return;
     }
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
 
+      // Upload directly to bucket root (bucket name is 'avatars')
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type,
+        });
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -100,11 +103,13 @@ export default function ProfilePage() {
 
       setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
       toast.success(isRTL ? 'تم تحديث الصورة ✨' : 'Photo updated ✨');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error(isRTL ? 'فشل رفع الصورة' : 'Failed to upload photo');
+      toast.error(isRTL ? 'فشل رفع الصورة: ' + (error.message || '') : 'Upload failed: ' + (error.message || ''));
     } finally {
       setIsUploading(false);
+      // Reset input so same file can be selected again
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -129,6 +134,34 @@ export default function ProfilePage() {
       toast.error(isRTL ? 'فشل الحفظ' : 'Failed to save');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleShareUsername = async () => {
+    const link = `${window.location.origin}/@${username}`;
+    const shareData = {
+      title: 'Directly',
+      text: isRTL 
+        ? `تواصل معي على Directly: @${username}` 
+        : `Reach me on Directly: @${username}`,
+      url: link,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(link);
+        toast.success(isRTL ? 'تم نسخ الرابط!' : 'Link copied!');
+      }
+    } catch {
+      // Fallback
+      try {
+        await navigator.clipboard.writeText(link);
+        toast.success(isRTL ? 'تم نسخ الرابط!' : 'Link copied!');
+      } catch {
+        toast.error(isRTL ? 'فشل النسخ' : 'Copy failed');
+      }
     }
   };
 
@@ -192,18 +225,46 @@ export default function ProfilePage() {
             >
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFileChange} className="hidden" />
           </div>
           <p className="text-xs text-muted-foreground mt-2">{isRTL ? 'اضغط لتغيير الصورة' : 'Tap to change photo'}</p>
-          {username && (
-            <button
-              onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/@${username}`); toast.success(isRTL ? 'تم نسخ رابطك' : 'Your link copied!'); }}
-              className="mt-1 text-xs text-primary font-medium hover:underline"
-            >
-              @{username}
-            </button>
-          )}
         </div>
+
+        {/* Share Username Card */}
+        {username && (
+          <div className="mb-5 p-4 rounded-2xl bg-card border border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <AtSign className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm truncate">@{username}</p>
+                  <p className="text-xs text-muted-foreground truncate">directly.app/@{username}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { navigator.clipboard.writeText(`@${username}`); toast.success(isRTL ? 'تم النسخ' : 'Copied!'); }}
+                  className="h-9 w-9 rounded-xl"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleShareUsername}
+                  className="h-9 rounded-xl gap-1.5 text-xs font-semibold"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  {isRTL ? 'شارك' : 'Share'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <div className="space-y-4">
@@ -221,6 +282,7 @@ export default function ProfilePage() {
               {isRTL ? 'اسم المستخدم' : 'Username'}
             </Label>
             <Input value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="username" className="h-12 text-base rounded-xl" dir="ltr" maxLength={20} />
+            <p className="text-xs text-muted-foreground">{isRTL ? 'يتم إنشاء username تلقائياً عند التسجيل' : 'Auto-generated on signup, you can customize it'}</p>
           </div>
 
           <div className="space-y-1.5">
@@ -267,8 +329,15 @@ export default function ProfilePage() {
           {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : isRTL ? 'حفظ التغييرات' : 'Save Changes'}
         </Button>
 
-        {/* Legal links — App Store / Play Store compliance */}
+        {/* Links */}
         <div className="mt-6 p-4 rounded-2xl bg-card border border-border space-y-2">
+          <a href="/security" className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors touch-feedback">
+            <span className="text-sm font-medium flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              {isRTL ? 'الأمان والخصوصية' : 'Security & Privacy'}
+            </span>
+            <span className="text-xs text-muted-foreground">→</span>
+          </a>
           <a href="/privacy" className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors touch-feedback">
             <span className="text-sm font-medium">{isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
             <span className="text-xs text-muted-foreground">→</span>
@@ -285,7 +354,7 @@ export default function ProfilePage() {
           {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
         </Button>
 
-        {/* Delete Account — GDPR compliance */}
+        {/* Delete Account */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" className="w-full mt-1 h-12 text-destructive/60 rounded-xl text-xs">

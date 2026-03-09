@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare } from 'lucide-react';
+import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare, Pin, X } from 'lucide-react';
 import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -52,6 +52,12 @@ export default function Dashboard() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [composeRecipient, setComposeRecipient] = useState<Profile | null>(null);
   const [isDirectAccessOpen, setIsDirectAccessOpen] = useState(false);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  
+  // Message search
+  const [messageSearchQuery, setMessageSearchQuery] = useState('');
+  const [messageSearchResults, setMessageSearchResults] = useState<Message[]>([]);
+  const [isSearchingMessages, setIsSearchingMessages] = useState(false);
 
   // Incoming call state
   const [incomingCall, setIncomingCall] = useState<{ from: string; callType: 'audio' | 'video'; offer: RTCSessionDescriptionInit; callerName?: string; callerAvatar?: string } | null>(null);
@@ -68,6 +74,30 @@ export default function Dashboard() {
       }
     }
   }, [user]);
+
+  // Fetch pinned conversations
+  useEffect(() => {
+    if (!user) return;
+    const fetchPins = async () => {
+      const { data } = await supabase
+        .from('pinned_conversations')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+      if (data) setPinnedIds(new Set(data.map(p => p.conversation_id)));
+    };
+    fetchPins();
+  }, [user]);
+
+  const togglePin = async (messageId: string) => {
+    if (!user) return;
+    if (pinnedIds.has(messageId)) {
+      await supabase.from('pinned_conversations').delete().eq('user_id', user.id).eq('conversation_id', messageId);
+      setPinnedIds(prev => { const next = new Set(prev); next.delete(messageId); return next; });
+    } else {
+      await supabase.from('pinned_conversations').insert({ user_id: user.id, conversation_id: messageId } as any);
+      setPinnedIds(prev => new Set([...prev, messageId]));
+    }
+  };
 
   // Listen for incoming calls via Supabase Realtime broadcast
   useEffect(() => {
@@ -105,7 +135,6 @@ export default function Dashboard() {
                 callerAvatar: callerProfile?.avatar_url || undefined,
               });
 
-              // Also send push notification for the call
               supabase.functions.invoke('send-push-notification', {
                 body: {
                   receiverId: user.id,
@@ -194,6 +223,7 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchMessages]);
 
+  // Search for users
   useEffect(() => {
     const searchUsers = async () => {
       if (searchQuery.length < 2 || !user) { setSearchResults([]); return; }
@@ -211,12 +241,51 @@ export default function Dashboard() {
     return () => clearTimeout(debounce);
   }, [searchQuery, user]);
 
+  // Search in messages
+  useEffect(() => {
+    if (messageSearchQuery.length < 2 || !user) { setMessageSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setIsSearchingMessages(true);
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`receiver_id.eq.${user.id},sender_id.eq.${user.id}`)
+        .ilike('content', `%${messageSearchQuery}%`)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (data) {
+        const userIds = [...new Set(data.flatMap(m => [m.sender_id, m.receiver_id]).filter(id => id !== user.id))];
+        const { data: profiles } = userIds.length > 0
+          ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds)
+          : { data: [] };
+        
+        setMessageSearchResults(data.map(m => {
+          const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+          return {
+            ...m,
+            sender_profile: profiles?.find(p => p.id === otherId) || { id: otherId, display_name: null, username: null, avatar_url: null },
+          };
+        }) as Message[]);
+      }
+      setIsSearchingMessages(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [messageSearchQuery, user]);
+
   const handleSetLimit = async (category: MessageCategory, limit: number) => {
     if (!user) return;
     await supabase.from('message_limits').upsert({
       user_id: user.id, category, max_messages: limit,
     }, { onConflict: 'user_id,category' });
     setLimits(prev => ({ ...prev, [category]: limit }));
+  };
+
+  // Sort messages: pinned first
+  const sortWithPins = (msgs: Message[]) => {
+    const pinned = msgs.filter(m => pinnedIds.has(m.id));
+    const unpinned = msgs.filter(m => !pinnedIds.has(m.id));
+    return [...pinned, ...unpinned];
   };
 
   const unreadCount = messages.work.filter(m => !m.is_read).length + messages.audience.filter(m => !m.is_read).length + messages.direct.filter(m => !m.is_read).length;
@@ -295,7 +364,7 @@ export default function Dashboard() {
 
         {activeTab === 'inbox' && (
           <div className="space-y-4">
-            {/* Apple-style value proposition */}
+            {/* Value proposition */}
             <div className="text-center py-4 px-2">
               <p className="text-[15px] font-medium leading-relaxed text-foreground/90">
                 {isRTL 
@@ -308,18 +377,72 @@ export default function Dashboard() {
                   : 'Invite only who you want to connect with. Leave the rest to Directly.'}
               </p>
             </div>
-            {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
-              <InboxSection
-                key={category}
-                category={category}
-                messages={messages[category] as any}
-                messageLimit={limits[category]}
-                onSetLimit={(limit) => handleSetLimit(category, limit)}
-                onMessageClick={setSelectedMessage}
-                isLoading={isLoadingMessages}
-                isOnline={category === 'direct' ? isOnline : undefined}
+
+            {/* Message search bar */}
+            <div className="relative">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={isRTL ? '🔍 ابحث في الرسائل والمحادثات...' : '🔍 Search messages & conversations...'}
+                value={messageSearchQuery}
+                onChange={(e) => setMessageSearchQuery(e.target.value)}
+                className="ps-9 h-10 text-sm rounded-xl border"
               />
-            ))}
+              {messageSearchQuery && (
+                <button onClick={() => setMessageSearchQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2">
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+
+            {/* Message search results */}
+            {messageSearchQuery.length >= 2 && (
+              <div className="space-y-2">
+                {isSearchingMessages && (
+                  <div className="text-center py-4"><Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" /></div>
+                )}
+                {!isSearchingMessages && messageSearchResults.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">{isRTL ? 'لا نتائج' : 'No results found'}</p>
+                )}
+                {messageSearchResults.map(msg => (
+                  <button
+                    key={msg.id}
+                    onClick={() => setSelectedMessage(msg)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors text-start"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={msg.sender_profile?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                        {msg.sender_profile?.display_name?.[0] || <User className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{msg.sender_profile?.display_name || msg.sender_profile?.username || '—'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{msg.content}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Inbox categories - only show when not searching */}
+            {messageSearchQuery.length < 2 && (
+              <>
+                {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
+                  <InboxSection
+                    key={category}
+                    category={category}
+                    messages={sortWithPins(messages[category]) as any}
+                    messageLimit={limits[category]}
+                    onSetLimit={(limit) => handleSetLimit(category, limit)}
+                    onMessageClick={setSelectedMessage}
+                    isLoading={isLoadingMessages}
+                    isOnline={category === 'direct' ? isOnline : undefined}
+                    pinnedIds={pinnedIds}
+                    onTogglePin={togglePin}
+                  />
+                ))}
+              </>
+            )}
           </div>
         )}
 
