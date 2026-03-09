@@ -9,7 +9,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { BottomNavigation } from '@/components/BottomNavigation';
 
-const ease = [0.25, 0.1, 0.25, 1];
+const ease = [0.25, 0.1, 0.25, 1] as const;
+type EasingTuple = [number, number, number, number];
+
 
 interface SecurityCardProps {
   icon: React.ReactNode;
