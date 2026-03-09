@@ -411,6 +411,10 @@ export type Database = {
         Args: { _receiver_id: string; _sender_id: string }
         Returns: boolean
       }
+      check_rate_limit: {
+        Args: { _action: string; _max_per_minute?: number; _user_id: string }
+        Returns: boolean
+      }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       get_message_count: {
         Args: {
