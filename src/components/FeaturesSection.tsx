@@ -11,7 +11,7 @@ import {
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export function FeaturesSection() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   return (
     <section id="features" className="py-24">
