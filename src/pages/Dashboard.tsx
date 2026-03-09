@@ -295,10 +295,19 @@ export default function Dashboard() {
 
         {activeTab === 'inbox' && (
           <div className="space-y-4">
-            <FeatureHint
-              id="inbox_intro"
-              text={isRTL ? 'صناديقك مصنّفة تلقائياً — كل رسالة في مكانها' : 'Your inboxes are auto-sorted — every message in its place'}
-            />
+            {/* Apple-style value proposition */}
+            <div className="text-center py-4 px-2">
+              <p className="text-[15px] font-medium leading-relaxed text-foreground/90">
+                {isRTL 
+                  ? 'تحكم بمن يصل إليك، ودع رسائلك تصل دائمًا إلى مكانها الصحيح.'
+                  : 'Control who reaches you, and let your messages always land where they belong.'}
+              </p>
+              <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
+                {isRTL 
+                  ? 'ادعُ فقط من تريد التواصل معه، ودع الباقي على Directly.'
+                  : 'Invite only who you want to connect with. Leave the rest to Directly.'}
+              </p>
+            </div>
             {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
               <InboxSection
                 key={category}

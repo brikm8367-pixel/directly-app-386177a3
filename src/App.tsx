@@ -33,9 +33,10 @@ const queryClient = new QueryClient({
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
   </div>
 );
+
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
