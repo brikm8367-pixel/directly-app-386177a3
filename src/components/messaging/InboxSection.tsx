@@ -3,7 +3,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck } from 'lucide-react';
+import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck, Pin } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,8 @@ interface InboxSectionProps {
   onMessageClick: (message: Message) => void;
   isLoading?: boolean;
   isOnline?: (userId: string) => boolean;
+  pinnedIds?: Set<string>;
+  onTogglePin?: (messageId: string) => void;
 }
 
 const categoryConfig = {
@@ -71,6 +73,8 @@ export default function InboxSection({
   onMessageClick,
   isLoading = false,
   isOnline,
+  pinnedIds,
+  onTogglePin,
 }: InboxSectionProps) {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
@@ -173,45 +177,60 @@ export default function InboxSection({
             const senderName = message.sender_profile?.display_name || message.sender_profile?.username || (isRTL ? 'مجهول' : 'Unknown');
             const senderOnline = category === 'direct' && isOnline && message.sender_profile?.id
               ? isOnline(message.sender_profile.id) : false;
+            const isPinned = pinnedIds?.has(message.id);
 
             return (
-              <button
-                key={message.id}
-                onClick={() => onMessageClick(message)}
-                className={cn(
-                  'w-full text-start p-3 rounded-xl transition-all touch-feedback',
-                  message.is_read ? 'bg-muted/30' : 'bg-primary/5 border border-primary/15',
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={cn('p-1.5 rounded-lg relative', message.is_read ? 'bg-muted' : 'bg-primary/10')}>
-                    {message.is_read ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
-                    {/* Gold online indicator */}
-                    {senderOnline && (
-                      <div className="absolute -top-0.5 -end-0.5 w-3 h-3 rounded-full border-2 border-card" style={{ background: 'var(--gradient-gold)' }} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className={cn('font-medium text-sm truncate', !message.is_read && 'text-foreground')}>
-                        {senderName}
-                      </span>
+              <div key={message.id} className="relative group">
+                <button
+                  onClick={() => onMessageClick(message)}
+                  className={cn(
+                    'w-full text-start p-3 rounded-xl transition-all touch-feedback',
+                    message.is_read ? 'bg-muted/30' : 'bg-primary/5 border border-primary/15',
+                    isPinned && 'ring-1 ring-primary/20',
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn('p-1.5 rounded-lg relative', message.is_read ? 'bg-muted' : 'bg-primary/10')}>
+                      {message.is_read ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
                       {senderOnline && (
-                        <span className="text-[10px] text-primary font-medium">{isRTL ? 'نشط' : 'Active'}</span>
+                        <div className="absolute -top-0.5 -end-0.5 w-3 h-3 rounded-full border-2 border-card" style={{ background: 'var(--gradient-gold)' }} />
                       )}
-                      <span className="text-xs text-muted-foreground ms-auto">{formatTime(message.created_at)}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
-                      {message.sender_id === user?.id && (
-                        message.is_read
-                          ? <CheckCheck className="h-3 w-3 text-blue-400 shrink-0" />
-                          : <Check className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-                      )}
-                      {message.voice_url ? (isRTL ? '🎤 رسالة صوتية' : '🎤 Voice message') : message.content}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        {isPinned && <Pin className="h-3 w-3 text-primary shrink-0" />}
+                        <span className={cn('font-medium text-sm truncate', !message.is_read && 'text-foreground')}>
+                          {senderName}
+                        </span>
+                        {senderOnline && (
+                          <span className="text-[10px] text-primary font-medium">{isRTL ? 'نشط' : 'Active'}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground ms-auto">{formatTime(message.created_at)}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
+                        {message.sender_id === user?.id && (
+                          message.is_read
+                            ? <CheckCheck className="h-3 w-3 text-blue-400 shrink-0" />
+                            : <Check className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                        )}
+                        {message.voice_url ? (isRTL ? '🎤 رسالة صوتية' : '🎤 Voice message') : message.content}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
+                {/* Pin button on hover/long-press */}
+                {onTogglePin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onTogglePin(message.id); }}
+                    className={cn(
+                      'absolute top-2 end-2 h-7 w-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity',
+                      isPinned ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground hover:text-primary'
+                    )}
+                  >
+                    <Pin className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             );
           })
         )}
