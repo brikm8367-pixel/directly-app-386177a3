@@ -79,11 +79,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     const fetchPins = async () => {
-      const { data } = await supabase
-        .from('pinned_conversations')
-        .select('conversation_id')
-        .eq('user_id', user.id);
-      if (data) setPinnedIds(new Set(data.map(p => p.conversation_id)));
+      const { data } = await (supabase as any).from('pinned_conversations').select('conversation_id').eq('user_id', user.id);
+      if (data) setPinnedIds(new Set(data.map((p: any) => p.conversation_id)));
     };
     fetchPins();
   }, [user]);
@@ -91,10 +88,10 @@ export default function Dashboard() {
   const togglePin = async (messageId: string) => {
     if (!user) return;
     if (pinnedIds.has(messageId)) {
-      await supabase.from('pinned_conversations').delete().eq('user_id', user.id).eq('conversation_id', messageId);
+      await (supabase as any).from('pinned_conversations').delete().eq('user_id', user.id).eq('conversation_id', messageId);
       setPinnedIds(prev => { const next = new Set(prev); next.delete(messageId); return next; });
     } else {
-      await supabase.from('pinned_conversations').insert({ user_id: user.id, conversation_id: messageId } as any);
+      await (supabase as any).from('pinned_conversations').insert({ user_id: user.id, conversation_id: messageId });
       setPinnedIds(prev => new Set([...prev, messageId]));
     }
   };
