@@ -221,7 +221,7 @@ export default function InboxSection({
                       <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
                         {message.sender_id === user?.id && (
                           message.is_read
-                            ? <CheckCheck className="h-3 w-3 text-blue-400 shrink-0" />
+                            ? <CheckCheck className={cn('h-3 w-3 shrink-0', category === 'work' ? 'text-blue-400' : category === 'audience' ? 'text-violet-400' : 'text-amber-400')} />
                             : <Check className="h-3 w-3 text-muted-foreground/50 shrink-0" />
                         )}
                         {message.voice_url ? (isRTL ? '🎤 رسالة صوتية' : '🎤 Voice message') : message.content}
