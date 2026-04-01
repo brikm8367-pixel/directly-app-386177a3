@@ -263,6 +263,8 @@ export type Database = {
           id: string
           is_public: boolean | null
           public_key: string | null
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string | null
           username: string | null
         }
@@ -274,6 +276,8 @@ export type Database = {
           id: string
           is_public?: boolean | null
           public_key?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -285,6 +289,8 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           public_key?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -317,6 +323,36 @@ export type Database = {
           p256dh?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          invite_code: string
+          invitee_id: string | null
+          inviter_id: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          invite_code: string
+          invitee_id?: string | null
+          inviter_id: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          invite_code?: string
+          invitee_id?: string | null
+          inviter_id?: string
+          status?: string
         }
         Relationships: []
       }
@@ -413,6 +449,10 @@ export type Database = {
       }
       check_rate_limit: {
         Args: { _action: string; _max_per_minute?: number; _user_id: string }
+        Returns: boolean
+      }
+      complete_referral: {
+        Args: { _invite_code: string; _invitee_id: string }
         Returns: boolean
       }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
