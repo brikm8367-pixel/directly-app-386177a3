@@ -138,7 +138,7 @@ export default function InboxSection({
               )}
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {messages.length}/{messageLimit}
+              {isRTL ? `مساحتك — ${messages.length}/${messageLimit}` : `Your space — ${messages.length}/${messageLimit}`}
               <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="h-3 w-3" />
                 <span className="text-[10px] font-medium">E2E</span>
