@@ -181,7 +181,7 @@ export default function InboxSection({
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد رسائل' : 'No messages'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'هادئ الآن. وجاهز لما يأتي.' : 'Quiet now. Ready for what comes.'}</p>
           </div>
         ) : (
           messages.slice(0, 5).map((message) => {
