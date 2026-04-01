@@ -313,6 +313,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Classification Banner */}
+      {classificationBanner && (
+        <ClassificationBanner
+          key={Date.now()}
+          senderName={classificationBanner.name}
+          category={classificationBanner.category}
+          isFirst={classificationBanner.isFirst}
+        />
+      )}
+
       <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
         <div className="max-w-lg mx-auto flex h-14 items-center justify-between px-4">
           <p className="text-sm font-medium text-muted-foreground">
