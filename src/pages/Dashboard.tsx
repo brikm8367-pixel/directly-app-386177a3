@@ -208,7 +208,7 @@ export default function Dashboard() {
     if (!user) return;
     const channel = supabase
       .channel('messages-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, async (payload) => {
         fetchMessages();
         playNotificationSound();
         const msg = payload.new as any;
@@ -218,6 +218,14 @@ export default function Dashboard() {
             `${categoryLabel} Directly`,
             msg.voice_url ? '🎤 Voice message' : msg.media_url ? '📷 Media' : msg.content?.substring(0, 50) || 'New message'
           );
+          // Classification banner
+          const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', msg.sender_id).single();
+          const totalMsgs = messages.work.length + messages.audience.length + messages.direct.length;
+          setClassificationBanner({
+            name: senderProfile?.display_name || 'Someone',
+            category: msg.category,
+            isFirst: totalMsgs === 0,
+          });
         }
       })
       .subscribe();
