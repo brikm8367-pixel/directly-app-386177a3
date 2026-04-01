@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, Loader2, Eye, EyeOff } from 'lucide-react';
+import { MessageSquare, Loader2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { lovable } from '@/integrations/lovable/index';
 
 const loginSchema = z.object({
@@ -32,13 +32,9 @@ export default function Auth() {
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
-  // Auth pages always render in English
-  const isRTL = false;
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate('/home');
-    }
+    if (!loading && user) navigate('/home');
   }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,17 +46,16 @@ export default function Auth() {
       if (isLogin) {
         const validation = loginSchema.safeParse({ email, password });
         if (!validation.success) {
-          setError(isRTL ? 'تأكد من صحة البريد الإلكتروني وكلمة المرور' : 'Please check your email and password');
+          setError('Please check your email and password');
           setIsLoading(false);
           return;
         }
-
         const { error: signInError } = await signIn(email, password);
         if (signInError) {
           if (signInError.message.includes('Invalid login credentials')) {
-            setError(isRTL ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
+            setError('Your key is incorrect — try again.');
           } else {
-            setError(isRTL ? 'حدث خطأ، حاول مرة أخرى' : 'An error occurred, please try again');
+            setError('Something didn\'t work — your messages are safe.');
           }
         }
       } else {
@@ -70,27 +65,26 @@ export default function Auth() {
           if (firstError?.path[0] === 'username') {
             setError('Username must be 3-15 characters (letters, numbers, _ only)');
           } else if (firstError?.path[0] === 'displayName') {
-            setError(isRTL ? 'الاسم يجب أن يكون حرفين على الأقل' : 'Display name must be at least 2 characters');
+            setError('Display name must be at least 2 characters');
           } else if (firstError?.path[0] === 'email') {
-            setError(isRTL ? 'أدخل بريد إلكتروني صحيح' : 'Please enter a valid email');
+            setError('Please enter a valid email');
           } else if (firstError?.path[0] === 'password') {
-            setError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+            setError('Password must be at least 6 characters');
           }
           setIsLoading(false);
           return;
         }
-
         const { error: signUpError } = await signUp(email, password, username, displayName);
         if (signUpError) {
           if (signUpError.message.includes('already registered')) {
-            setError(isRTL ? 'هذا البريد الإلكتروني مسجل مسبقاً' : 'This email is already registered');
+            setError('Looks like you already have an account — sign in.');
           } else {
-            setError(isRTL ? 'حدث خطأ، حاول مرة أخرى' : 'An error occurred, please try again');
+            setError('Something didn\'t work — your messages are safe.');
           }
         }
       }
     } catch {
-      setError(isRTL ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
+      setError('Something didn\'t work — your messages are safe.');
     } finally {
       setIsLoading(false);
     }
@@ -110,14 +104,13 @@ export default function Auth() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground text-sm">{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
@@ -125,20 +118,20 @@ export default function Auth() {
             <MessageSquare className="h-7 w-7" />
           </div>
           <span className="text-2xl font-bold text-foreground">Directly</span>
-          <p className="text-sm text-muted-foreground text-center">
-            {isRTL ? 'تحكم في من يصل إليك' : 'Control who reaches you'}
+          <p className="text-sm text-muted-foreground text-center max-w-[250px]">
+            Smart Communication
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-lg">
-          <h1 className="text-xl font-semibold text-center mb-6">
-            {isLogin 
-              ? (isRTL ? 'تسجيل الدخول' : 'Sign In') 
-              : (isRTL ? 'إنشاء حساب جديد' : 'Create Account')}
+          <h1 className="text-xl font-semibold text-center mb-1">
+            {isLogin ? 'Welcome back' : 'Start your journey'}
           </h1>
+          <p className="text-xs text-muted-foreground text-center mb-6">
+            {isLogin ? 'Your messages are waiting — everything in its place.' : 'Your account is about to be ready.'}
+          </p>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
               <p className="text-sm text-destructive text-center">{error}</p>
@@ -149,8 +142,23 @@ export default function Auth() {
             {!isLogin && (
               <>
                 <div className="space-y-2">
+                  <Label htmlFor="displayName" className="text-sm font-medium">
+                    What name do you want the world to see you by?
+                  </Label>
+                  <Input
+                    id="displayName"
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="John Doe"
+                    className="h-11"
+                    autoComplete="name"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="username" className="text-sm font-medium">
-                    {isRTL ? 'اسم المستخدم' : 'Username'}
+                    Your name on Directly — people will find you by it.
                   </Label>
                   <Input
                     id="username"
@@ -163,27 +171,12 @@ export default function Auth() {
                     disabled={isLoading}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="displayName" className="text-sm font-medium">
-                    {isRTL ? 'الاسم الظاهر' : 'Display Name'}
-                  </Label>
-                  <Input
-                    id="displayName"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder={isRTL ? 'محمد أحمد' : 'John Doe'}
-                    className="h-11"
-                    autoComplete="name"
-                    disabled={isLoading}
-                  />
-                </div>
               </>
             )}
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
-                {isRTL ? 'البريد الإلكتروني' : 'Email'}
+                {isLogin ? 'Email' : 'Your email — this will be your private gateway.'}
               </Label>
               <Input
                 id="email"
@@ -199,7 +192,7 @@ export default function Auth() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
-                {isRTL ? 'كلمة المرور' : 'Password'}
+                {isLogin ? 'Password' : 'Your private key — only you know it.'}
               </Label>
               <div className="relative">
                 <Input
@@ -223,17 +216,11 @@ export default function Auth() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-11 font-medium" 
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full h-11 font-medium" disabled={isLoading}>
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                isLogin 
-                  ? (isRTL ? 'دخول' : 'Sign In')
-                  : (isRTL ? 'إنشاء حساب' : 'Create Account')
+                isLogin ? 'Sign In' : 'Start your journey'
               )}
             </Button>
           </form>
@@ -257,12 +244,8 @@ export default function Auth() {
             onClick={async () => {
               setIsLoading(true);
               setError('');
-              const { error } = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: window.location.origin,
-              });
-              if (error) {
-                setError('Failed to sign in with Google');
-              }
+              const { error } = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+              if (error) setError('Failed to sign in with Google');
               setIsLoading(false);
             }}
           >
@@ -284,12 +267,8 @@ export default function Auth() {
             onClick={async () => {
               setIsLoading(true);
               setError('');
-              const { error } = await lovable.auth.signInWithOAuth("apple", {
-                redirect_uri: window.location.origin,
-              });
-              if (error) {
-                setError('Failed to sign in with Apple');
-              }
+              const { error } = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+              if (error) setError('Failed to sign in with Apple');
               setIsLoading(false);
             }}
           >
@@ -299,32 +278,23 @@ export default function Auth() {
             Continue with Apple
           </Button>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={switchMode}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              disabled={isLoading}
-            >
-              {isLogin 
-                ? (isRTL ? 'ليس لديك حساب؟ ' : "Don't have an account? ")
-                : (isRTL ? 'لديك حساب؟ ' : 'Already have an account? ')}
-              <span className="font-medium text-primary">
-                {isLogin 
-                  ? (isRTL ? 'إنشاء حساب' : 'Sign Up')
-                  : (isRTL ? 'تسجيل الدخول' : 'Sign In')}
-              </span>
+          {/* E2E Trust badge */}
+          <div className="flex items-center justify-center gap-1.5 mt-4 text-emerald-600 dark:text-emerald-400">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-medium">End-to-end encrypted · Zero tracking</span>
+          </div>
+
+          <div className="mt-5 text-center">
+            <button type="button" onClick={switchMode} className="text-sm text-muted-foreground hover:text-primary transition-colors" disabled={isLoading}>
+              {isLogin ? "Don't have an account? " : 'Already have an account? '}
+              <span className="font-medium text-primary">{isLogin ? 'Sign Up' : 'Sign In'}</span>
             </button>
           </div>
         </div>
 
-        {/* About link */}
         <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/welcome')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {isRTL ? 'ما هو Directly؟' : 'What is Directly?'}
+          <button onClick={() => navigate('/welcome')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            What is Directly?
           </button>
         </div>
       </div>

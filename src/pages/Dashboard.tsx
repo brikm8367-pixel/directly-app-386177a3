@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare, Pin, X } from 'lucide-react';
+import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare, Pin, X, UserPlus } from 'lucide-react';
 import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -19,6 +19,8 @@ import { registerPushNotifications, showInAppNotification } from '@/utils/pushNo
 import { startRingtone, stopRingtone } from '@/utils/sounds';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { FeatureHint } from '@/components/FeatureHint';
+import { ClassificationBanner } from '@/components/ClassificationBanner';
+import InviteSystem from '@/components/InviteSystem';
 
 interface Profile {
   id: string;
@@ -52,7 +54,9 @@ export default function Dashboard() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [composeRecipient, setComposeRecipient] = useState<Profile | null>(null);
   const [isDirectAccessOpen, setIsDirectAccessOpen] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  const [classificationBanner, setClassificationBanner] = useState<{ name: string; category: 'work' | 'audience' | 'direct'; isFirst: boolean } | null>(null);
   
   // Message search
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
@@ -204,7 +208,7 @@ export default function Dashboard() {
     if (!user) return;
     const channel = supabase
       .channel('messages-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, async (payload) => {
         fetchMessages();
         playNotificationSound();
         const msg = payload.new as any;
@@ -214,6 +218,14 @@ export default function Dashboard() {
             `${categoryLabel} Directly`,
             msg.voice_url ? '🎤 Voice message' : msg.media_url ? '📷 Media' : msg.content?.substring(0, 50) || 'New message'
           );
+          // Classification banner
+          const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', msg.sender_id).single();
+          const totalMsgs = messages.work.length + messages.audience.length + messages.direct.length;
+          setClassificationBanner({
+            name: senderProfile?.display_name || 'Someone',
+            category: msg.category,
+            isFirst: totalMsgs === 0,
+          });
         }
       })
       .subscribe();
@@ -301,6 +313,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Classification Banner */}
+      {classificationBanner && (
+        <ClassificationBanner
+          key={Date.now()}
+          senderName={classificationBanner.name}
+          category={classificationBanner.category}
+          isFirst={classificationBanner.isFirst}
+        />
+      )}
+
       <header className="fixed top-0 right-0 left-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border safe-area-inset-top">
         <div className="max-w-lg mx-auto flex h-14 items-center justify-between px-4">
           <p className="text-sm font-medium text-muted-foreground">
@@ -311,6 +333,9 @@ export default function Dashboard() {
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl touch-feedback" onClick={() => setIsInviteOpen(true)}>
+              <UserPlus className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl touch-feedback" onClick={() => setIsDirectAccessOpen(true)}>
               <Heart className="h-5 w-5" />
             </Button>
@@ -557,6 +582,7 @@ export default function Dashboard() {
       />
       <MessageComposer isOpen={!!composeRecipient} onClose={() => setComposeRecipient(null)} recipient={composeRecipient?.id ? composeRecipient : null} onMessageSent={fetchMessages} />
       <DirectAccessManager isOpen={isDirectAccessOpen} onClose={() => setIsDirectAccessOpen(false)} />
+      <InviteSystem isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
     </div>
   );
 }
