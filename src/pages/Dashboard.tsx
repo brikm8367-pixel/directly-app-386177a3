@@ -582,6 +582,7 @@ export default function Dashboard() {
       />
       <MessageComposer isOpen={!!composeRecipient} onClose={() => setComposeRecipient(null)} recipient={composeRecipient?.id ? composeRecipient : null} onMessageSent={fetchMessages} />
       <DirectAccessManager isOpen={isDirectAccessOpen} onClose={() => setIsDirectAccessOpen(false)} />
+      <InviteSystem isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
     </div>
   );
 }
