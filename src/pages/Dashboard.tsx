@@ -54,7 +54,9 @@ export default function Dashboard() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [composeRecipient, setComposeRecipient] = useState<Profile | null>(null);
   const [isDirectAccessOpen, setIsDirectAccessOpen] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  const [classificationBanner, setClassificationBanner] = useState<{ name: string; category: 'work' | 'audience' | 'direct'; isFirst: boolean } | null>(null);
   
   // Message search
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
