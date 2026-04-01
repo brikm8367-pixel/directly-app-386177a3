@@ -121,8 +121,8 @@ export default function InboxSection({
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
+          <div className={cn('p-2 rounded-xl', config.bgColor)}>
+            <Icon className={cn('h-5 w-5', config.color)} />
           </div>
           <div>
             <div className="flex items-center gap-2">
