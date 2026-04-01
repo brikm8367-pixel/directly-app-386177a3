@@ -488,8 +488,8 @@ export default function Dashboard() {
                 <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
                   <Search className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="font-medium mb-1">{isRTL ? 'ابحث عن أشخاص' : 'Search for people'}</p>
-                <p className="text-sm text-muted-foreground">{isRTL ? 'أرسل رسالتك للشخص المناسب' : 'Send your message to the right person'}</p>
+                <p className="font-medium mb-1">{isRTL ? 'من تريد أن يسمعك؟' : 'Who do you want to hear you?'}</p>
+                <p className="text-sm text-muted-foreground">{isRTL ? 'كل شخص له مكانه' : 'Everyone has their place'}</p>
               </div>
             )}
           </div>
