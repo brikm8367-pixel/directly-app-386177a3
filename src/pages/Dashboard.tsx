@@ -306,7 +306,7 @@ export default function Dashboard() {
           <p className="text-sm font-medium text-muted-foreground">
             {unreadCount > 0
               ? (isRTL ? `✨ ${unreadCount} جديد` : `✨ ${unreadCount} new`)
-              : (isRTL ? '🎯 منظم' : '🎯 Organized')}
+              : (isRTL ? 'كل شيء في مكانه — تلقائيًا' : 'Everything in its place — automatically')}
           </p>
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
