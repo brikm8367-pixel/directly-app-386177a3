@@ -276,7 +276,10 @@ export default function NotificationsPage() {
               <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 <Bell className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-muted-foreground">{l.noNotifications}</p>
+              <p className="text-muted-foreground font-medium">{isRTL ? 'لا شيء بعد.' : 'Nothing yet.'}</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                {isRTL ? 'لكن كل ما يأتي سيصل لمكانه.' : 'But everything that comes will land in its place.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-0.5">
