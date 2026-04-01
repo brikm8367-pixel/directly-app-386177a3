@@ -19,6 +19,8 @@ import { registerPushNotifications, showInAppNotification } from '@/utils/pushNo
 import { startRingtone, stopRingtone } from '@/utils/sounds';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { FeatureHint } from '@/components/FeatureHint';
+import { ClassificationBanner } from '@/components/ClassificationBanner';
+import InviteSystem from '@/components/InviteSystem';
 
 interface Profile {
   id: string;
