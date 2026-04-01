@@ -333,6 +333,9 @@ export default function Dashboard() {
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl touch-feedback" onClick={() => setIsInviteOpen(true)}>
+              <UserPlus className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl touch-feedback" onClick={() => setIsDirectAccessOpen(true)}>
               <Heart className="h-5 w-5" />
             </Button>
