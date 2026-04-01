@@ -211,7 +211,7 @@ export default function InboxSection({
                       <div className="flex items-center gap-2 mb-0.5">
                         {isPinned && <Pin className="h-3 w-3 text-primary shrink-0" />}
                         <span className={cn('font-medium text-sm truncate', !message.is_read && 'text-foreground')}>
-                          {senderName}
+                          {senderName} <span className={cn('text-[10px] font-normal', config.color)}>— {config.label[isRTL ? 'ar' : 'en']} {config.emoji}</span>
                         </span>
                         {senderOnline && (
                           <span className="text-[10px] text-primary font-medium">{isRTL ? 'نشط' : 'Active'}</span>
