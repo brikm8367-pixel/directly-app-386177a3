@@ -459,7 +459,7 @@ export default function Dashboard() {
               <div className="space-y-3">
                 {searchResults.length === 0 && !isSearching ? (
                   <div className="text-center py-12">
-                    <p className="text-muted-foreground">{isRTL ? 'لا توجد نتائج' : 'No results'}</p>
+                    <p className="text-muted-foreground">{isRTL ? 'لم نجد أحداً بهذا الاسم — هل الاسم صحيح؟' : "We couldn't find anyone — is the name correct?"}</p>
                   </div>
                 ) : (
                   searchResults.map((profile) => (
