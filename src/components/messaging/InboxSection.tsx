@@ -51,17 +51,26 @@ const categoryConfig = {
   work: {
     icon: Briefcase,
     label: { ar: 'العمل', en: 'Work' },
-    subtitle: { ar: 'رسائل مهنية', en: 'Professional' },
+    subtitle: { ar: 'تركيزك المهني', en: 'Your professional focus' },
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+    emoji: '💼',
   },
   audience: {
     icon: Users,
     label: { ar: 'العلاقات', en: 'Relationships' },
-    subtitle: { ar: 'تواصل مفتوح', en: 'Open messages' },
+    subtitle: { ar: 'الناس الذين يهمونك', en: 'People who matter to you' },
+    color: 'text-violet-500',
+    bgColor: 'bg-violet-500/10',
+    emoji: '👥',
   },
   direct: {
     icon: Heart,
     label: { ar: 'الخاص', en: 'Private' },
-    subtitle: { ar: 'المقربون', en: 'Close contacts' },
+    subtitle: { ar: 'مساحتك أنت فقط', en: 'Your space only' },
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-500/10',
+    emoji: '🤍',
   },
 };
 
@@ -112,8 +121,8 @@ export default function InboxSection({
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
+          <div className={cn('p-2 rounded-xl', config.bgColor)}>
+            <Icon className={cn('h-5 w-5', config.color)} />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -121,13 +130,15 @@ export default function InboxSection({
                 {config.label[isRTL ? 'ar' : 'en']}
               </h3>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
+                <span className={cn('px-2 py-0.5 text-xs font-medium rounded-full text-white',
+                  category === 'work' ? 'bg-blue-500' : category === 'audience' ? 'bg-violet-500' : 'bg-amber-500'
+                )}>
                   {unreadCount}
                 </span>
               )}
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {messages.length}/{messageLimit}
+              {isRTL ? `مساحتك — ${messages.length}/${messageLimit}` : `Your space — ${messages.length}/${messageLimit}`}
               <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="h-3 w-3" />
                 <span className="text-[10px] font-medium">E2E</span>
@@ -144,17 +155,17 @@ export default function InboxSection({
           </DialogTrigger>
           <DialogContent className="rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">{isRTL ? 'إعدادات الصندوق' : 'Inbox Settings'}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">{isRTL ? 'أنت تتحكم في من يصل' : 'You control who reaches you'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="text-center p-4 bg-muted rounded-xl">
                 <span className="text-4xl font-bold">{tempLimit}</span>
-                <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'الحد الأقصى' : 'maximum'}</p>
+                <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'مساحتك اليومية' : 'Your daily space'}</p>
               </div>
               <Slider value={[tempLimit]} onValueChange={([value]) => setTempLimit(value)} min={10} max={500} step={10} />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{isRTL ? 'تركيز' : 'Focus'}</span>
-                <span>{isRTL ? 'أكثر' : 'More'}</span>
+                <span>{isRTL ? 'انتقائي' : 'Selective'}</span>
+                <span>{isRTL ? 'منفتح' : 'Open'}</span>
               </div>
               <Button onClick={handleSaveLimit} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
             </div>
@@ -170,7 +181,7 @@ export default function InboxSection({
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground">{isRTL ? 'لا توجد رسائل' : 'No messages'}</p>
+            <p className="text-sm text-muted-foreground">{isRTL ? 'هادئ الآن. وجاهز لما يأتي.' : 'Quiet now. Ready for what comes.'}</p>
           </div>
         ) : (
           messages.slice(0, 5).map((message) => {
@@ -200,7 +211,7 @@ export default function InboxSection({
                       <div className="flex items-center gap-2 mb-0.5">
                         {isPinned && <Pin className="h-3 w-3 text-primary shrink-0" />}
                         <span className={cn('font-medium text-sm truncate', !message.is_read && 'text-foreground')}>
-                          {senderName}
+                          {senderName} <span className={cn('text-[10px] font-normal', config.color)}>— {config.label[isRTL ? 'ar' : 'en']} {config.emoji}</span>
                         </span>
                         {senderOnline && (
                           <span className="text-[10px] text-primary font-medium">{isRTL ? 'نشط' : 'Active'}</span>
@@ -210,7 +221,7 @@ export default function InboxSection({
                       <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
                         {message.sender_id === user?.id && (
                           message.is_read
-                            ? <CheckCheck className="h-3 w-3 text-blue-400 shrink-0" />
+                            ? <CheckCheck className={cn('h-3 w-3 shrink-0', category === 'work' ? 'text-blue-400' : category === 'audience' ? 'text-violet-400' : 'text-amber-400')} />
                             : <Check className="h-3 w-3 text-muted-foreground/50 shrink-0" />
                         )}
                         {message.voice_url ? (isRTL ? '🎤 رسالة صوتية' : '🎤 Voice message') : message.content}

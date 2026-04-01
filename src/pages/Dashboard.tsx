@@ -306,7 +306,7 @@ export default function Dashboard() {
           <p className="text-sm font-medium text-muted-foreground">
             {unreadCount > 0
               ? (isRTL ? `✨ ${unreadCount} جديد` : `✨ ${unreadCount} new`)
-              : (isRTL ? '🎯 منظم' : '🎯 Organized')}
+              : (isRTL ? 'كل شيء في مكانه — تلقائيًا' : 'Everything in its place — automatically')}
           </p>
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
@@ -448,7 +448,7 @@ export default function Dashboard() {
             <div className="relative mb-4">
               <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder={isRTL ? 'ابحث عن أشخاص...' : 'Search for people...'}
+                placeholder={isRTL ? 'من تريد أن يسمعك؟' : 'Who do you want to hear you?'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="ps-12 h-13 text-base rounded-2xl border-2 focus:border-primary"
@@ -459,7 +459,7 @@ export default function Dashboard() {
               <div className="space-y-3">
                 {searchResults.length === 0 && !isSearching ? (
                   <div className="text-center py-12">
-                    <p className="text-muted-foreground">{isRTL ? 'لا توجد نتائج' : 'No results'}</p>
+                    <p className="text-muted-foreground">{isRTL ? 'لم نجد أحداً بهذا الاسم — هل الاسم صحيح؟' : "We couldn't find anyone — is the name correct?"}</p>
                   </div>
                 ) : (
                   searchResults.map((profile) => (
@@ -488,8 +488,8 @@ export default function Dashboard() {
                 <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
                   <Search className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="font-medium mb-1">{isRTL ? 'ابحث عن أشخاص' : 'Search for people'}</p>
-                <p className="text-sm text-muted-foreground">{isRTL ? 'أرسل رسالتك للشخص المناسب' : 'Send your message to the right person'}</p>
+                <p className="font-medium mb-1">{isRTL ? 'من تريد أن يسمعك؟' : 'Who do you want to hear you?'}</p>
+                <p className="text-sm text-muted-foreground">{isRTL ? 'كل شخص له مكانه' : 'Everyone has their place'}</p>
               </div>
             )}
           </div>
