@@ -51,17 +51,26 @@ const categoryConfig = {
   work: {
     icon: Briefcase,
     label: { ar: 'العمل', en: 'Work' },
-    subtitle: { ar: 'رسائل مهنية', en: 'Professional' },
+    subtitle: { ar: 'تركيزك المهني', en: 'Your professional focus' },
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+    emoji: '💼',
   },
   audience: {
     icon: Users,
     label: { ar: 'العلاقات', en: 'Relationships' },
-    subtitle: { ar: 'تواصل مفتوح', en: 'Open messages' },
+    subtitle: { ar: 'الناس الذين يهمونك', en: 'People who matter to you' },
+    color: 'text-violet-500',
+    bgColor: 'bg-violet-500/10',
+    emoji: '👥',
   },
   direct: {
     icon: Heart,
     label: { ar: 'الخاص', en: 'Private' },
-    subtitle: { ar: 'المقربون', en: 'Close contacts' },
+    subtitle: { ar: 'مساحتك أنت فقط', en: 'Your space only' },
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-500/10',
+    emoji: '🤍',
   },
 };
 
