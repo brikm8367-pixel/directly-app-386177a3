@@ -130,7 +130,9 @@ export default function InboxSection({
                 {config.label[isRTL ? 'ar' : 'en']}
               </h3>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
+                <span className={cn('px-2 py-0.5 text-xs font-medium rounded-full text-white',
+                  category === 'work' ? 'bg-blue-500' : category === 'audience' ? 'bg-violet-500' : 'bg-amber-500'
+                )}>
                   {unreadCount}
                 </span>
               )}
