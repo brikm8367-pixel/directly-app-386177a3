@@ -448,7 +448,7 @@ export default function Dashboard() {
             <div className="relative mb-4">
               <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder={isRTL ? 'ابحث عن أشخاص...' : 'Search for people...'}
+                placeholder={isRTL ? 'من تريد أن يسمعك؟' : 'Who do you want to hear you?'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="ps-12 h-13 text-base rounded-2xl border-2 focus:border-primary"
