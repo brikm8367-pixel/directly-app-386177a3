@@ -155,17 +155,17 @@ export default function InboxSection({
           </DialogTrigger>
           <DialogContent className="rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">{isRTL ? 'إعدادات الصندوق' : 'Inbox Settings'}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">{isRTL ? 'أنت تتحكم في من يصل' : 'You control who reaches you'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="text-center p-4 bg-muted rounded-xl">
                 <span className="text-4xl font-bold">{tempLimit}</span>
-                <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'الحد الأقصى' : 'maximum'}</p>
+                <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'مساحتك اليومية' : 'Your daily space'}</p>
               </div>
               <Slider value={[tempLimit]} onValueChange={([value]) => setTempLimit(value)} min={10} max={500} step={10} />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{isRTL ? 'تركيز' : 'Focus'}</span>
-                <span>{isRTL ? 'أكثر' : 'More'}</span>
+                <span>{isRTL ? 'انتقائي' : 'Selective'}</span>
+                <span>{isRTL ? 'منفتح' : 'Open'}</span>
               </div>
               <Button onClick={handleSaveLimit} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
             </div>
