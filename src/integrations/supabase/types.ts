@@ -197,7 +197,10 @@ export type Database = {
           category: Database["public"]["Enums"]["message_category"]
           content: string
           created_at: string
+          edited_at: string | null
+          expires_at: string | null
           id: string
+          is_edited: boolean | null
           is_important: boolean | null
           is_read: boolean | null
           is_sealed: boolean | null
@@ -214,7 +217,10 @@ export type Database = {
           category?: Database["public"]["Enums"]["message_category"]
           content: string
           created_at?: string
+          edited_at?: string | null
+          expires_at?: string | null
           id?: string
+          is_edited?: boolean | null
           is_important?: boolean | null
           is_read?: boolean | null
           is_sealed?: boolean | null
@@ -231,7 +237,10 @@ export type Database = {
           category?: Database["public"]["Enums"]["message_category"]
           content?: string
           created_at?: string
+          edited_at?: string | null
+          expires_at?: string | null
           id?: string
+          is_edited?: boolean | null
           is_important?: boolean | null
           is_read?: boolean | null
           is_sealed?: boolean | null
@@ -451,6 +460,7 @@ export type Database = {
         Args: { _action: string; _max_per_minute?: number; _user_id: string }
         Returns: boolean
       }
+      cleanup_expired_messages: { Args: never; Returns: undefined }
       complete_referral: {
         Args: { _invite_code: string; _invitee_id: string }
         Returns: boolean
