@@ -147,7 +147,6 @@ export default function PublicProfile() {
 
   const handleCopyLink = () => {
     if (!profile?.username) return;
-    const { copyToClipboard } = require('@/utils/sharing');
     copyToClipboard(`${window.location.origin}/@${profile.username}`, l.linkCopied);
   };
 
