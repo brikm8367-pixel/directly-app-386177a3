@@ -5,37 +5,36 @@ export function getProfileUrl(username: string): string {
 }
 
 /**
- * Robust share function that always works:
- * 1. Try Web Share API (mobile)
- * 2. Fallback to clipboard
- * 3. Fallback to manual copy via textarea
+ * Share via Web Share API (native share sheet on mobile).
+ * Falls back to clipboard only if Web Share is unavailable.
  */
-async function robustShare(data: { title: string; text: string; url: string }, successMsg: string) {
-  // Try Web Share API first (mobile browsers)
+async function nativeShare(data: { title: string; text: string; url: string }, successMsg: string): Promise<boolean> {
   if (navigator.share) {
     try {
       await navigator.share(data);
-      return; // Success — native share sheet handled it
+      return true;
     } catch (err: any) {
-      if (err?.name === 'AbortError') return; // User cancelled
-      // Fall through to clipboard
+      if (err?.name === 'AbortError') return true; // User cancelled
     }
   }
+  return false;
+}
 
-  // Try Clipboard API
-  const textToCopy = `${data.text}\n${data.url}`;
+/**
+ * Copy text to clipboard with fallbacks.
+ */
+export async function copyToClipboard(text: string, successMsg = 'Copied!'): Promise<void> {
   try {
-    await navigator.clipboard.writeText(textToCopy);
+    await navigator.clipboard.writeText(text);
     toast.success(successMsg);
     return;
   } catch {
-    // Clipboard API failed (permissions, insecure context, etc.)
+    // Clipboard API failed
   }
-
-  // Ultimate fallback: textarea trick
+  // Fallback: textarea trick
   try {
     const textarea = document.createElement('textarea');
-    textarea.value = textToCopy;
+    textarea.value = text;
     textarea.style.position = 'fixed';
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);
@@ -45,10 +44,14 @@ async function robustShare(data: { title: string; text: string; url: string }, s
     document.body.removeChild(textarea);
     toast.success(successMsg);
   } catch {
-    toast.error('Could not copy link');
+    toast.error('Could not copy');
   }
 }
 
+/**
+ * Share profile - always opens native share sheet.
+ * SEPARATE from copy.
+ */
 export async function shareProfile(
   displayName: string,
   username: string,
@@ -60,39 +63,38 @@ export async function shareProfile(
     ? `${displayName} is a "${personalityType}" communicator on Directly ✨`
     : `Check out ${displayName} on Directly`;
 
-  await robustShare(
+  const shared = await nativeShare(
     { title: `${displayName} — Directly`, text: shareText, url },
     successMsg
   );
+
+  // Only copy as fallback if native share is not available
+  if (!shared) {
+    await copyToClipboard(`${shareText}\n${url}`, successMsg);
+  }
 }
 
+/**
+ * Share analysis text - always opens native share sheet.
+ */
 export async function shareAnalysisText(
   analysis: { type: string; description: string; traits: string[]; advice: string },
   profileUrl: string,
   successMsg = 'Copied! Share it on your Story ✨'
 ) {
   const text = `✨ ${analysis.type}\n${analysis.description}\n\n${analysis.traits.join(' · ')}\n\n💡 ${analysis.advice}`;
-  await robustShare(
+  const shared = await nativeShare(
     { title: 'My Communication Pattern — Directly', text, url: profileUrl },
     successMsg
   );
+  if (!shared) {
+    await copyToClipboard(`${text}\n\n${profileUrl}`, successMsg);
+  }
 }
 
+/**
+ * Copy username - clipboard only, no share sheet.
+ */
 export async function copyUsername(username: string, successMsg = 'Username copied') {
-  try {
-    await navigator.clipboard.writeText(`@${username}`);
-    toast.success(successMsg);
-  } catch {
-    // Fallback
-    const textarea = document.createElement('textarea');
-    textarea.value = `@${username}`;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    toast.success(successMsg);
-  }
+  await copyToClipboard(`@${username}`, successMsg);
 }

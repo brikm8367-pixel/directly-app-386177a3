@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
-import { shareProfile, copyUsername } from '@/utils/sharing';
+import { shareProfile, copyUsername, copyToClipboard } from '@/utils/sharing';
 
 interface Profile {
   id: string;
@@ -136,7 +136,18 @@ export default function PublicProfile() {
   const handleShare = () => {
     if (!profile?.username) return;
     const displayName = profile.display_name || profile.username;
+    // Always use native share sheet (Web Share API), NOT clipboard
     shareProfile(displayName, profile.username, personality?.type, l.linkCopied);
+  };
+
+  const handleCopyUsername = () => {
+    if (!profile?.username) return;
+    copyUsername(profile.username, l.usernameCopied);
+  };
+
+  const handleCopyLink = () => {
+    if (!profile?.username) return;
+    copyToClipboard(`${window.location.origin}/@${profile.username}`, l.linkCopied);
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

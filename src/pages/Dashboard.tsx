@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare, Pin, X, UserPlus } from 'lucide-react';
+import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare, Pin, X } from 'lucide-react';
 import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -20,7 +20,7 @@ import { startRingtone, stopRingtone } from '@/utils/sounds';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { FeatureHint } from '@/components/FeatureHint';
 import { ClassificationBanner } from '@/components/ClassificationBanner';
-import InviteSystem from '@/components/InviteSystem';
+
 
 interface Profile {
   id: string;
@@ -54,7 +54,7 @@ export default function Dashboard() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [composeRecipient, setComposeRecipient] = useState<Profile | null>(null);
   const [isDirectAccessOpen, setIsDirectAccessOpen] = useState(false);
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
   const [classificationBanner, setClassificationBanner] = useState<{ name: string; category: 'work' | 'audience' | 'direct'; isFirst: boolean } | null>(null);
   
@@ -333,9 +333,6 @@ export default function Dashboard() {
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl touch-feedback" onClick={() => setIsInviteOpen(true)}>
-              <UserPlus className="h-5 w-5" />
-            </Button>
             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl touch-feedback" onClick={() => setIsDirectAccessOpen(true)}>
               <Heart className="h-5 w-5" />
             </Button>
@@ -582,7 +579,7 @@ export default function Dashboard() {
       />
       <MessageComposer isOpen={!!composeRecipient} onClose={() => setComposeRecipient(null)} recipient={composeRecipient?.id ? composeRecipient : null} onMessageSent={fetchMessages} />
       <DirectAccessManager isOpen={isDirectAccessOpen} onClose={() => setIsDirectAccessOpen(false)} />
-      <InviteSystem isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
+      
     </div>
   );
 }

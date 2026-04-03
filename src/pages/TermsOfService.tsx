@@ -9,9 +9,10 @@ export default function TermsOfService() {
   const navigate = useNavigate();
 
   const sections = isRTL ? [
-    { t: 'قبول الشروط', c: 'باستخدام تطبيق Directly، فإنك توافق على هذه الشروط. إذا لم توافق، يرجى عدم استخدام التطبيق. يجب أن يكون عمرك 18 عاماً أو أكثر لاستخدام التطبيق.' },
+    { t: 'قبول الشروط', c: 'باستخدام تطبيق Directly، فإنك توافق على هذه الشروط. إذا لم توافق، يرجى عدم استخدام التطبيق. يجب أن يكون عمرك 13 عاماً أو أكثر لاستخدام التطبيق.' },
     { t: 'وصف الخدمة', c: 'Directly هو منصة تواصل ذكية تتيح لك التحكم في من يمكنه الوصول إليك عبر ثلاثة مستويات: الخاص (للمقربين)، العمل (للفرص المهنية)، والعلاقات (للتواصل العام). يستخدم الذكاء الاصطناعي لتصنيف الرسائل تلقائياً.' },
     { t: 'حسابك', c: 'أنت مسؤول عن الحفاظ على أمان حسابك وكلمة مرورك. يجب أن تكون المعلومات التي تقدمها دقيقة وحقيقية. لا يُسمح بإنشاء حسابات مزيفة أو انتحال هوية الآخرين.' },
+    { t: 'حماية القاصرين', c: 'يجب أن يكون عمرك 13 سنة على الأقل لاستخدام Directly. إذا كان عمرك بين 13 و18، يجب أن يوافق ولي أمرك على استخدامك للتطبيق. نحن ملتزمون بحماية سلامة القاصرين ونبلغ عن أي محتوى ضار يتعلق بهم.' },
     { t: 'السلوك المقبول', c: 'يُحظر: إرسال رسائل مزعجة (Spam)، التحرش أو التنمر، انتحال هوية الآخرين، محاولة اختراق النظام، نشر محتوى غير قانوني (مخدرات، إرهاب، استغلال أطفال)، استخدام التطبيق لأي غرض غير قانوني.' },
     { t: 'المحتوى', c: 'أنت مسؤول عن المحتوى الذي ترسله. نحتفظ بالحق في إزالة أي محتوى ينتهك هذه الشروط وتعليق أو حذف الحسابات المخالفة.' },
     { t: 'الملكية الفكرية', c: 'أنت تمتلك المحتوى الذي تنشئه. بإرسال محتوى عبر التطبيق، تمنحنا ترخيصاً محدوداً لمعالجة وتخزين هذا المحتوى لتقديم الخدمة. نحترم حقوق النشر ونتعامل مع شكاوى DMCA.' },
@@ -21,9 +22,10 @@ export default function TermsOfService() {
     { t: 'القانون المعمول به', c: 'تخضع هذه الشروط للقوانين المعمول بها في بلد إقامتك. أي نزاعات تُحل عبر التحكيم الملزم ما لم ينص القانون المحلي على خلاف ذلك.' },
     { t: 'التغييرات', c: 'سنخطرك بأي تغييرات جوهرية. استمرارك في الاستخدام يعني موافقتك على الشروط المحدّثة.' },
   ] : [
-    { t: 'Acceptance of Terms', c: 'By using Directly, you agree to these terms. If you do not agree, please do not use the app. You must be 18 years or older to use the app.' },
+    { t: 'Acceptance of Terms', c: 'By using Directly, you agree to these terms. If you do not agree, please do not use the app. You must be 13 years or older to use the app.' },
     { t: 'Service Description', c: 'Directly is an intelligent communication platform that lets you control who can reach you through three levels: Private (close contacts), Work (professional opportunities), and Audience (general communication). It uses AI to automatically classify messages.' },
     { t: 'Your Account', c: 'You are responsible for maintaining the security of your account and password. Information you provide must be accurate and truthful. Creating fake accounts or impersonating others is not allowed.' },
+    { t: 'Child Safety', c: 'You must be at least 13 years old to use Directly. If you are between 13 and 18, a parent or guardian must consent to your use of the app. We are committed to protecting the safety of minors and report any harmful content related to them.' },
     { t: 'Acceptable Conduct', c: 'Prohibited: sending spam, harassment or bullying, impersonating others, attempting to hack the system, posting illegal content (drugs, terrorism, child exploitation), or any illegal use of the app.' },
     { t: 'Content', c: 'You are responsible for content you send. We reserve the right to remove any content that violates these terms and to suspend or delete accounts in violation.' },
     { t: 'Intellectual Property', c: 'You own the content you create. By sending content through the app, you grant us a limited license to process and store it to provide the service. We respect copyrights and handle DMCA complaints.' },
@@ -46,7 +48,7 @@ export default function TermsOfService() {
       </header>
 
       <main className="max-w-lg mx-auto pt-16 pb-24 px-4 space-y-6">
-        <p className="text-sm text-muted-foreground">{isRTL ? 'آخر تحديث: مارس 2026' : 'Last updated: March 2026'}</p>
+        <p className="text-sm text-muted-foreground">{isRTL ? 'آخر تحديث: أبريل 2026' : 'Last updated: April 2026'}</p>
         {sections.map((s, i) => (
           <section key={i}>
             <h2 className="text-base font-bold mb-2">{s.t}</h2>
