@@ -136,7 +136,19 @@ export default function PublicProfile() {
   const handleShare = () => {
     if (!profile?.username) return;
     const displayName = profile.display_name || profile.username;
+    // Always use native share sheet (Web Share API), NOT clipboard
     shareProfile(displayName, profile.username, personality?.type, l.linkCopied);
+  };
+
+  const handleCopyUsername = () => {
+    if (!profile?.username) return;
+    copyUsername(profile.username, l.usernameCopied);
+  };
+
+  const handleCopyLink = () => {
+    if (!profile?.username) return;
+    const { copyToClipboard } = require('@/utils/sharing');
+    copyToClipboard(`${window.location.origin}/@${profile.username}`, l.linkCopied);
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

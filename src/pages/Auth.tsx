@@ -283,6 +283,9 @@ export default function Auth() {
             <ShieldCheck className="h-3.5 w-3.5" />
             <span className="text-[11px] font-medium">End-to-end encrypted · Zero tracking</span>
           </div>
+          <p className="text-[10px] text-muted-foreground text-center mt-2">
+            You must be 13 years or older to use Directly.
+          </p>
 
           <div className="mt-5 text-center">
             <button type="button" onClick={switchMode} className="text-sm text-muted-foreground hover:text-primary transition-colors" disabled={isLoading}>
