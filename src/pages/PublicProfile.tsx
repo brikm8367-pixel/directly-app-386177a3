@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
-import { shareProfile, copyUsername } from '@/utils/sharing';
+import { shareProfile, copyUsername, copyToClipboard } from '@/utils/sharing';
 
 interface Profile {
   id: string;
