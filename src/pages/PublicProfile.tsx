@@ -137,8 +137,12 @@ export default function PublicProfile() {
   const handleShare = () => {
     if (!profile?.username) return;
     const displayName = profile.display_name || profile.username;
-    // Always use native share sheet (Web Share API), NOT clipboard
-    shareProfile(displayName, profile.username, personality?.type, l.linkCopied);
+    // Share as image card if personality card exists, otherwise native share
+    shareCardAsImage(
+      'profile-share-card',
+      `${displayName} — Directly`,
+      `Check out ${displayName}'s communication style on Directly!\n${window.location.origin}/@${profile.username}`
+    );
   };
 
   const handleCopyUsername = () => {
