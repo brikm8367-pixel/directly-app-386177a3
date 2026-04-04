@@ -22,6 +22,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Launch = lazy(() => import("./pages/Launch"));
 const Security = lazy(() => import("./pages/Security"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
