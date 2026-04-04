@@ -81,6 +81,7 @@ const App = () => {
                     <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/launch" element={<Launch />} />
                     <Route path="/security" element={<Security />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
