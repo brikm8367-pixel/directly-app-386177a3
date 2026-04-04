@@ -241,6 +241,25 @@ export default function Auth() {
               </div>
             </div>
 
+            {isLogin && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-xs text-primary hover:underline mt-1"
+                disabled={isLoading}
+              >
+                Forgot your password?
+              </button>
+            )}
+
+            {resetSent && (
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mt-2">
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 text-center">
+                  Check your email — we sent you a recovery link.
+                </p>
+              </div>
+            )}
+
             <Button type="submit" className="w-full h-11 font-medium" disabled={isLoading}>
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
