@@ -92,8 +92,30 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email first');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setResetSent(true);
+      setError('');
+    } catch {
+      setError('Something didn\'t work — try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const switchMode = () => {
     setIsLogin(!isLogin);
+    setIsForgotPassword(false);
+    setResetSent(false);
     setError('');
     setEmail('');
     setPassword('');
