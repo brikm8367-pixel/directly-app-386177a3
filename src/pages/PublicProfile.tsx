@@ -250,7 +250,7 @@ export default function PublicProfile() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
 
-        <Card className="p-8 text-center border-primary/10">
+        <Card id="profile-share-card" className="p-8 text-center border-primary/10">
           {/* §1 — Basic Info */}
           <div className="relative inline-block mb-4">
             <Avatar className="h-24 w-24 mx-auto ring-4 ring-primary/10">
