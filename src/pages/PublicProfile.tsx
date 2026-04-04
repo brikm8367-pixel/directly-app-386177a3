@@ -9,7 +9,8 @@ import { Card } from '@/components/ui/card';
 import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
-import { shareProfile, copyUsername, copyToClipboard } from '@/utils/sharing';
+import { copyUsername, copyToClipboard } from '@/utils/sharing';
+import { shareCardAsImage } from '@/utils/shareCard';
 
 interface Profile {
   id: string;
@@ -136,8 +137,12 @@ export default function PublicProfile() {
   const handleShare = () => {
     if (!profile?.username) return;
     const displayName = profile.display_name || profile.username;
-    // Always use native share sheet (Web Share API), NOT clipboard
-    shareProfile(displayName, profile.username, personality?.type, l.linkCopied);
+    // Share as image card if personality card exists, otherwise native share
+    shareCardAsImage(
+      'profile-share-card',
+      `${displayName} — Directly`,
+      `Check out ${displayName}'s communication style on Directly!\n${window.location.origin}/@${profile.username}`
+    );
   };
 
   const handleCopyUsername = () => {
@@ -245,7 +250,7 @@ export default function PublicProfile() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
 
-        <Card className="p-8 text-center border-primary/10">
+        <Card id="profile-share-card" className="p-8 text-center border-primary/10">
           {/* §1 — Basic Info */}
           <div className="relative inline-block mb-4">
             <Avatar className="h-24 w-24 mx-auto ring-4 ring-primary/10">

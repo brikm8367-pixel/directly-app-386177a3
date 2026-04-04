@@ -75,3 +75,25 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+// Offline message queue support
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'directly-send-messages') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then((windowClients) => {
+        for (const client of windowClients) {
+          client.postMessage({ type: 'FLUSH_OFFLINE_QUEUE' });
+        }
+      })
+    );
+  }
+});
+
+// Cache critical assets for offline
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});

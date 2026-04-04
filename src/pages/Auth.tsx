@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +30,8 @@ export default function Auth() {
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -90,8 +93,30 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email first');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setResetSent(true);
+      setError('');
+    } catch {
+      setError('Something didn\'t work — try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const switchMode = () => {
     setIsLogin(!isLogin);
+    setIsForgotPassword(false);
+    setResetSent(false);
     setError('');
     setEmail('');
     setPassword('');
@@ -215,6 +240,25 @@ export default function Auth() {
                 </button>
               </div>
             </div>
+
+            {isLogin && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-xs text-primary hover:underline mt-1"
+                disabled={isLoading}
+              >
+                Forgot your password?
+              </button>
+            )}
+
+            {resetSent && (
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mt-2">
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 text-center">
+                  Check your email — we sent you a recovery link.
+                </p>
+              </div>
+            )}
 
             <Button type="submit" className="w-full h-11 font-medium" disabled={isLoading}>
               {isLoading ? (

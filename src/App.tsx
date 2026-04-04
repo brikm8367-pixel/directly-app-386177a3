@@ -22,6 +22,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Launch = lazy(() => import("./pages/Launch"));
 const Security = lazy(() => import("./pages/Security"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +81,7 @@ const App = () => {
                     <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/launch" element={<Launch />} />
                     <Route path="/security" element={<Security />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
