@@ -10,10 +10,11 @@ export async function captureCardAsImage(elementId: string): Promise<Blob | null
 
   try {
     const canvas = await html2canvas(el, {
-      backgroundColor: null,
-      scale: 2, // Retina quality
+      backgroundColor: '#0f1218',
+      scale: 2,
       useCORS: true,
       logging: false,
+      allowTaint: true,
     });
     return new Promise((resolve) => {
       canvas.toBlob((blob) => resolve(blob), 'image/png', 1.0);
@@ -27,6 +28,15 @@ export async function captureCardAsImage(elementId: string): Promise<Blob | null
 export async function shareCardAsImage(elementId: string, title: string, text: string): Promise<void> {
   const blob = await captureCardAsImage(elementId);
   if (!blob) {
+    // Fallback to text share if card capture fails
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url: window.location.href });
+        return;
+      } catch (e: any) {
+        if (e.name === 'AbortError') return;
+      }
+    }
     toast.error('Failed to generate card');
     return;
   }
@@ -39,7 +49,7 @@ export async function shareCardAsImage(elementId: string, title: string, text: s
       await navigator.share({ title, text, files: [file] });
       return;
     } catch (e: any) {
-      if (e.name === 'AbortError') return; // User cancelled
+      if (e.name === 'AbortError') return;
     }
   }
 

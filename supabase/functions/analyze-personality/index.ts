@@ -12,41 +12,51 @@ serve(async (req) => {
 
   try {
     const { stats, language } = await req.json();
-    const isArabic = language === 'ar';
-    const isFrench = language === 'fr';
-    const isSpanish = language === 'es';
+    const langName = language === 'ar' ? 'ARABIC' : language === 'fr' ? 'FRENCH' : language === 'es' ? 'SPANISH' : 'ENGLISH';
 
-    const langName = isArabic ? 'ARABIC' : isFrench ? 'FRENCH' : isSpanish ? 'SPANISH' : 'ENGLISH';
+    const prompt = `You are a world-class communication psychologist creating a UNIQUE identity card.
 
-    // Third-person prompt — the analysis describes the user to OTHERS
-    const prompt = `You are a world-class communication psychologist. Analyze this user's LAST WEEK messaging data and create a SHORT, positive, third-person personality card that OTHER people will see on this user's public profile.
+ANALYZE these 25 factors from the user's last week:
 
-DATA (from last week):
-- Received: ${stats.totalReceived} | Sent: ${stats.totalSent}
-- Work: ${stats.workCount} (${stats.workRatio}%) | Audience: ${stats.audienceCount} (${stats.audienceRatio}%) | Private: ${stats.directCount} (${stats.directRatio}%)
+SENDING BEHAVIOR:
+- Messages initiated: ${stats.totalSent} sent / ${stats.totalReceived} received
 - Response rate: ${stats.responseRate}%
 - Peak hour: ${stats.mostActiveHour}
 
+INBOX DISTRIBUTION:
+- Work: ${stats.workCount} (${stats.workRatio}%)
+- Relationships: ${stats.audienceCount} (${stats.audienceRatio}%)
+- Private: ${stats.directCount} (${stats.directRatio}%)
+
 RESPOND IN ${langName}. Return ONLY raw JSON (no markdown):
 {
-  "type": "emoji + powerful 2-3 word title (e.g. 🎯 Strategic Leader)",
-  "description": "ONE sentence (max 15 words) describing this person's communication style IN THIRD PERSON. e.g. 'They communicate with precision and strategic clarity.'",
+  "pattern_name": "A UNIQUE 2-4 word name that has NEVER been used before. Not MBTI. Not generic. This person's crown title.",
+  "emoji": "ONE emoji that represents this pattern",
+  "type": "emoji + pattern_name combined (e.g. 🎯 Strategic Leader)",
   "traits": ["trait1", "trait2", "trait3"],
-  "advice": "ONE sentence (max 15 words) telling others HOW to best communicate with this person. e.g. 'Be direct and get to the point quickly.'",
-  "insight": "ONE sentence (max 15 words) about their response pattern that others should know. e.g. 'Responds fastest during morning hours.'"
+  "description": "ONE sentence (max 15 words) that makes them say 'That's exactly me.' THIRD PERSON.",
+  "main_sentence": "ONE sentence that creates the feeling of RECOGNITION — they knew this about themselves but never had words for it.",
+  "inner_sentence": "ONE sentence that makes them feel RARE and unique — their pattern is one-of-a-kind.",
+  "advice": "ONE sentence telling others HOW to best communicate with this person.",
+  "insight": "ONE sentence about their response pattern others should know.",
+  "badge": "An achievement badge title (e.g. 'Elite Responder — Top 20%')",
+  "percentile": "A realistic percentile comparison (e.g. 'Responds faster than 73% of users')"
 }
 
-CRITICAL RULES:
-- Write EVERYTHING in THIRD PERSON — this is seen by OTHER people visiting their profile
-- Keep it POSITIVE and flattering — this is their public identity card
-- The "type" is their crown title — make it memorable and unique
-- "advice" is guidance for people who want to talk to this person
-- "insight" is about HOW this person responds (pattern)
-- traits should be 1-2 words each, punchy
+THE TRIPLE CRITERIA — ALL THREE MUST BE MET:
+1. RECOGNITION: Will they say "That's exactly me"?
+2. RARITY: Will they feel this pattern is rare and special?
+3. SHAREABILITY: Will they want to show this to people?
+
+If all three aren't met → redo the analysis.
+
+RULES:
+- NO technical terms. NO MBTI. NO generic lists.
+- Every human is unique — the description reflects THIS person specifically.
 - Frame low activity positively ("selective" not "inactive")
-- If data is minimal (< 5 messages), still give a compelling micro-analysis
-- NEVER use first-person or second-person (no "your", "you", "أنت", "تواصلك")
-- This is an EGO TOOL — users will share this on Instagram Stories`;
+- This is a VIP CARD — not a test result
+- Write in THIRD PERSON for public visibility
+- If data is minimal (< 5 messages), still give a compelling micro-analysis`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
@@ -89,7 +99,11 @@ CRITICAL RULES:
       description: 'Not enough data yet for a meaningful analysis.',
       traits: ['New', 'Exploring', 'Open'],
       advice: 'Send a few messages to build your profile.',
-      insight: 'Every journey starts with one message.'
+      insight: 'Every journey starts with one message.',
+      badge: 'Explorer — Just Started',
+      percentile: 'Building your unique pattern',
+      main_sentence: 'Your story is just beginning.',
+      inner_sentence: 'The rarest patterns take time to reveal themselves.',
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

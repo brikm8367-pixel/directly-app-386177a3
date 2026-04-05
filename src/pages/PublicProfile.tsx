@@ -6,7 +6,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield } from 'lucide-react';
+import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
 import { copyUsername, copyToClipboard } from '@/utils/sharing';
@@ -24,6 +24,8 @@ interface Profile {
 interface PersonalitySummary {
   type?: string;
   traits?: string[];
+  description?: string;
+  badge?: string;
 }
 
 const LABELS: Record<string, Record<string, string>> = {
@@ -108,7 +110,6 @@ export default function PublicProfile() {
       const displayName = data.display_name || cleanUsername;
       document.title = `${displayName} — Directly`;
 
-      // Load personality summary for public profiles (type + traits only)
       if (data.is_public) {
         const { data: analysis } = await supabase
           .from('weekly_analysis')
@@ -119,13 +120,14 @@ export default function PublicProfile() {
 
         if (analysis?.[0]?.analysis) {
           const a = analysis[0].analysis as any;
-          const pd: PersonalitySummary = {
+          setPersonality({
             type: a.type || undefined,
             traits: (a.traits || []).slice(0, 3),
-          };
-          setPersonality(pd);
-          if (pd.type) {
-            document.title = `${displayName} — "${pd.type}" | Directly`;
+            description: a.description || undefined,
+            badge: a.badge || undefined,
+          });
+          if (a.type) {
+            document.title = `${displayName} — "${a.type}" | Directly`;
           }
         }
       }
@@ -137,7 +139,6 @@ export default function PublicProfile() {
   const handleShare = () => {
     if (!profile?.username) return;
     const displayName = profile.display_name || profile.username;
-    // Share as image card if personality card exists, otherwise native share
     shareCardAsImage(
       'profile-share-card',
       `${displayName} — Directly`,
@@ -150,42 +151,41 @@ export default function PublicProfile() {
     copyUsername(profile.username, l.usernameCopied);
   };
 
-  const handleCopyLink = () => {
-    if (!profile?.username) return;
-    copyToClipboard(`${window.location.origin}/@${profile.username}`, l.linkCopied);
-  };
-
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || !isOwnProfile) return;
 
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('JPG, PNG or WebP only');
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Max 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Max 10MB');
       return;
     }
 
     setIsUploading(true);
     try {
-      const ext = file.name.split('.').pop();
-      const path = `${user.id}/avatar.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
       const avatar_url = `${urlData.publicUrl}?t=${Date.now()}`;
 
       await supabase.from('profiles').update({ avatar_url, updated_at: new Date().toISOString() }).eq('id', user.id);
       setProfile(prev => prev ? { ...prev, avatar_url } : prev);
       toast.success('✨');
-    } catch {
-      toast.error('Upload failed');
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast.error('Upload failed: ' + (err.message || ''));
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -196,7 +196,6 @@ export default function PublicProfile() {
     toast.success('✨');
   };
 
-  // Extract short personality type label for CTA
   const personalityLabel = personality?.type?.replace(/^[\p{Emoji}\s]+/u, '').trim() || '';
 
   if (isLoading) {
@@ -223,7 +222,6 @@ export default function PublicProfile() {
     );
   }
 
-  // Private profile
   if (profile && !profile.is_public && !isOwnProfile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
@@ -231,9 +229,7 @@ export default function PublicProfile() {
           <Lock className="h-10 w-10 text-muted-foreground" />
         </div>
         <h1 className="text-xl font-bold mb-1">{profile.display_name || profile.username}</h1>
-        <p className="text-sm text-muted-foreground mb-1">@{profile.username}</p>
-        {profile.bio && <p className="text-sm text-muted-foreground mb-4 max-w-xs text-center">{profile.bio}</p>}
-        <p className="text-muted-foreground text-sm mb-6">{l.privateProfile}</p>
+        <p className="text-sm text-muted-foreground mb-6">{l.privateProfile}</p>
         <Button onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/home')} variant="outline" className="rounded-xl">
           <ArrowLeft className="h-4 w-4 me-2" />
           {l.goBack}
@@ -245,109 +241,114 @@ export default function PublicProfile() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto px-4 py-8">
-        {/* Back button */}
         <Button variant="ghost" size="icon" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/home')} className="mb-6 h-11 w-11 rounded-xl">
           <ArrowLeft className="h-5 w-5" />
         </Button>
 
-        <Card id="profile-share-card" className="p-8 text-center border-primary/10">
-          {/* §1 — Basic Info */}
-          <div className="relative inline-block mb-4">
-            <Avatar className="h-24 w-24 mx-auto ring-4 ring-primary/10">
-              <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-3xl">
-                {profile?.display_name?.[0] || <User className="h-10 w-10" />}
-              </AvatarFallback>
-            </Avatar>
-            {isOwnProfile && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-1 -end-1 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                disabled={isUploading}
-              >
-                {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+        {/* VIP Profile Card — shareable as image */}
+        <div id="profile-share-card" className="relative overflow-hidden rounded-2xl p-8 text-center" style={{ background: 'linear-gradient(135deg, hsl(220 15% 10%), hsl(220 20% 16%))' }}>
+          <div className="absolute inset-0 opacity-10" style={{ background: 'radial-gradient(circle at 30% 20%, hsl(45 80% 60%), transparent 60%)' }} />
+          <div className="relative z-10">
+            {/* Avatar */}
+            <div className="relative inline-block mb-4">
+              <Avatar className="h-24 w-24 mx-auto ring-4 ring-amber-500/20">
+                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarFallback className="bg-white/10 text-white text-3xl">
+                  {profile?.display_name?.[0] || <User className="h-10 w-10" />}
+                </AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1 -end-1 h-8 w-8 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-lg"
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                </button>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleAvatarChange} />
+            </div>
+
+            {isOwnProfile && profile?.avatar_url && (
+              <button onClick={handleRemoveAvatar} className="text-xs text-white/40 hover:text-red-400 mb-2 block mx-auto">
+                {l.removeAvatar}
               </button>
             )}
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
-          </div>
 
-          {isOwnProfile && profile?.avatar_url && (
-            <button onClick={handleRemoveAvatar} className="text-xs text-muted-foreground hover:text-destructive mb-2 block mx-auto">
-              {l.removeAvatar}
-            </button>
-          )}
+            <h1 className="text-2xl font-bold text-white mb-1">{profile?.display_name}</h1>
+            <p className="text-white/50 text-sm mb-3">@{profile?.username}</p>
 
-          <h1 className="text-2xl font-bold mb-1">{profile?.display_name}</h1>
-          <button
-            onClick={() => profile?.username && copyUsername(profile.username, l.usernameCopied)}
-            className="text-muted-foreground hover:text-primary transition-colors mb-1 inline-block"
-          >
-            @{profile?.username}
-          </button>
+            {profile?.bio && (
+              <p className="text-sm text-white/60 mb-4 max-w-xs mx-auto">{profile.bio}</p>
+            )}
 
-          {profile?.bio && (
-            <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">{profile.bio}</p>
-          )}
-
-          {/* §2 — Mini Personality Card (type + 3 traits only) */}
-          {personality?.type && profile?.is_public && (
-            <div className="mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/10">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">{l.commStyle}</span>
-              </div>
-              <p className="text-lg font-bold text-foreground mb-2">{personality.type}</p>
-              {personality.traits && personality.traits.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 justify-center">
-                  {personality.traits.map((t, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/15">
-                      {t}
-                    </span>
-                  ))}
+            {/* Personality Card */}
+            {personality?.type && profile?.is_public && (
+              <div className="mb-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  <span className="text-sm font-semibold text-amber-400">{l.commStyle}</span>
                 </div>
-              )}
+                <p className="text-xl font-bold text-white mb-2">{personality.type}</p>
+                {personality.description && (
+                  <p className="text-xs text-white/60 mb-3">{personality.description}</p>
+                )}
+                {personality.traits && personality.traits.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 justify-center mb-3">
+                    {personality.traits.map((t, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {personality.badge && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/25">
+                    <Award className="h-3 w-3 text-amber-400" />
+                    <span className="text-[10px] font-semibold text-amber-300">{personality.badge}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* E2E badge */}
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <Shield className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="text-xs text-white/40">{l.encrypted}</span>
             </div>
+
+            <p className="text-[10px] text-white/20 mt-3">Directly — Smart Communication</p>
+          </div>
+        </div>
+
+        {/* Action Buttons — outside card for clean share image */}
+        <div className="flex gap-3 justify-center flex-wrap mt-6">
+          {user && !isOwnProfile && (
+            <Button onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-6 text-base">
+              <Send className="h-5 w-5 me-2" />
+              {personalityLabel ? `${l.talkTo} ${personalityLabel}` : l.sendMessage}
+            </Button>
           )}
-
-          {/* E2E badge */}
-          <div className="flex items-center justify-center gap-1.5 mb-4 text-muted-foreground">
-            <Shield className="h-3.5 w-3.5 text-emerald-500" />
-            <span className="text-xs">{l.encrypted}</span>
-          </div>
-
-          {/* §3 — Action Buttons */}
-          <div className="flex gap-3 justify-center flex-wrap">
-            {user && !isOwnProfile && (
-              <Button onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-6 text-base">
-                <Send className="h-5 w-5 me-2" />
-                {personalityLabel
-                  ? `${l.talkTo} ${personalityLabel}`
-                  : l.sendMessage}
-              </Button>
-            )}
-            {!user && (
-              <Button onClick={() => navigate('/')} className="rounded-xl h-12 px-6 text-base">
-                <MessageCircle className="h-5 w-5 me-2" />
-                {l.joinDirectly}
-              </Button>
-            )}
-            <Button variant="outline" onClick={handleShare} className="rounded-xl h-12 px-5 text-sm">
-              <Share2 className="h-4 w-4 me-2" />
-              {l.shareProfile}
+          {!user && (
+            <Button onClick={() => navigate('/')} className="rounded-xl h-12 px-6 text-base">
+              <MessageCircle className="h-5 w-5 me-2" />
+              {l.joinDirectly}
             </Button>
-            <Button variant="outline" size="icon" onClick={() => profile?.username && copyUsername(profile.username, l.usernameCopied)} className="h-12 w-12 rounded-xl">
-              <Copy className="h-5 w-5" />
-            </Button>
-          </div>
-        </Card>
+          )}
+          <Button variant="outline" onClick={handleShare} className="rounded-xl h-12 px-5 text-sm">
+            <Share2 className="h-4 w-4 me-2" />
+            {l.shareProfile}
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleCopyUsername} className="h-12 w-12 rounded-xl">
+            <Copy className="h-5 w-5" />
+          </Button>
+        </div>
 
         {/* CTA for non-logged-in visitors */}
         {!user && (
-          <Card className="mt-4 p-5 text-center border-primary/10 bg-primary/5">
+          <Card className="mt-6 p-5 text-center border-primary/10 bg-primary/5">
             <Sparkles className="h-6 w-6 text-primary mx-auto mb-2" />
-            <p className="text-sm font-semibold mb-2">
-              {l.discoverStyle}
-            </p>
+            <p className="text-sm font-semibold mb-2">{l.discoverStyle}</p>
             <Button onClick={() => navigate('/')} size="sm" className="rounded-xl">
               {l.joinDirectly}
             </Button>
