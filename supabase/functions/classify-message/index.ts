@@ -12,37 +12,47 @@ serve(async (req) => {
   }
 
   try {
-    const { content, senderHistory } = await req.json();
+    const { content, senderHistory, lastMessage, timeDiffMinutes } = await req.json();
 
-    // Enhanced cognitive AI classification prompt — TikTok-grade understanding
-    const prompt = `You are the world's most advanced cognitive message classifier for "Directly", a premium communication app.
-Your intelligence EXCEEDS TikTok's pre-acquisition algorithm in understanding human intent.
+    // 3-layer classification prompt with 11 special cases
+    const prompt = `أنت نظام تصنيف رسائل لتطبيق Directly.
+مهمتك: صنّف الرسالة التالية إلى "work" أو "audience" فقط.
 
-MISSION: Analyze the MESSAGE deeply — tone, semantics, cultural context, emotional undertones, hidden intent — and classify into ONE category.
+السياق:
+- المرسل: مشترك
+- آخر رسالة بين نفس الشخصين: ${lastMessage || 'لا توجد'}
+- الوقت منذ آخر رسالة: ${timeDiffMinutes ?? 'غير معروف'} دقيقة
+- الرسالة الحالية: "${content}"
+${senderHistory ? `- تاريخ تصنيف هذا المرسل: ${senderHistory}` : ''}
 
-Categories:
-- "work": Professional communication of ANY kind: business proposals, partnerships, sponsorships, job offers, brand deals, client requests, professional networking, formal inquiries, money-related messages, service requests, freelance work, collaboration pitches, interview requests, consulting
-- "audience": General public messages: fan messages, follower greetings, casual inquiries, content feedback, product questions, general support requests, casual compliments, "hi/hello" from strangers, subscription questions, event inquiries
-- "direct": ONLY messages that clearly indicate a pre-existing deep personal bond — family talk, romantic messages, close friend references, inside jokes, emotional vulnerability, crisis/emergency from someone close
+## الطبقة الأولى — الكلمات المفتاحية:
+عمل: مشروع، عرض، تقرير، اجتماع، تعاون، ميزانية، عقد، موعد، خطة، صفقة، project, proposal, report, meeting, collaboration, budget, contract, schedule, plan, deal, sponsorship, partnership
+علاقات: كيف حالك، وين أنت، أحبك، مساء النور، كيفك، تعال، how are you, miss you, love you
 
-COGNITIVE RULES (think like a psychologist):
-1. Read BETWEEN the lines — detect manipulation attempts (someone pretending to be a friend to bypass filters)
-2. Professional language OR any monetary/business intent = ALWAYS "work"
-3. Casual/generic greetings without personal context = ALWAYS "audience"
-4. "direct" requires OVERWHELMING evidence of intimacy — names, shared memories, emotional depth
-5. Mixed signals → classify by PRIMARY commercial or social intent
-6. Cultural sensitivity: Arabic formal greetings that seem warm are often professional = "work"
-7. Fan admiration ≠ personal relationship = "audience"
-8. If uncertain, choose "audience" — NEVER default to "direct"
-9. Sponsorship, collaboration, "let's work together" = "work"
-10. "I love your content" or "you're amazing" from unknown = "audience"
+## الطبقة الثانية — طبيعة الطلب:
+طلب محدد وقابل للتنفيذ → work
+تعبير عن شعور أو بداية حوار → audience
 
-${senderHistory ? `SENDER PATTERN (learning signal): Previous messages from this sender were classified as: ${senderHistory}. Use this as a weak signal, but ALWAYS prioritize current message content.` : ''}
+## الطبقة الثالثة — عند الشك:
+انظر لآخر رسالة بين نفس الشخصين.
+إذا كانت work → work. إذا لم توجد سابقة → audience.
 
-Message to classify:
-"${content}"
+## الحالات الخاصة الـ 11:
+1. تحية قصيرة ("هلا"/"مرحبا"/"هي"/"hi") → audience دائماً
+2. رسالة مبهمة ("تمام"/"ماشي"/"ok") → ينظر للسابقة → audience
+3. إيموجي فقط → audience دائماً
+4. محتوى مختلط ("كيف حالك؟ أرسل التقرير") → work — الأقوى يتحكم
+5. لغة غير رسمية + محتوى عمل ("يا عمي وين التقرير؟ 😂") → work — المحتوى يتحكم لا الأسلوب
+6. تغيير السياق (محادثة عمل → "كيف عيلتك؟") → audience — الأخيرة تتحكم
+7. تحول تدريجي (عمل → علاقات تدريجياً) → آخر 2-3 رسائل تحكم
+8. لغات مختلطة ("يا man وين التقرير؟") → work — المحتوى لا اللغة
+9. متابع لمشهور ("أحب محتواك") → audience دائماً
+10. تعاون/sponsorship ("عندنا عرض تجاري") → work دائماً
+11. صورة/ملف بعد ساعة+ → رسالة مستقلة جديدة
 
-Respond with ONLY one word: work, audience, or direct`;
+## القاعدة الذهبية: عند الشك الكامل → audience دائماً.
+
+أجب بكلمة واحدة فقط: work أو audience`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     
@@ -53,10 +63,10 @@ Respond with ONLY one word: work, audience, or direct`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-flash-lite',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 10,
-        temperature: 0.05, // Even lower temp for more deterministic classification
+        temperature: 0.05,
       }),
     });
 
