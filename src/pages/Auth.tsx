@@ -130,6 +130,8 @@ const signupSchema = z.object({
 });
 
 export default function Auth() {
+  const { language, isRTL } = useLanguage();
+  const tc = AUTH_COPY[language] || AUTH_COPY.en;
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
