@@ -12,42 +12,68 @@ serve(async (req) => {
   }
 
   try {
-    const { content, senderHistory, lastMessage, timeDiffMinutes } = await req.json();
+    const { content, senderHistory, lastMessage, timeDiffMinutes, hasMedia, mediaOnly } = await req.json();
 
-    // 3-layer classification prompt with 11 special cases
-    const prompt = `أنت نظام تصنيف رسائل لتطبيق Directly.
-مهمتك: صنّف الرسالة التالية إلى "work" أو "audience" فقط.
+    // Quick local heuristics — fastest path (zero AI latency for obvious cases)
+    const text = (content || '').trim();
+    const lower = text.toLowerCase();
+
+    // Empty / emoji-only / very short greeting → audience (per document Special Case #1, #3)
+    const emojiOnly = text.length > 0 && /^[\p{Emoji}\s\p{Extended_Pictographic}\u200d]+$/u.test(text);
+    const tinyGreeting = /^(hi|hey|hello|hola|salut|bonjour|hola|هلا|مرحبا|اهلا|أهلا|سلام|هاي)[!.\s]*$/i.test(text);
+    if (emojiOnly || tinyGreeting) {
+      return new Response(JSON.stringify({ category: 'audience', confidence: 'high', reason: 'greeting/emoji' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Media without text after >1h gap → independent new context, default audience (Special Case #4/#11)
+    if (mediaOnly && (timeDiffMinutes ?? 999) > 60) {
+      return new Response(JSON.stringify({ category: 'audience', confidence: 'medium', reason: 'media-new-context' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Strong work signals — instant decision (sponsorship, contracts) → Special Case #10
+    const workStrong = /(sponsor|sponsorship|partnership|تعاون تجاري|عرض تجاري|عقد|contract|invoice|ميزانية|budget|deliverable|deadline|تقرير|اجتماع|meeting|proposal)/i;
+    if (workStrong.test(lower)) {
+      return new Response(JSON.stringify({ category: 'work', confidence: 'high', reason: 'work-keyword' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3-layer classification prompt — full document spec
+    const prompt = `أنت نظام تصنيف رسائل لتطبيق Directly. صنّف الرسالة إلى "work" أو "audience" فقط.
 
 السياق:
-- المرسل: مشترك
 - آخر رسالة بين نفس الشخصين: ${lastMessage || 'لا توجد'}
 - الوقت منذ آخر رسالة: ${timeDiffMinutes ?? 'غير معروف'} دقيقة
-- الرسالة الحالية: "${content}"
+- يحتوي وسائط: ${hasMedia ? 'نعم' : 'لا'}
+- الرسالة الحالية: "${text}"
 ${senderHistory ? `- تاريخ تصنيف هذا المرسل: ${senderHistory}` : ''}
 
-## الطبقة الأولى — الكلمات المفتاحية:
-عمل: مشروع، عرض، تقرير، اجتماع، تعاون، ميزانية، عقد، موعد، خطة، صفقة، project, proposal, report, meeting, collaboration, budget, contract, schedule, plan, deal, sponsorship, partnership
-علاقات: كيف حالك، وين أنت، أحبك، مساء النور، كيفك، تعال، how are you, miss you, love you
+## الطبقة 1 — الكلمات المفتاحية:
+عمل: مشروع، عرض، تقرير، اجتماع، تعاون، ميزانية، عقد، موعد، خطة، صفقة، project, proposal, report, meeting, collaboration, budget, contract, schedule, plan, deal, sponsorship, partnership, deliverable, deadline, invoice
+علاقات: كيف حالك، وين أنت، أحبك، مساء النور، كيفك، تعال، how are you, miss you, love you, family, friends
 
-## الطبقة الثانية — طبيعة الطلب:
-طلب محدد وقابل للتنفيذ → work
+## الطبقة 2 — طبيعة الطلب:
+طلب محدد قابل للتنفيذ → work
 تعبير عن شعور أو بداية حوار → audience
 
-## الطبقة الثالثة — عند الشك:
-انظر لآخر رسالة بين نفس الشخصين.
-إذا كانت work → work. إذا لم توجد سابقة → audience.
+## الطبقة 3 — عند الشك:
+انظر لآخر رسالة. إذا work → work. إذا لم توجد سابقة → audience.
 
-## الحالات الخاصة الـ 11:
-1. تحية قصيرة ("هلا"/"مرحبا"/"هي"/"hi") → audience دائماً
-2. رسالة مبهمة ("تمام"/"ماشي"/"ok") → ينظر للسابقة → audience
-3. إيموجي فقط → audience دائماً
-4. محتوى مختلط ("كيف حالك؟ أرسل التقرير") → work — الأقوى يتحكم
-5. لغة غير رسمية + محتوى عمل ("يا عمي وين التقرير؟ 😂") → work — المحتوى يتحكم لا الأسلوب
-6. تغيير السياق (محادثة عمل → "كيف عيلتك؟") → audience — الأخيرة تتحكم
-7. تحول تدريجي (عمل → علاقات تدريجياً) → آخر 2-3 رسائل تحكم
-8. لغات مختلطة ("يا man وين التقرير؟") → work — المحتوى لا اللغة
-9. متابع لمشهور ("أحب محتواك") → audience دائماً
-10. تعاون/sponsorship ("عندنا عرض تجاري") → work دائماً
+## الحالات الـ 11:
+1. تحية قصيرة → audience
+2. رسالة مبهمة (تمام/ok) → ينظر للسابقة → audience افتراضياً
+3. إيموجي فقط → audience
+4. محتوى مختلط (عمل + اجتماعي) → work (الأقوى يتحكم)
+5. لغة غير رسمية + محتوى عمل → work (المحتوى يحكم)
+6. تغيير سياق (عمل → "كيف عيلتك؟") → audience (الأخيرة تحكم)
+7. تحول تدريجي → آخر 2-3 رسائل تحكم
+8. لغات مختلطة → work (المحتوى لا اللغة)
+9. متابع لمشهور → audience دائماً
+10. تعاون/sponsorship → work دائماً
 11. صورة/ملف بعد ساعة+ → رسالة مستقلة جديدة
 
 ## القاعدة الذهبية: عند الشك الكامل → audience دائماً.
@@ -55,7 +81,7 @@ ${senderHistory ? `- تاريخ تصنيف هذا المرسل: ${senderHistory}
 أجب بكلمة واحدة فقط: work أو audience`;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -65,29 +91,28 @@ ${senderHistory ? `- تاريخ تصنيف هذا المرسل: ${senderHistory}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash-lite',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 10,
+        max_tokens: 8,
         temperature: 0.05,
       }),
     });
 
     if (!response.ok) {
-      console.error('AI Gateway error:', response.status, await response.text());
-      return new Response(JSON.stringify({ category: 'audience' }), {
+      console.error('AI Gateway error:', response.status);
+      return new Response(JSON.stringify({ category: 'audience', confidence: 'low', reason: 'fallback' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
     const raw = data.choices?.[0]?.message?.content?.toLowerCase().trim() || 'audience';
-    const validCategories = ['work', 'audience', 'direct'];
-    const category = validCategories.includes(raw) ? raw : 'audience';
+    const category = raw.includes('work') ? 'work' : 'audience';
 
-    return new Response(JSON.stringify({ category, confidence: raw === category ? 'high' : 'low' }), {
+    return new Response(JSON.stringify({ category, confidence: 'high' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('classify-message error:', error);
-    return new Response(JSON.stringify({ category: 'audience' }), {
+    return new Response(JSON.stringify({ category: 'audience', confidence: 'low', reason: 'error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
