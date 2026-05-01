@@ -2,120 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
-import { useLanguage } from '@/i18n/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MessageSquare, Loader2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { lovable } from '@/integrations/lovable/index';
-
-const AUTH_COPY: Record<string, any> = {
-  ar: {
-    welcomeBack: 'مرحباً بعودتك', startJourney: 'ابدأ رحلتك',
-    loginSub: 'رسائلك تنتظرك — كل شيء في مكانه.',
-    signupSub: 'حسابك جاهز — رسائلك من الآن ستصل دائماً لمكانها الصحيح.',
-    nameLabel: 'ما الاسم الذي تريد أن يراك به العالم؟',
-    usernameLabel: 'اسمك على Directly — به سيجدك الناس.',
-    emailLabelLogin: 'البريد الإلكتروني',
-    emailLabelSignup: 'بريدك الإلكتروني — هذا سيكون بوابتك الخاصة.',
-    passwordLabelLogin: 'كلمة المرور',
-    passwordLabelSignup: 'مفتاحك الخاص — لا أحد غيرك يعرفه.',
-    signIn: 'تسجيل الدخول', signUp: 'تسجيل', startBtn: 'ابدأ رحلتك',
-    forgot: 'نسيت كلمة المرور؟', or: 'أو',
-    googleBtn: 'المتابعة عبر Google', appleBtn: 'المتابعة عبر Apple',
-    e2e: 'مشفّر — صفر تتبع', age: 'يجب أن يكون عمرك 13 عاماً أو أكثر لاستخدام Directly.',
-    noAccount: 'ليس لديك حساب؟ ', hasAccount: 'لديك حساب بالفعل؟ ',
-    whatIs: 'ما هو Directly؟',
-    resetSent: 'تحقق من بريدك — أرسلنا لك رابط الاسترجاع.',
-    errInvalid: 'مفتاحك غير صحيح — حاول مرة أخرى.',
-    errExists: 'يبدو أنك عندك حساب بالفعل — سجّل الدخول.',
-    errGeneric: 'شيء ما لم يعمل — رسائلك بأمان.',
-    errEmail: 'الرجاء إدخال بريد صحيح',
-    errPwd: 'كلمة المرور 6 أحرف على الأقل',
-    errUser: 'اسم المستخدم 3-15 حرفاً (أحرف، أرقام، _ فقط)',
-    errName: 'الاسم حرفان على الأقل',
-    enterEmail: 'الرجاء إدخال بريدك أولاً',
-  },
-  en: {
-    welcomeBack: 'Welcome back', startJourney: 'Start your journey',
-    loginSub: 'Your messages are waiting — everything in its place.',
-    signupSub: 'Your account is ready — from now on, your messages always land in the right place.',
-    nameLabel: 'What name do you want the world to see you by?',
-    usernameLabel: 'Your name on Directly — people will find you by it.',
-    emailLabelLogin: 'Email',
-    emailLabelSignup: 'Your email — this will be your private gateway.',
-    passwordLabelLogin: 'Password',
-    passwordLabelSignup: 'Your private key — only you know it.',
-    signIn: 'Sign In', signUp: 'Sign Up', startBtn: 'Start your journey',
-    forgot: tc.forgot, or: 'or',
-    googleBtn: tc.googleBtn, appleBtn: tc.appleBtn,
-    e2e: tc.e2e, age: tc.age,
-    noAccount: "Don't have an account? ", hasAccount: 'Already have an account? ',
-    whatIs: tc.whatIs,
-    resetSent: tc.resetSent,
-    errInvalid: 'Your key is incorrect — try again.',
-    errExists: 'Looks like you already have an account — sign in.',
-    errGeneric: "Something didn't work — your messages are safe.",
-    errEmail: 'Please enter a valid email',
-    errPwd: 'Password must be at least 6 characters',
-    errUser: 'Username must be 3-15 chars (letters, numbers, _ only)',
-    errName: 'Display name must be at least 2 characters',
-    enterEmail: 'Please enter your email first',
-  },
-  fr: {
-    welcomeBack: 'Bon retour', startJourney: 'Commencez votre voyage',
-    loginSub: 'Vos messages vous attendent — tout à sa place.',
-    signupSub: 'Votre compte est prêt — désormais vos messages arrivent toujours au bon endroit.',
-    nameLabel: 'Quel nom voulez-vous que le monde voie?',
-    usernameLabel: 'Votre nom sur Directly — les gens vous trouveront par lui.',
-    emailLabelLogin: 'Email',
-    emailLabelSignup: 'Votre email — votre porte d\'entrée privée.',
-    passwordLabelLogin: 'Mot de passe',
-    passwordLabelSignup: 'Votre clé privée — vous seul la connaissez.',
-    signIn: 'Connexion', signUp: 'S\'inscrire', startBtn: 'Commencer',
-    forgot: 'Mot de passe oublié?', or: 'ou',
-    googleBtn: 'Continuer avec Google', appleBtn: 'Continuer avec Apple',
-    e2e: 'Chiffré · Zéro suivi', age: 'Vous devez avoir 13 ans ou plus pour utiliser Directly.',
-    noAccount: 'Pas de compte? ', hasAccount: 'Vous avez déjà un compte? ',
-    whatIs: 'Qu\'est-ce que Directly?',
-    resetSent: 'Vérifiez votre email — nous avons envoyé un lien.',
-    errInvalid: 'Votre clé est incorrecte — réessayez.',
-    errExists: 'Vous avez déjà un compte — connectez-vous.',
-    errGeneric: 'Quelque chose n\'a pas marché — vos messages sont en sécurité.',
-    errEmail: 'Email invalide',
-    errPwd: 'Mot de passe: 6 caractères minimum',
-    errUser: 'Nom: 3-15 caractères (lettres, chiffres, _)',
-    errName: 'Nom: 2 caractères minimum',
-    enterEmail: 'Entrez votre email d\'abord',
-  },
-  es: {
-    welcomeBack: 'Bienvenido de nuevo', startJourney: 'Empieza tu viaje',
-    loginSub: 'Tus mensajes te esperan — todo en su lugar.',
-    signupSub: 'Tu cuenta está lista — desde ahora tus mensajes siempre llegan al lugar correcto.',
-    nameLabel: '¿Qué nombre quieres que el mundo vea?',
-    usernameLabel: 'Tu nombre en Directly — la gente te encontrará por él.',
-    emailLabelLogin: 'Email',
-    emailLabelSignup: 'Tu email — esta será tu puerta privada.',
-    passwordLabelLogin: 'Contraseña',
-    passwordLabelSignup: 'Tu clave privada — solo tú la conoces.',
-    signIn: 'Iniciar sesión', signUp: 'Registrarse', startBtn: 'Empezar',
-    forgot: '¿Olvidaste tu contraseña?', or: 'o',
-    googleBtn: 'Continuar con Google', appleBtn: 'Continuar con Apple',
-    e2e: 'Cifrado · Cero seguimiento', age: 'Debes tener 13 años o más para usar Directly.',
-    noAccount: '¿No tienes cuenta? ', hasAccount: '¿Ya tienes cuenta? ',
-    whatIs: '¿Qué es Directly?',
-    resetSent: 'Revisa tu email — te enviamos un enlace.',
-    errInvalid: 'Tu clave es incorrecta — inténtalo otra vez.',
-    errExists: 'Parece que ya tienes una cuenta — inicia sesión.',
-    errGeneric: 'Algo no funcionó — tus mensajes están seguros.',
-    errEmail: 'Email no válido',
-    errPwd: 'Contraseña: mínimo 6 caracteres',
-    errUser: 'Usuario: 3-15 caracteres (letras, números, _)',
-    errName: 'Nombre: mínimo 2 caracteres',
-    enterEmail: 'Ingresa tu email primero',
-  },
-};
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -130,8 +22,6 @@ const signupSchema = z.object({
 });
 
 export default function Auth() {
-  const { language, isRTL } = useLanguage();
-  const tc = AUTH_COPY[language] || AUTH_COPY.en;
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -159,7 +49,7 @@ export default function Auth() {
       if (isLogin) {
         const validation = loginSchema.safeParse({ email, password });
         if (!validation.success) {
-          setError(tc.errInvalid);
+          setError('Please check your email and password');
           setIsLoading(false);
           return;
         }
@@ -217,7 +107,7 @@ export default function Auth() {
       setResetSent(true);
       setError('');
     } catch {
-      setError(tc.errGeneric);
+      setError('Something didn\'t work — try again.');
     } finally {
       setIsLoading(false);
     }
@@ -261,10 +151,10 @@ export default function Auth() {
         {/* Card */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-lg">
           <h1 className="text-xl font-semibold text-center mb-1">
-            {isLogin ? tc.welcomeBack : tc.startJourney}
+            {isLogin ? 'Welcome back' : 'Start your journey'}
           </h1>
           <p className="text-xs text-muted-foreground text-center mb-6">
-            {isLogin ? tc.loginSub : tc.signupSub}
+            {isLogin ? 'Your messages are waiting — everything in its place.' : 'Your account is about to be ready.'}
           </p>
 
           {error && (
@@ -311,7 +201,7 @@ export default function Auth() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
-                {isLogin ? tc.emailLabelLogin : tc.emailLabelSignup}
+                {isLogin ? 'Email' : 'Your email — this will be your private gateway.'}
               </Label>
               <Input
                 id="email"
@@ -327,7 +217,7 @@ export default function Auth() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
-                {isLogin ? tc.passwordLabelLogin : tc.passwordLabelSignup}
+                {isLogin ? 'Password' : 'Your private key — only you know it.'}
               </Label>
               <div className="relative">
                 <Input
@@ -374,7 +264,7 @@ export default function Auth() {
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                isLogin ? tc.signIn : tc.startBtn
+                isLogin ? 'Sign In' : 'Start your journey'
               )}
             </Button>
           </form>
@@ -399,7 +289,7 @@ export default function Auth() {
               setIsLoading(true);
               setError('');
               const { error } = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-              if (error) setError(tc.errGeneric);
+              if (error) setError('Failed to sign in with Google');
               setIsLoading(false);
             }}
           >
@@ -422,7 +312,7 @@ export default function Auth() {
               setIsLoading(true);
               setError('');
               const { error } = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-              if (error) setError(tc.errGeneric);
+              if (error) setError('Failed to sign in with Apple');
               setIsLoading(false);
             }}
           >
@@ -443,8 +333,8 @@ export default function Auth() {
 
           <div className="mt-5 text-center">
             <button type="button" onClick={switchMode} className="text-sm text-muted-foreground hover:text-primary transition-colors" disabled={isLoading}>
-              {isLogin ? tc.noAccount : tc.hasAccount}
-              <span className="font-medium text-primary">{isLogin ? tc.signUp : tc.signIn}</span>
+              {isLogin ? "Don't have an account? " : 'Already have an account? '}
+              <span className="font-medium text-primary">{isLogin ? 'Sign Up' : 'Sign In'}</span>
             </button>
           </div>
         </div>
