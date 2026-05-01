@@ -48,12 +48,12 @@ const AUTH_COPY: Record<string, any> = {
     passwordLabelLogin: 'Password',
     passwordLabelSignup: 'Your private key — only you know it.',
     signIn: 'Sign In', signUp: 'Sign Up', startBtn: 'Start your journey',
-    forgot: 'Forgot your password?', or: 'or',
-    googleBtn: 'Continue with Google', appleBtn: 'Continue with Apple',
-    e2e: 'End-to-end encrypted · Zero tracking', age: 'You must be 13 years or older to use Directly.',
+    forgot: tc.forgot, or: 'or',
+    googleBtn: tc.googleBtn, appleBtn: tc.appleBtn,
+    e2e: tc.e2e, age: tc.age,
     noAccount: "Don't have an account? ", hasAccount: 'Already have an account? ',
-    whatIs: 'What is Directly?',
-    resetSent: 'Check your email — we sent you a recovery link.',
+    whatIs: tc.whatIs,
+    resetSent: tc.resetSent,
     errInvalid: 'Your key is incorrect — try again.',
     errExists: 'Looks like you already have an account — sign in.',
     errGeneric: "Something didn't work — your messages are safe.",
@@ -159,7 +159,7 @@ export default function Auth() {
       if (isLogin) {
         const validation = loginSchema.safeParse({ email, password });
         if (!validation.success) {
-          setError('Please check your email and password');
+          setError(tc.errInvalid);
           setIsLoading(false);
           return;
         }
@@ -217,7 +217,7 @@ export default function Auth() {
       setResetSent(true);
       setError('');
     } catch {
-      setError('Something didn\'t work — try again.');
+      setError(tc.errGeneric);
     } finally {
       setIsLoading(false);
     }
@@ -261,10 +261,10 @@ export default function Auth() {
         {/* Card */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-lg">
           <h1 className="text-xl font-semibold text-center mb-1">
-            {isLogin ? 'Welcome back' : 'Start your journey'}
+            {isLogin ? tc.welcomeBack : tc.startJourney}
           </h1>
           <p className="text-xs text-muted-foreground text-center mb-6">
-            {isLogin ? 'Your messages are waiting — everything in its place.' : 'Your account is about to be ready.'}
+            {isLogin ? tc.loginSub : tc.signupSub}
           </p>
 
           {error && (
@@ -311,7 +311,7 @@ export default function Auth() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
-                {isLogin ? 'Email' : 'Your email — this will be your private gateway.'}
+                {isLogin ? tc.emailLabelLogin : tc.emailLabelSignup}
               </Label>
               <Input
                 id="email"
@@ -327,7 +327,7 @@ export default function Auth() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
-                {isLogin ? 'Password' : 'Your private key — only you know it.'}
+                {isLogin ? tc.passwordLabelLogin : tc.passwordLabelSignup}
               </Label>
               <div className="relative">
                 <Input
@@ -374,7 +374,7 @@ export default function Auth() {
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                isLogin ? 'Sign In' : 'Start your journey'
+                isLogin ? tc.signIn : tc.startBtn
               )}
             </Button>
           </form>
@@ -399,7 +399,7 @@ export default function Auth() {
               setIsLoading(true);
               setError('');
               const { error } = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-              if (error) setError('Failed to sign in with Google');
+              if (error) setError(tc.errGeneric);
               setIsLoading(false);
             }}
           >
@@ -422,7 +422,7 @@ export default function Auth() {
               setIsLoading(true);
               setError('');
               const { error } = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-              if (error) setError('Failed to sign in with Apple');
+              if (error) setError(tc.errGeneric);
               setIsLoading(false);
             }}
           >
@@ -443,8 +443,8 @@ export default function Auth() {
 
           <div className="mt-5 text-center">
             <button type="button" onClick={switchMode} className="text-sm text-muted-foreground hover:text-primary transition-colors" disabled={isLoading}>
-              {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              <span className="font-medium text-primary">{isLogin ? 'Sign Up' : 'Sign In'}</span>
+              {isLogin ? tc.noAccount : tc.hasAccount}
+              <span className="font-medium text-primary">{isLogin ? tc.signUp : tc.signIn}</span>
             </button>
           </div>
         </div>
