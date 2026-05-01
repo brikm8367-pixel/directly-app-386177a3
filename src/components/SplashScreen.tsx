@@ -63,11 +63,11 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             />
           </motion.div>
           
-          {/* Brand name + tagline per document */}
+          {/* Brand name + tagline per document — gentle pulse */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={showLogo ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.6, duration: 0.5 }}
+            animate={showLogo ? { opacity: 1, y: 0, scale: [1, 1.02, 1] } : {}}
+            transition={{ delay: 0.6, duration: 0.5, scale: { duration: 0.5, times: [0, 0.5, 1] } }}
             className="absolute bottom-24 text-center"
           >
             <p className="text-2xl font-bold gold-shine tracking-wide mb-2">Directly</p>
