@@ -267,7 +267,17 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
       let finalCategory = message.category;
       if (shouldDeductCredit && text.trim()) {
         try {
-          const { data: classData } = await supabase.functions.invoke('classify-message', { body: { content: text } });
+          const { data: classData } = await supabase.functions.invoke('classify-message', {
+            body: { content: text, senderId: user.id, receiverId: otherUserId },
+          });
+          // If blocked by spam/toxicity/filter, silently drop (sender never knows)
+          if (classData?.blocked) {
+            toast.success(isRTL ? 'تم الإرسال' : 'Sent');
+            setThread(prev => prev.filter(m => m.id !== tempId));
+            setReplyContent('');
+            setIsSending(false); setSendingMsgId(null);
+            return;
+          }
           if (classData?.category && classData.category !== 'direct' && message.category !== 'direct') finalCategory = classData.category;
         } catch { /* keep */ }
       }
