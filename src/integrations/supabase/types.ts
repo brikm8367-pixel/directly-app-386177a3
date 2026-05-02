@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_content_log: {
+        Row: {
+          content_preview: string | null
+          created_at: string
+          id: string
+          reason: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content_preview?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content_preview?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       blocked_users: {
         Row: {
           blocked_id: string
@@ -143,18 +170,21 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["message_category"]
           id: string
+          inbox_mode: string
           max_messages: number | null
           user_id: string
         }
         Insert: {
           category: Database["public"]["Enums"]["message_category"]
           id?: string
+          inbox_mode?: string
           max_messages?: number | null
           user_id: string
         }
         Update: {
           category?: Database["public"]["Enums"]["message_category"]
           id?: string
+          inbox_mode?: string
           max_messages?: number | null
           user_id?: string
         }
@@ -331,6 +361,30 @@ export type Database = {
           id?: string
           p256dh?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recipient_filters: {
+        Row: {
+          created_at: string
+          filter_type: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filter_type: string
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filter_type?: string
+          id?: string
+          is_active?: boolean
           user_id?: string
         }
         Relationships: []
