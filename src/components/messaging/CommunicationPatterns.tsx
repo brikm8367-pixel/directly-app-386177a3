@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useMood, moodConfigs } from '@/hooks/useMood';
 import { cn } from '@/lib/utils';
 import { shareCardAsImage } from '@/utils/shareCard';
+import PsychologicalAvatar from '@/components/profile/PsychologicalAvatar';
 
 interface Message {
   id: string;
@@ -97,11 +98,22 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
 
   useEffect(() => {
     const loadCachedAnalysis = async () => {
-      const { data } = await supabase.from('weekly_analysis').select('analysis').eq('user_id', userId).eq('week_start', lastWeekStart).single();
-      if (data?.analysis) setAnalysis(data.analysis as unknown as PersonalityAnalysis);
+      const { data } = await supabase.from('weekly_analysis').select('analysis').eq('user_id', userId).eq('week_start', lastWeekStart).maybeSingle();
+      if (data?.analysis) {
+        const cached = data.analysis as any;
+        // Only use cached analysis if its language matches the current UI language
+        if (cached?._language === language) {
+          setAnalysis(cached as PersonalityAnalysis);
+        } else {
+          // Language mismatch — clear so user can regenerate in current language
+          setAnalysis(null);
+        }
+      } else {
+        setAnalysis(null);
+      }
     };
     if (userId) loadCachedAnalysis();
-  }, [userId, lastWeekStart]);
+  }, [userId, lastWeekStart, language]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -161,7 +173,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
       });
       if (error) throw error;
       if (data?.type) {
-        const analysisData = data as PersonalityAnalysis;
+        const analysisData = { ...data, _language: language } as PersonalityAnalysis & { _language: string };
         setAnalysis(analysisData);
         await supabase.from('weekly_analysis').upsert({
           user_id: userId, week_start: lastWeekStart, analysis: analysisData as any,
@@ -277,12 +289,21 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
             }} />
 
             <div className="relative z-10 p-7 text-center">
-              {/* Crown icon */}
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center" style={{
-                background: 'linear-gradient(135deg, #D4AF37, #B8860B)',
-                boxShadow: '0 4px 20px rgba(212, 175, 55, 0.4)',
-              }}>
-                <Crown className="h-6 w-6 text-black" />
+              {/* Psychological Avatar — generated from 8 behavioral factors */}
+              <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <PsychologicalAvatar
+                  factors={{
+                    workRatio: stats.workPct,
+                    audienceRatio: stats.audiencePct,
+                    directRatio: stats.directPct,
+                    responseRate: stats.responseRate,
+                    sentRatio: stats.received > 0 ? stats.sent / (stats.sent + stats.received) : 0.5,
+                    peakHour: stats.peakHour,
+                    directCircleSize: stats.byCategory.direct,
+                    consumptionRate: 50,
+                  }}
+                  size={80}
+                />
               </div>
 
               {/* §1 — Identity */}

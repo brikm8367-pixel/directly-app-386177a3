@@ -120,21 +120,24 @@ export default function PublicProfile() {
 
         if (analysis?.[0]?.analysis) {
           const a = analysis[0].analysis as any;
-          setPersonality({
-            type: a.type || undefined,
-            traits: (a.traits || []).slice(0, 3),
-            description: a.description || undefined,
-            badge: a.badge || undefined,
-          });
-          if (a.type) {
-            document.title = `${displayName} — "${a.type}" | Directly`;
+          // Only show if analysis language matches viewer's UI language
+          if (!a._language || a._language === language) {
+            setPersonality({
+              type: a.type || undefined,
+              traits: (a.traits || []).slice(0, 3),
+              description: a.description || undefined,
+              badge: a.badge || undefined,
+            });
+            if (a.type) {
+              document.title = `${displayName} — "${a.type}" | Directly`;
+            }
           }
         }
       }
       setIsLoading(false);
     };
     fetchProfile();
-  }, [username]);
+  }, [username, language]);
 
   const handleShare = () => {
     if (!profile?.username) return;

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck, Pin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck, Pin, Infinity as InfinityIcon, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -88,10 +89,28 @@ export default function InboxSection({
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const [tempLimit, setTempLimit] = useState(messageLimit);
+  const [tempMode, setTempMode] = useState<'unlimited' | 'limited' | 'closed'>('limited');
   const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
 
   const config = categoryConfig[category];
   const Icon = config.icon;
+
+  // Load current mode
+  useEffect(() => {
+    if (!user || !isLimitDialogOpen) return;
+    (async () => {
+      const { data } = await supabase
+        .from('message_limits')
+        .select('inbox_mode, max_messages')
+        .eq('user_id', user.id)
+        .eq('category', category)
+        .maybeSingle();
+      if (data) {
+        setTempMode((data.inbox_mode as any) || 'limited');
+        setTempLimit(data.max_messages || 100);
+      }
+    })();
+  }, [user, isLimitDialogOpen, category]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -106,8 +125,16 @@ export default function InboxSection({
     return isRTL ? `${diffDays} ي` : `${diffDays}d`;
   };
 
-  const handleSaveLimit = () => {
-    onSetLimit(tempLimit);
+  const handleSaveLimit = async () => {
+    if (!user) return;
+    const finalLimit = tempMode === 'unlimited' ? 999999 : tempMode === 'closed' ? 0 : tempLimit;
+    await supabase.from('message_limits').upsert({
+      user_id: user.id,
+      category,
+      max_messages: finalLimit,
+      inbox_mode: tempMode,
+    }, { onConflict: 'user_id,category' });
+    onSetLimit(finalLimit);
     setIsLimitDialogOpen(false);
   };
 
@@ -138,7 +165,12 @@ export default function InboxSection({
               )}
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {isRTL ? `مساحتك — ${messages.length}/${messageLimit}` : `Your space — ${messages.length}/${messageLimit}`}
+              {messageLimit >= 999999
+                ? (isRTL ? `مساحتك — ${messages.length} (لا محدود)` : `Your space — ${messages.length} (unlimited)`)
+                : messageLimit === 0
+                  ? (isRTL ? 'مغلق — لا يصلك أحد' : 'Closed — no one reaches you')
+                  : (isRTL ? `مساحتك — ${messages.length}/${messageLimit}` : `Your space — ${messages.length}/${messageLimit}`)
+              }
               <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="h-3 w-3" />
                 <span className="text-[10px] font-medium">E2E</span>
@@ -153,20 +185,59 @@ export default function InboxSection({
               <Settings2 className="h-4 w-4 text-muted-foreground" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="rounded-2xl">
+          <DialogContent className="rounded-2xl max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">{isRTL ? 'أنت تتحكم في من يصل' : 'You control who reaches you'}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="text-center p-4 bg-muted rounded-xl">
-                <span className="text-4xl font-bold">{tempLimit}</span>
-                <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'مساحتك اليومية' : 'Your daily space'}</p>
+            <div className="space-y-3 py-2">
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={() => setTempMode('unlimited')}
+                  className={cn('flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all touch-feedback',
+                    tempMode === 'unlimited' ? 'border-primary bg-primary/5' : 'border-border bg-card')}>
+                  <InfinityIcon className="h-5 w-5 text-primary" />
+                  <span className="text-[11px] font-semibold">{isRTL ? 'غير محدود' : 'Unlimited'}</span>
+                </button>
+                <button onClick={() => setTempMode('limited')}
+                  className={cn('flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all touch-feedback',
+                    tempMode === 'limited' ? 'border-primary bg-primary/5' : 'border-border bg-card')}>
+                  <Settings2 className="h-5 w-5 text-primary" />
+                  <span className="text-[11px] font-semibold">{isRTL ? 'محدود' : 'Limited'}</span>
+                </button>
+                <button onClick={() => setTempMode('closed')}
+                  className={cn('flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all touch-feedback',
+                    tempMode === 'closed' ? 'border-primary bg-primary/5' : 'border-border bg-card')}>
+                  <Lock className="h-5 w-5 text-primary" />
+                  <span className="text-[11px] font-semibold">{isRTL ? 'مغلق' : 'Closed'}</span>
+                </button>
               </div>
-              <Slider value={[tempLimit]} onValueChange={([value]) => setTempLimit(value)} min={10} max={500} step={10} />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{isRTL ? 'انتقائي' : 'Selective'}</span>
-                <span>{isRTL ? 'منفتح' : 'Open'}</span>
-              </div>
+
+              {tempMode === 'unlimited' && (
+                <div className="text-center p-4 bg-muted rounded-xl">
+                  <p className="text-sm font-medium">{isRTL ? 'تستقبل رسائل بلا حد' : 'Receive unlimited messages'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'لا يوجد سقف لعدد الرسائل' : 'No cap on incoming messages'}</p>
+                </div>
+              )}
+              {tempMode === 'limited' && (
+                <>
+                  <div className="text-center p-4 bg-muted rounded-xl">
+                    <span className="text-4xl font-bold">{tempLimit}</span>
+                    <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'الحد الأقصى للرسائل' : 'Max messages'}</p>
+                  </div>
+                  <Slider value={[tempLimit]} onValueChange={([v]) => setTempLimit(v)} min={0} max={1000} step={10} />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0</span>
+                    <span>1000</span>
+                  </div>
+                </>
+              )}
+              {tempMode === 'closed' && (
+                <div className="text-center p-4 bg-muted rounded-xl">
+                  <Lock className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-sm font-medium">{isRTL ? 'مغلق تماماً' : 'Fully closed'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'لا يمكن لأي أحد أن يرسل لك في هذا الصندوق' : 'No one can send you messages in this box'}</p>
+                </div>
+              )}
+
               <Button onClick={handleSaveLimit} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
             </div>
           </DialogContent>

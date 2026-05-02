@@ -21,6 +21,7 @@ import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { FeatureHint } from '@/components/FeatureHint';
 import { ClassificationBanner } from '@/components/ClassificationBanner';
 import { decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
+import RecipientFiltersManager from '@/components/messaging/RecipientFiltersManager';
 
 
 interface Profile {
@@ -528,7 +529,14 @@ export default function Dashboard() {
           </div>
         )}
 
-        {activeTab === 'patterns' && user && <CommunicationPatterns userId={user.id} />}
+        {activeTab === 'patterns' && user && (
+          <div className="space-y-6">
+            <CommunicationPatterns userId={user.id} />
+            <div className="pt-2 border-t border-border">
+              <RecipientFiltersManager />
+            </div>
+          </div>
+        )}
       </main>
 
       {/* WhatsApp-style Compose FAB */}

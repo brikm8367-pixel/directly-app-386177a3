@@ -146,8 +146,23 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
         category = 'direct';
       } else {
         const { data: classData } = await supabase.functions.invoke('classify-message', {
-          body: { content: text || 'Voice message' },
+          body: { content: text || 'Voice message', senderId, receiverId: recipient.id },
         });
+
+        // Sender transparency: blocked by recipient's filter or spam/toxicity
+        if (classData?.blocked) {
+          const reasonMsg = classData.message || (
+            classData.reason === 'filter'
+              ? (isRTL ? `لم تصل رسالتك — المستلم لا يستقبل رسائل من نوع: ${classData.filter_type}` : `Your message was not delivered — recipient doesn't accept ${classData.filter_type} messages.`)
+              : classData.reason === 'spam'
+                ? (isRTL ? 'لم تصل رسالتك — اعتُبرت سبام.' : 'Your message was not delivered — flagged as spam.')
+                : (isRTL ? 'لم تصل رسالتك — تحتوي محتوى غير مسموح.' : 'Your message was not delivered — contains disallowed content.')
+          );
+          toast.error(reasonMsg, { duration: 5000 });
+          setIsSending(false);
+          return;
+        }
+
         category = classData?.category || 'audience';
         if (category === 'direct') category = 'audience';
       }
@@ -184,13 +199,35 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
       }
 
       if (shouldDeductCredit) {
-        const { data: canReceive } = await supabase.rpc('can_receive_message', {
-          _user_id: recipient.id, _category: category,
-        });
-        if (!canReceive) {
-          toast.error(isRTL ? 'صندوق المستلم ممتلئ' : "Recipient's inbox is full. They need to increase their limit.");
+        // Check recipient inbox mode (closed / limited)
+        const { data: limitRow } = await supabase
+          .from('message_limits')
+          .select('inbox_mode, max_messages')
+          .eq('user_id', recipient.id)
+          .eq('category', category)
+          .maybeSingle();
+
+        if (limitRow?.inbox_mode === 'closed' || limitRow?.max_messages === 0) {
+          toast.error(
+            isRTL
+              ? `لم تصل رسالتك — المستلم أغلق صندوق "${category === 'work' ? 'العمل' : category === 'direct' ? 'الخاص' : 'العلاقات'}".`
+              : `Your message was not delivered — recipient closed their ${category} inbox.`,
+            { duration: 5000 }
+          );
           setIsSending(false);
           return;
+        }
+
+        // Skip can_receive check if unlimited
+        if (limitRow?.inbox_mode !== 'unlimited') {
+          const { data: canReceive } = await supabase.rpc('can_receive_message', {
+            _user_id: recipient.id, _category: category,
+          });
+          if (!canReceive) {
+            toast.error(isRTL ? 'صندوق المستلم ممتلئ' : "Recipient's inbox is full. They need to increase their limit.");
+            setIsSending(false);
+            return;
+          }
         }
       }
 

@@ -77,7 +77,7 @@ serve(async (req) => {
         isToxic = true;
       }
 
-      // إذا حُجبت — سجّل ولا ترسل للمستقبل
+      // إذا حُجبت — سجّل وأعلم المرسل بشفافية
       if (isSpam || isToxic || matchesFilter) {
         await adminClient.from('blocked_content_log').insert({
           sender_id: senderId,
@@ -90,8 +90,15 @@ serve(async (req) => {
           category: 'audience',
           blocked: true,
           reason: isSpam ? 'spam' : isToxic ? 'toxicity' : 'filter',
+          filter_type: matchesFilter,
+          message: isSpam
+            ? 'Your message looks like spam and was not delivered.'
+            : isToxic
+              ? 'Your message contains harmful language and was not delivered.'
+              : `The recipient has chosen not to receive ${matchesFilter} messages.`,
           latency_ms: Date.now() - startTime,
         }), {
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
