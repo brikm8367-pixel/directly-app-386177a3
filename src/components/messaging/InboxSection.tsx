@@ -89,10 +89,28 @@ export default function InboxSection({
   const { isRTL } = useLanguage();
   const { user } = useAuth();
   const [tempLimit, setTempLimit] = useState(messageLimit);
+  const [tempMode, setTempMode] = useState<'unlimited' | 'limited' | 'closed'>('limited');
   const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
 
   const config = categoryConfig[category];
   const Icon = config.icon;
+
+  // Load current mode
+  useEffect(() => {
+    if (!user || !isLimitDialogOpen) return;
+    (async () => {
+      const { data } = await supabase
+        .from('message_limits')
+        .select('inbox_mode, max_messages')
+        .eq('user_id', user.id)
+        .eq('category', category)
+        .maybeSingle();
+      if (data) {
+        setTempMode((data.inbox_mode as any) || 'limited');
+        setTempLimit(data.max_messages || 100);
+      }
+    })();
+  }, [user, isLimitDialogOpen, category]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -107,8 +125,16 @@ export default function InboxSection({
     return isRTL ? `${diffDays} ي` : `${diffDays}d`;
   };
 
-  const handleSaveLimit = () => {
-    onSetLimit(tempLimit);
+  const handleSaveLimit = async () => {
+    if (!user) return;
+    const finalLimit = tempMode === 'unlimited' ? 999999 : tempMode === 'closed' ? 0 : tempLimit;
+    await supabase.from('message_limits').upsert({
+      user_id: user.id,
+      category,
+      max_messages: finalLimit,
+      inbox_mode: tempMode,
+    }, { onConflict: 'user_id,category' });
+    onSetLimit(finalLimit);
     setIsLimitDialogOpen(false);
   };
 
