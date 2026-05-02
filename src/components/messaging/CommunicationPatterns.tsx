@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useMood, moodConfigs } from '@/hooks/useMood';
 import { cn } from '@/lib/utils';
 import { shareCardAsImage } from '@/utils/shareCard';
+import PsychologicalAvatar from '@/components/profile/PsychologicalAvatar';
 
 interface Message {
   id: string;
