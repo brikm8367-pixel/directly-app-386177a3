@@ -289,12 +289,21 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
             }} />
 
             <div className="relative z-10 p-7 text-center">
-              {/* Crown icon */}
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center" style={{
-                background: 'linear-gradient(135deg, #D4AF37, #B8860B)',
-                boxShadow: '0 4px 20px rgba(212, 175, 55, 0.4)',
-              }}>
-                <Crown className="h-6 w-6 text-black" />
+              {/* Psychological Avatar — generated from 8 behavioral factors */}
+              <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <PsychologicalAvatar
+                  factors={{
+                    workRatio: stats.workPct,
+                    audienceRatio: stats.audiencePct,
+                    directRatio: stats.directPct,
+                    responseRate: stats.responseRate,
+                    sentRatio: stats.received > 0 ? stats.sent / (stats.sent + stats.received) : 0.5,
+                    peakHour: stats.peakHour,
+                    directCircleSize: stats.byCategory.direct,
+                    consumptionRate: 50,
+                  }}
+                  size={80}
+                />
               </div>
 
               {/* §1 — Identity */}
