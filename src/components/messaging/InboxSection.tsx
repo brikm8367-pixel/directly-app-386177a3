@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck, Pin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck, Pin, Infinity as InfinityIcon, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
