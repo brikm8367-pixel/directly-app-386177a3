@@ -97,11 +97,22 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
 
   useEffect(() => {
     const loadCachedAnalysis = async () => {
-      const { data } = await supabase.from('weekly_analysis').select('analysis').eq('user_id', userId).eq('week_start', lastWeekStart).single();
-      if (data?.analysis) setAnalysis(data.analysis as unknown as PersonalityAnalysis);
+      const { data } = await supabase.from('weekly_analysis').select('analysis').eq('user_id', userId).eq('week_start', lastWeekStart).maybeSingle();
+      if (data?.analysis) {
+        const cached = data.analysis as any;
+        // Only use cached analysis if its language matches the current UI language
+        if (cached?._language === language) {
+          setAnalysis(cached as PersonalityAnalysis);
+        } else {
+          // Language mismatch — clear so user can regenerate in current language
+          setAnalysis(null);
+        }
+      } else {
+        setAnalysis(null);
+      }
     };
     if (userId) loadCachedAnalysis();
-  }, [userId, lastWeekStart]);
+  }, [userId, lastWeekStart, language]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -161,7 +172,7 @@ export default function CommunicationPatterns({ userId }: { userId: string }) {
       });
       if (error) throw error;
       if (data?.type) {
-        const analysisData = data as PersonalityAnalysis;
+        const analysisData = { ...data, _language: language } as PersonalityAnalysis & { _language: string };
         setAnalysis(analysisData);
         await supabase.from('weekly_analysis').upsert({
           user_id: userId, week_start: lastWeekStart, analysis: analysisData as any,
