@@ -150,7 +150,7 @@ ${senderHistory ? `- تاريخ تصنيف المرسل: ${senderHistory}` : ''}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3.1-flash-image-preview', // fast lite model — fallback handled below
+        model: 'google/gemini-3-flash-preview', // fast classification model with fallback
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 10,
         temperature: 0.05,
