@@ -20,6 +20,7 @@ import { startRingtone, stopRingtone } from '@/utils/sounds';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { FeatureHint } from '@/components/FeatureHint';
 import { ClassificationBanner } from '@/components/ClassificationBanner';
+import { decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
 
 
 interface Profile {
@@ -172,13 +173,23 @@ export default function Dashboard() {
         ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds)
         : { data: [] };
 
-      const withProfiles = data.map(m => {
+      const withProfiles = await Promise.all(data.map(async (m) => {
         const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+        // Decrypt preview content for inbox display (silent — user never sees encryption)
+        let displayContent = m.content;
+        if (isEncryptedMessage(m.content)) {
+          try {
+            displayContent = await decryptFromSender(m.content, m.sender_id === user.id ? m.receiver_id : m.sender_id);
+          } catch {
+            displayContent = m.content;
+          }
+        }
         return {
           ...m,
+          content: displayContent,
           sender_profile: profiles?.find(p => p.id === otherId) || { id: otherId, display_name: null, username: null, avatar_url: null },
         };
-      }) as Message[];
+      })) as Message[];
 
       setMessages({
         work: withProfiles.filter(m => m.category === 'work'),
