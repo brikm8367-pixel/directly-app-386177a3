@@ -23,6 +23,8 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Launch = lazy(() => import("./pages/Launch"));
 const Security = lazy(() => import("./pages/Security"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Subscribe = lazy(() => import("./pages/Subscribe"));
+const BugBounty = lazy(() => import("./pages/BugBounty"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +84,8 @@ const App = () => {
                     <Route path="/launch" element={<Launch />} />
                     <Route path="/security" element={<Security />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/subscribe" element={<Subscribe />} />
+                    <Route path="/security/bounty" element={<BugBounty />} />
                     <Route path="/:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
