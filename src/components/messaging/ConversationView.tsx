@@ -16,6 +16,7 @@ import CallScreen from './CallScreen';
 import BlockReportDialog from './BlockReportDialog';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { encryptForRecipient, decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
+import { initScreenshotDetection, onScreenshot, notifyScreenshot } from '@/utils/screenshotDetection';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -211,6 +212,22 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [thread]);
+
+  // 📸 Screenshot detection — notify the other party in real-time
+  useEffect(() => {
+    if (!isOpen || !user?.id || !message) return;
+    initScreenshotDetection();
+    const otherId = message.sender_id === user.id ? message.receiver_id : message.sender_id;
+    const off = onScreenshot(() => {
+      toast.warning('تم رصد لقطة شاشة — تم إخطار الطرف الآخر');
+      notifyScreenshot({
+        senderId: user.id,
+        receiverId: otherId,
+        category: message.category as any,
+      });
+    });
+    return () => { off(); };
+  }, [isOpen, user?.id, message?.id]);
 
   const otherUserId = message?.sender_id === user?.id ? message?.receiver_id : message?.sender_id;
   const isInactive = isInactiveThread(thread);
