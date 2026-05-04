@@ -70,6 +70,15 @@ export default function Dashboard() {
   const [incomingCall, setIncomingCall] = useState<{ from: string; callType: 'audio' | 'video'; offer: RTCSessionDescriptionInit; callerName?: string; callerAvatar?: string } | null>(null);
   const [activeIncomingCall, setActiveIncomingCall] = useState<typeof incomingCall>(null);
 
+  // Self profile for stories row
+  const [myProfile, setMyProfile] = useState<{ avatar_url: string | null; display_name: string | null } | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('avatar_url, display_name').eq('id', user.id).single().then(({ data }) => {
+      if (data) setMyProfile(data);
+    });
+  }, [user]);
+
   useEffect(() => { if (!loading && !user) navigate('/'); }, [user, loading, navigate]);
 
   // Register push notifications on mount
