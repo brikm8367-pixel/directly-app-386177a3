@@ -22,6 +22,7 @@ import { FeatureHint } from '@/components/FeatureHint';
 import { ClassificationBanner } from '@/components/ClassificationBanner';
 import { decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
 import RecipientFiltersManager from '@/components/messaging/RecipientFiltersManager';
+import StoriesRow from '@/components/messaging/StoriesRow';
 
 
 interface Profile {
@@ -69,6 +70,15 @@ export default function Dashboard() {
   const [incomingCall, setIncomingCall] = useState<{ from: string; callType: 'audio' | 'video'; offer: RTCSessionDescriptionInit; callerName?: string; callerAvatar?: string } | null>(null);
   const [activeIncomingCall, setActiveIncomingCall] = useState<typeof incomingCall>(null);
 
+  // Self profile for stories row
+  const [myProfile, setMyProfile] = useState<{ avatar_url: string | null; display_name: string | null } | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('avatar_url, display_name').eq('id', user.id).single().then(({ data }) => {
+      if (data) setMyProfile(data);
+    });
+  }, [user]);
+
   useEffect(() => { if (!loading && !user) navigate('/'); }, [user, loading, navigate]);
 
   // Register push notifications on mount
@@ -108,16 +118,22 @@ export default function Dashboard() {
     const callChannels: any[] = [];
 
     const setupCallListener = async () => {
-      // Listen on channels for BOTH directions: people I added AND people who added me.
-      // Otherwise the recipient never hears the offer broadcast.
-      const [{ data: iAdded }, { data: addedMe }] = await Promise.all([
+      // Build the peer set from EVERY person we have any communication tie with —
+      // direct_access (both directions) + anyone we exchanged a message with.
+      // Without this, recipients who weren't pre-approved never hear the offer broadcast.
+      const [{ data: iAdded }, { data: addedMe }, { data: msgPeers }] = await Promise.all([
         supabase.from('direct_access').select('allowed_user_id').eq('owner_id', user.id),
         supabase.from('direct_access').select('owner_id').eq('allowed_user_id', user.id),
+        supabase.from('messages')
+          .select('sender_id, receiver_id')
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .limit(500),
       ]);
 
       const peerIds = new Set<string>([
         ...(iAdded?.map(r => r.allowed_user_id) ?? []),
         ...(addedMe?.map(r => r.owner_id) ?? []),
+        ...(msgPeers?.flatMap(m => [m.sender_id, m.receiver_id]).filter(id => id !== user.id) ?? []),
       ]);
 
       if (peerIds.size === 0) return;
@@ -415,6 +431,25 @@ export default function Dashboard() {
                   : 'Invite only who you want to connect with. Leave the rest to Directly.'}
               </p>
             </div>
+
+            {/* Stories Row — Snapchat / Instagram style */}
+            {user && (
+              <StoriesRow
+                userId={user.id}
+                messages={[...messages.direct, ...messages.work, ...messages.audience] as any}
+                myAvatar={myProfile?.avatar_url}
+                myName={myProfile?.display_name}
+                onStoryClick={(p) => {
+                  // Open the most recent message thread with that person
+                  const all = [...messages.direct, ...messages.work, ...messages.audience];
+                  const msg = all
+                    .filter(m => m.sender_profile?.id === p.id || m.sender_id === p.id || m.receiver_id === p.id)
+                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                  if (msg) setSelectedMessage(msg);
+                  else setComposeRecipient({ id: p.id, username: p.username, display_name: p.display_name, avatar_url: p.avatar_url });
+                }}
+              />
+            )}
 
             {/* Message search bar */}
             <div className="relative">
