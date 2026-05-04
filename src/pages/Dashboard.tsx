@@ -432,6 +432,25 @@ export default function Dashboard() {
               </p>
             </div>
 
+            {/* Stories Row — Snapchat / Instagram style */}
+            {user && (
+              <StoriesRow
+                userId={user.id}
+                messages={[...messages.direct, ...messages.work, ...messages.audience] as any}
+                myAvatar={myProfile?.avatar_url}
+                myName={myProfile?.display_name}
+                onStoryClick={(p) => {
+                  // Open the most recent message thread with that person
+                  const all = [...messages.direct, ...messages.work, ...messages.audience];
+                  const msg = all
+                    .filter(m => m.sender_profile?.id === p.id || m.sender_id === p.id || m.receiver_id === p.id)
+                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                  if (msg) setSelectedMessage(msg);
+                  else setComposeRecipient({ id: p.id, username: p.username, display_name: p.display_name, avatar_url: p.avatar_url });
+                }}
+              />
+            )}
+
             {/* Message search bar */}
             <div className="relative">
               <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
