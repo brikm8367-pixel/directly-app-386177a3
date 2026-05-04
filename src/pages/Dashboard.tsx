@@ -22,6 +22,7 @@ import { FeatureHint } from '@/components/FeatureHint';
 import { ClassificationBanner } from '@/components/ClassificationBanner';
 import { decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
 import RecipientFiltersManager from '@/components/messaging/RecipientFiltersManager';
+import StoriesRow from '@/components/messaging/StoriesRow';
 
 
 interface Profile {
