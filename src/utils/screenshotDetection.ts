@@ -1,6 +1,8 @@
 /**
- * Screenshot Detection — Capacitor native + PWA heuristics.
- * Notifies the other party via a system message in the conversation.
+ * Screenshot Detection — runtime-only, zero external imports.
+ * Native plugins (privacy-screen, screenshot) are accessed lazily via
+ * window.Capacitor.Plugins when present in a real Capacitor build.
+ * Web/PWA path uses a visibility-flicker heuristic.
  */
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,22 +10,25 @@ type Listener = () => void;
 const listeners = new Set<Listener>();
 let installed = false;
 
-const isNative = (): boolean => {
+const getCap = (): any => {
+  if (typeof window === 'undefined') return null;
   // @ts-ignore
-  return !!(window as any).Capacitor?.isNativePlatform?.();
+  return (window as any).Capacitor || null;
 };
 
-async function setupNative() {
+const isNative = (): boolean => !!getCap()?.isNativePlatform?.();
+
+function setupNative() {
   try {
-    // @ts-ignore — only present in native build
-    const mod = await import(/* @vite-ignore */ '@capacitor-community/privacy-screen').catch(() => null);
-    if (mod?.PrivacyScreen?.enable) {
-      await mod.PrivacyScreen.enable();
+    const cap = getCap();
+    const plugins = cap?.Plugins || {};
+    // Privacy screen — blocks the OS screenshot preview when available
+    if (plugins.PrivacyScreen?.enable) {
+      plugins.PrivacyScreen.enable().catch(() => {});
     }
-    // @ts-ignore — screenshot plugin (optional)
-    const detect = await import(/* @vite-ignore */ 'capacitor-plugin-screenshot').catch(() => null);
-    if (detect?.Screenshot?.addListener) {
-      detect.Screenshot.addListener('screenshotTaken', () => {
+    // Screenshot detection — only iOS/Android with the plugin installed
+    if (plugins.Screenshot?.addListener) {
+      plugins.Screenshot.addListener('screenshotTaken', () => {
         listeners.forEach((l) => l());
       });
     }
@@ -33,8 +38,7 @@ async function setupNative() {
 }
 
 function setupWeb() {
-  // Heuristic: macOS/iOS Safari emits no event, but Android Chrome briefly hides via visibilitychange.
-  // We treat sudden visibility flicker (<400ms hidden) as a possible screenshot signal.
+  // Heuristic: brief visibility flicker (<400ms) ≈ possible screenshot on Android Chrome.
   let hiddenAt = 0;
   const onVis = () => {
     if (document.visibilityState === 'hidden') {
@@ -61,10 +65,6 @@ export function onScreenshot(cb: Listener): () => void {
   return () => listeners.delete(cb);
 }
 
-/**
- * Notify the other party that a screenshot was taken in this conversation.
- * Sends a low-priority system message so the receiver sees a clear alert.
- */
 export async function notifyScreenshot(opts: {
   senderId: string;
   receiverId: string;
@@ -75,7 +75,7 @@ export async function notifyScreenshot(opts: {
       sender_id: opts.senderId,
       receiver_id: opts.receiverId,
       category: opts.category,
-      content: '📸 ' + 'تم التقاط لقطة شاشة لهذه المحادثة',
+      content: '📸 تم التقاط لقطة شاشة لهذه المحادثة',
       is_important: true,
     });
   } catch {

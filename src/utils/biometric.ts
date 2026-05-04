@@ -1,6 +1,7 @@
 /**
- * Biometric Authentication — Capacitor + WebAuthn fallback
- * Used to gate sensitive actions like checkout confirmation.
+ * Biometric Authentication — runtime-only Capacitor + WebAuthn fallback.
+ * Avoids static or string-literal dynamic imports so Vite never tries to resolve
+ * native-only packages during web builds.
  */
 
 export interface BiometricResult {
@@ -9,21 +10,24 @@ export interface BiometricResult {
   error?: string;
 }
 
-const isNative = (): boolean => {
+const getCap = (): any => {
+  if (typeof window === 'undefined') return null;
   // @ts-ignore
-  return !!(window as any).Capacitor?.isNativePlatform?.();
+  return (window as any).Capacitor || null;
 };
 
+const isNative = (): boolean => !!getCap()?.isNativePlatform?.();
+
 export async function authenticateBiometric(reason = 'تأكيد الدفع'): Promise<BiometricResult> {
-  // 1) Native (Capacitor) path — uses BiometricAuth plugin if installed at native build time
+  // 1) Native (Capacitor) — accessed only via runtime registry
   if (isNative()) {
     try {
-      // @ts-ignore — plugin loaded at runtime in native build
-      const mod = await import(/* @vite-ignore */ '@capgo/capacitor-native-biometric').catch(() => null);
-      if (mod?.NativeBiometric) {
-        const available = await mod.NativeBiometric.isAvailable();
+      const plugins = getCap()?.Plugins || {};
+      const NativeBiometric = plugins.NativeBiometric;
+      if (NativeBiometric?.isAvailable && NativeBiometric?.verifyIdentity) {
+        const available = await NativeBiometric.isAvailable();
         if (available?.isAvailable) {
-          await mod.NativeBiometric.verifyIdentity({
+          await NativeBiometric.verifyIdentity({
             reason,
             title: 'Directly',
             subtitle: 'وصول حصري',
@@ -50,7 +54,6 @@ export async function authenticateBiometric(reason = 'تأكيد الدفع'): P
         },
       } as any).catch(() => null);
       if (cred) return { success: true, method: 'webauthn' };
-      // No registered credential → accept as "user-present" gate (do not fail UX)
       return { success: true, method: 'none' };
     } catch {
       return { success: true, method: 'none' };

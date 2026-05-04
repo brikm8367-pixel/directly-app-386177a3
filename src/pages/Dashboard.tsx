@@ -108,15 +108,22 @@ export default function Dashboard() {
     const callChannels: any[] = [];
 
     const setupCallListener = async () => {
-      const { data: myAccess } = await supabase
-        .from('direct_access')
-        .select('allowed_user_id')
-        .eq('owner_id', user.id);
+      // Listen on channels for BOTH directions: people I added AND people who added me.
+      // Otherwise the recipient never hears the offer broadcast.
+      const [{ data: iAdded }, { data: addedMe }] = await Promise.all([
+        supabase.from('direct_access').select('allowed_user_id').eq('owner_id', user.id),
+        supabase.from('direct_access').select('owner_id').eq('allowed_user_id', user.id),
+      ]);
 
-      if (!myAccess) return;
+      const peerIds = new Set<string>([
+        ...(iAdded?.map(r => r.allowed_user_id) ?? []),
+        ...(addedMe?.map(r => r.owner_id) ?? []),
+      ]);
 
-      for (const access of myAccess) {
-        const channelName = [user.id, access.allowed_user_id].sort().join('-');
+      if (peerIds.size === 0) return;
+
+      for (const peerId of peerIds) {
+        const channelName = [user.id, peerId].sort().join('-');
         const channel = supabase.channel(`call-${channelName}`);
 
         channel
