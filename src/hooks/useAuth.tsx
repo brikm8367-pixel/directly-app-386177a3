@@ -71,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    await clearE2EKeysOnSignOut();
     await supabase.auth.signOut();
   };
 
