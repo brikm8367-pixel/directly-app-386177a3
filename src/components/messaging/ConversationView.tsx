@@ -127,8 +127,8 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     if (!user) return msgs;
     return Promise.all(msgs.map(async (msg) => {
       if (isEncryptedMessage(msg.content)) {
-        const plaintext = await decryptFromSender(msg.content, msg.sender_id === user.id ? msg.receiver_id : msg.sender_id);
-        return { ...msg, content: plaintext };
+        const res = await decryptFromSender(msg.content, msg.sender_id === user.id ? msg.receiver_id : msg.sender_id);
+        return { ...msg, content: res.success ? res.plaintext : '🔒' };
       }
       return msg;
     }));
