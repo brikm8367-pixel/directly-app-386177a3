@@ -202,11 +202,8 @@ export default function Dashboard() {
         // Decrypt preview content for inbox display (silent — user never sees encryption)
         let displayContent = m.content;
         if (isEncryptedMessage(m.content)) {
-          try {
-            displayContent = await decryptFromSender(m.content, m.sender_id === user.id ? m.receiver_id : m.sender_id);
-          } catch {
-            displayContent = m.content;
-          }
+          const res = await decryptFromSender(m.content, m.sender_id === user.id ? m.receiver_id : m.sender_id);
+          displayContent = res.success ? res.plaintext : '🔒';
         }
         return {
           ...m,

@@ -1,47 +1,46 @@
 /**
  * E2E Encryption using Web Crypto API (AES-GCM + ECDH key exchange)
- * 
- * Flow:
- * 1. Each user generates an ECDH key pair on signup/first use
- * 2. Public key is stored in the database
- * 3. When sending a message, derive a shared secret using ECDH
- * 4. Encrypt message content with AES-GCM using the shared secret
- * 5. Only sender and receiver can decrypt
+ *
+ * - ECDH P-256 key pairs per device.
+ * - Shared AES-GCM key derived per recipient.
+ * - Messages prefixed with `E2Ev1:` for unambiguous detection.
+ * - Private key is stored encrypted at rest (see e2eManager + cryptoHelpers).
  */
+import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
+import {
+  deriveKeyFromPassword,
+  encryptBlobAESGCM,
+  decryptBlobAESGCM,
+  getOrCreateDeviceSecret,
+} from './cryptoHelpers';
 
 const ALGO = 'AES-GCM';
 const KEY_ALGO = { name: 'ECDH', namedCurve: 'P-256' };
+export const E2E_PREFIX = 'E2Ev1:';
 
-// Generate ECDH key pair
+// ---------- Key generation & import ----------
+
 export async function generateKeyPair(): Promise<{ publicKey: string; privateKey: string }> {
   const keyPair = await crypto.subtle.generateKey(KEY_ALGO, true, ['deriveKey']);
-
   const publicKeyRaw = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
   const privateKeyRaw = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
-
   return {
     publicKey: JSON.stringify(publicKeyRaw),
     privateKey: JSON.stringify(privateKeyRaw),
   };
 }
 
-// Import a public key from JWK string
 async function importPublicKey(jwkStr: string): Promise<CryptoKey> {
-  const jwk = JSON.parse(jwkStr);
-  return crypto.subtle.importKey('jwk', jwk, KEY_ALGO, false, []);
+  return crypto.subtle.importKey('jwk', JSON.parse(jwkStr), KEY_ALGO, false, []);
 }
 
-// Import a private key from JWK string
 async function importPrivateKey(jwkStr: string): Promise<CryptoKey> {
-  const jwk = JSON.parse(jwkStr);
-  return crypto.subtle.importKey('jwk', jwk, KEY_ALGO, false, ['deriveKey']);
+  return crypto.subtle.importKey('jwk', JSON.parse(jwkStr), KEY_ALGO, false, ['deriveKey']);
 }
 
-// Derive a shared AES key from ECDH
 async function deriveSharedKey(privateKeyStr: string, publicKeyStr: string): Promise<CryptoKey> {
   const privateKey = await importPrivateKey(privateKeyStr);
   const publicKey = await importPublicKey(publicKeyStr);
-
   return crypto.subtle.deriveKey(
     { name: 'ECDH', public: publicKey },
     privateKey,
@@ -51,7 +50,21 @@ async function deriveSharedKey(privateKeyStr: string, publicKeyStr: string): Pro
   );
 }
 
-// Encrypt a message
+function bytesToBase64(bytes: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// ---------- Message encryption ----------
+
 export async function encryptMessage(
   plaintext: string,
   senderPrivateKey: string,
@@ -59,66 +72,86 @@ export async function encryptMessage(
 ): Promise<string> {
   const sharedKey = await deriveSharedKey(senderPrivateKey, recipientPublicKey);
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encoded = new TextEncoder().encode(plaintext);
-
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: ALGO, iv },
-    sharedKey,
-    encoded
-  );
-
-  // Combine IV + ciphertext and encode as base64
-  const combined = new Uint8Array(iv.length + new Uint8Array(ciphertext).length);
+  const ct = await crypto.subtle.encrypt({ name: ALGO, iv }, sharedKey, new TextEncoder().encode(plaintext));
+  const ctBytes = new Uint8Array(ct);
+  const combined = new Uint8Array(iv.length + ctBytes.length);
   combined.set(iv);
-  combined.set(new Uint8Array(ciphertext), iv.length);
-
-  return btoa(String.fromCharCode(...combined));
+  combined.set(ctBytes, iv.length);
+  return E2E_PREFIX + bytesToBase64(combined);
 }
 
-// Decrypt a message
 export async function decryptMessage(
-  encryptedBase64: string,
+  encrypted: string,
   recipientPrivateKey: string,
   senderPublicKey: string
 ): Promise<string> {
+  const payload = encrypted.startsWith(E2E_PREFIX) ? encrypted.slice(E2E_PREFIX.length) : encrypted;
   const sharedKey = await deriveSharedKey(recipientPrivateKey, senderPublicKey);
-
-  const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+  const combined = base64ToBytes(payload);
   const iv = combined.slice(0, 12);
-  const ciphertext = combined.slice(12);
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: ALGO, iv },
-    sharedKey,
-    ciphertext
-  );
-
-  return new TextDecoder().decode(decrypted);
+  const ct = combined.slice(12);
+  const plain = await crypto.subtle.decrypt({ name: ALGO, iv }, sharedKey, ct);
+  return new TextDecoder().decode(plain);
 }
 
-// Key storage in localStorage (encrypted with user password in production)
-const PRIVATE_KEY_STORAGE = 'directly_e2e_private_key';
-const PUBLIC_KEY_STORAGE = 'directly_e2e_public_key';
-
-export function getStoredKeys(): { publicKey: string; privateKey: string } | null {
-  const pub = localStorage.getItem(PUBLIC_KEY_STORAGE);
-  const priv = localStorage.getItem(PRIVATE_KEY_STORAGE);
-  if (pub && priv) return { publicKey: pub, privateKey: priv };
-  return null;
-}
-
-export function storeKeys(publicKey: string, privateKey: string) {
-  localStorage.setItem(PUBLIC_KEY_STORAGE, publicKey);
-  localStorage.setItem(PRIVATE_KEY_STORAGE, privateKey);
-}
-
-export function clearKeys() {
-  localStorage.removeItem(PUBLIC_KEY_STORAGE);
-  localStorage.removeItem(PRIVATE_KEY_STORAGE);
-}
-
-// Check if a message is encrypted (starts with base64 pattern)
 export function isEncryptedMessage(content: string): boolean {
-  // Encrypted messages are base64 and typically long
-  return content.length > 50 && /^[A-Za-z0-9+/=]+$/.test(content);
+  return typeof content === 'string' && content.startsWith(E2E_PREFIX);
+}
+
+// ---------- Encrypted-at-rest key storage (IndexedDB) ----------
+
+const IDB_PUBLIC_KEY = 'directly_e2e_public_key_v2';
+const IDB_PRIVATE_BLOB = 'directly_e2e_private_blob_v2';
+const IDB_PRIVATE_SALT = 'directly_e2e_private_salt_v2';
+
+// Legacy plaintext keys (will be migrated and cleared)
+const LEGACY_PRIVATE = 'directly_e2e_private_key';
+const LEGACY_PUBLIC = 'directly_e2e_public_key';
+
+export async function storeKeysSecure(publicKey: string, privateKey: string, passphrase: string): Promise<void> {
+  const { key, saltBase64 } = await deriveKeyFromPassword(passphrase);
+  const blob = await encryptBlobAESGCM(key, privateKey);
+  await idbSet(IDB_PUBLIC_KEY, publicKey);
+  await idbSet(IDB_PRIVATE_BLOB, blob);
+  await idbSet(IDB_PRIVATE_SALT, saltBase64);
+}
+
+export async function getStoredKeysSecure(
+  passphrase?: string
+): Promise<{ publicKey: string; privateKey: string } | null> {
+  const pub = await idbGet<string>(IDB_PUBLIC_KEY);
+  const blob = await idbGet<string>(IDB_PRIVATE_BLOB);
+  const salt = await idbGet<string>(IDB_PRIVATE_SALT);
+  if (!pub || !blob || !salt) return null;
+  const pass = passphrase ?? getOrCreateDeviceSecret();
+  try {
+    const { key } = await deriveKeyFromPassword(pass, salt);
+    const privateKey = await decryptBlobAESGCM(key, blob);
+    return { publicKey: pub, privateKey };
+  } catch {
+    return null;
+  }
+}
+
+export async function clearKeysSecure(): Promise<void> {
+  await idbDel(IDB_PUBLIC_KEY);
+  await idbDel(IDB_PRIVATE_BLOB);
+  await idbDel(IDB_PRIVATE_SALT);
+  // Also clear legacy
+  localStorage.removeItem(LEGACY_PRIVATE);
+  localStorage.removeItem(LEGACY_PUBLIC);
+}
+
+/**
+ * One-time migration: if old plaintext keys exist in localStorage, move them
+ * into encrypted IndexedDB storage and wipe the originals.
+ */
+export async function migrateLegacyKeysIfPresent(): Promise<boolean> {
+  const legacyPub = localStorage.getItem(LEGACY_PUBLIC);
+  const legacyPriv = localStorage.getItem(LEGACY_PRIVATE);
+  if (!legacyPub || !legacyPriv) return false;
+  await storeKeysSecure(legacyPub, legacyPriv, getOrCreateDeviceSecret());
+  localStorage.removeItem(LEGACY_PUBLIC);
+  localStorage.removeItem(LEGACY_PRIVATE);
+  return true;
 }

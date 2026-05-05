@@ -8,6 +8,7 @@ import { LanguageProvider } from "./i18n/LanguageContext";
 import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -58,6 +59,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
@@ -95,6 +97,7 @@ const App = () => {
           </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 };

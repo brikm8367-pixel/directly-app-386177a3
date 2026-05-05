@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { initE2EKeys } from '@/utils/e2eManager';
+import { initE2EKeys, clearE2EKeysOnSignOut } from '@/utils/e2eManager';
 
 interface AuthContextType {
   user: User | null;
@@ -71,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    await clearE2EKeysOnSignOut();
     await supabase.auth.signOut();
   };
 

@@ -127,8 +127,8 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
     if (!user) return msgs;
     return Promise.all(msgs.map(async (msg) => {
       if (isEncryptedMessage(msg.content)) {
-        const plaintext = await decryptFromSender(msg.content, msg.sender_id === user.id ? msg.receiver_id : msg.sender_id);
-        return { ...msg, content: plaintext };
+        const res = await decryptFromSender(msg.content, msg.sender_id === user.id ? msg.receiver_id : msg.sender_id);
+        return { ...msg, content: res.success ? res.plaintext : '🔒' };
       }
       return msg;
     }));
@@ -300,7 +300,14 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
       }
 
       const contentToSend = text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤');
-      const encryptedContent = await encryptForRecipient(contentToSend, otherUserId!);
+      const enc = await encryptForRecipient(contentToSend, otherUserId!);
+      if (!enc.success) {
+        toast.error(isRTL ? 'تعذّر التشفير — لم يتم الإرسال' : 'Encryption failed — message not sent');
+        setThread(prev => prev.filter(m => m.id !== tempId));
+        setIsSending(false); setSendingMsgId(null);
+        return;
+      }
+      const encryptedContent = enc.payload;
 
       // Calculate expires_at based on disappear timer
       let expiresAt: string | null = null;
@@ -342,9 +349,13 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
   const handleEditMessage = async (msgId: string) => {
     if (!editContent.trim()) return;
     try {
-      const encryptedContent = await encryptForRecipient(editContent, otherUserId!);
+      const enc = await encryptForRecipient(editContent, otherUserId!);
+      if (!enc.success) {
+        toast.error(isRTL ? 'تعذّر التشفير' : 'Encryption failed');
+        return;
+      }
       await supabase.from('messages').update({
-        content: encryptedContent, is_edited: true, edited_at: new Date().toISOString(),
+        content: enc.payload, is_edited: true, edited_at: new Date().toISOString(),
       }).eq('id', msgId);
       setEditingMsg(null);
       setEditContent('');
