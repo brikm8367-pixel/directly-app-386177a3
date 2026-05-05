@@ -97,6 +97,7 @@ const App = () => {
           </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 };
