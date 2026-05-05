@@ -233,7 +233,13 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
 
       // Encrypt the message content
       const contentToSend = text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤');
-      const encryptedContent = await encryptForRecipient(contentToSend, recipient.id);
+      const enc = await encryptForRecipient(contentToSend, recipient.id);
+      if (!enc.success) {
+        toast.error(isRTL ? 'تعذّر التشفير — لم يتم الإرسال' : 'Encryption failed — message not sent');
+        setIsSending(false);
+        return;
+      }
+      const encryptedContent = enc.payload;
 
       const { data: insertedMsg, error } = await supabase.from('messages').insert({
         sender_id: senderId,
