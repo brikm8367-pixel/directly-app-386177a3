@@ -145,6 +145,33 @@ export type Database = {
           },
         ]
       }
+      device_keys: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          last_seen: string
+          public_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          last_seen?: string
+          public_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          last_seen?: string
+          public_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       direct_access: {
         Row: {
           allowed_user_id: string
