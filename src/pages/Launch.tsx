@@ -24,7 +24,7 @@ const COMPARISON = [
   { feature: 'AI Message Sorting', directly: true, whatsapp: false, telegram: false },
   { feature: 'E2E Encryption', directly: true, whatsapp: true, telegram: false },
   { feature: 'Access Control Levels', directly: true, whatsapp: false, telegram: false },
-  { feature: 'Access Control Levels', directly: true, whatsapp: false, telegram: false },
+  { feature: 'Golden Hour Priority', directly: true, whatsapp: false, telegram: false },
   { feature: 'No Phone Number Required', directly: true, whatsapp: false, telegram: false },
   { feature: 'Open Web (PWA)', directly: true, whatsapp: false, telegram: true },
 ];
