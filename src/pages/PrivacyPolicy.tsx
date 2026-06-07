@@ -10,9 +10,9 @@ export default function PrivacyPolicy() {
 
   const sections = isRTL ? [
     { t: 'مقدمة', c: 'تطبيق Directly يحترم خصوصيتك. نلتزم بحماية بياناتك الشخصية وفقاً لأعلى المعايير الدولية بما في ذلك GDPR (الاتحاد الأوروبي) و CCPA (كاليفورنيا) و COPPA (حماية الأطفال).' },
-    { t: 'البيانات التي نجمعها', c: 'البريد الإلكتروني، اسم المستخدم، الاسم الظاهر، صورة الملف الشخصي، الرسائل المرسلة والمستلمة (مشفرة)، بيانات التحليل المجمّعة (أنماط التواصل). لا نجمع: بيانات الموقع، جهات الاتصال، سجل المكالمات، أو أي بيانات حساسة أخرى دون إذنك الصريح.' },
-    { t: 'كيف نستخدم بياناتك', c: 'تقديم خدمة التواصل وتحسين تجربتك. تصنيف الرسائل تلقائياً باستخدام الذكاء الاصطناعي. تحليل أنماط التواصل لصفحة "النمط". إرسال الإشعارات. منع الإساءة والاحتيال. لا نبيع أو نشارك بياناتك مع أطراف ثالثة لأغراض إعلانية مطلقاً.' },
-    { t: 'الذكاء الاصطناعي وتحليل الرسائل', c: 'نستخدم الذكاء الاصطناعي لتصنيف رسائلك إلى الصناديق المناسبة (عمل، علاقات، خاص) ولتقديم تحليلات شخصية. التحليل يتم على محتوى الرسائل مؤقتاً ولا يُخزّن النص الأصلي بعد التصنيف. يمكنك إيقاف هذه الميزة من الإعدادات.' },
+    { t: 'البيانات التي نجمعها', c: 'البريد الإلكتروني، اسم المستخدم، الاسم الظاهر، صورة الملف الشخصي، الرسائل المرسلة والمستلمة (مشفرة). لا نجمع: بيانات الموقع، جهات الاتصال، سجل المكالمات، أو أي بيانات حساسة أخرى دون إذنك الصريح.' },
+    { t: 'كيف نستخدم بياناتك', c: 'تقديم خدمة التواصل وتحسين تجربتك. تصنيف الرسائل تلقائياً باستخدام الذكاء الاصطناعي. إرسال الإشعارات. منع الإساءة والاحتيال. لا نبيع أو نشارك بياناتك مع أطراف ثالثة لأغراض إعلانية مطلقاً.' },
+    { t: 'الذكاء الاصطناعي وتصنيف الرسائل', c: 'نستخدم الذكاء الاصطناعي لتصنيف رسائلك إلى الصناديق المناسبة (عمل، علاقات، خاص) فقط. التصنيف يتم على محتوى الرسائل مؤقتاً ولا يُخزّن النص الأصلي بعد التصنيف.' },
     { t: 'تشفير الرسائل', c: 'جميع الرسائل محمية بتشفير TLS أثناء النقل. المكالمات الصوتية والمرئية مشفرة باستخدام DTLS/SRTP عبر WebRTC. بياناتك مخزنة بشكل آمن في خوادم محمية مع تشفير أثناء التخزين.' },
     { t: 'حقوقك (GDPR و CCPA)', c: 'لديك الحق في: الوصول إلى بياناتك، تعديلها، حذفها بالكامل، تصديرها، والاعتراض على معالجتها. يمكنك حذف حسابك وجميع بياناتك بالكامل من صفحة الملف الشخصي. الحذف نهائي وغير قابل للاسترجاع.' },
     { t: 'ملفات تعريف الارتباط', c: 'نستخدم ملفات تعريف الارتباط الأساسية فقط لتشغيل التطبيق (الجلسة والمصادقة). لا نستخدم ملفات تتبع أو إعلانية أو ملفات طرف ثالث.' },
@@ -23,9 +23,9 @@ export default function PrivacyPolicy() {
     { t: 'التواصل معنا', c: 'لأي استفسارات حول الخصوصية: privacy@directly.app' },
   ] : [
     { t: 'Introduction', c: 'Directly respects your privacy. We are committed to protecting your personal data in accordance with the highest international standards including GDPR (EU), CCPA (California), and COPPA (Children\'s Privacy).' },
-    { t: 'Data We Collect', c: 'Email address, username, display name, profile photo, sent/received messages (encrypted), aggregated analytics data (communication patterns). We do NOT collect: location data, contacts, call logs, or any other sensitive data without your explicit consent.' },
-    { t: 'How We Use Your Data', c: 'Providing communication services and improving your experience. Automatically classifying messages using AI. Analyzing communication patterns for "Pattern" page. Sending notifications. Preventing abuse and fraud. We never sell or share your data with third parties for advertising.' },
-    { t: 'AI & Message Analysis', c: 'We use AI to classify your messages into appropriate inboxes (Work, Audience, Private) and to provide personality insights. Analysis is performed temporarily on message content; original text is not stored after classification. You can disable this feature in Settings.' },
+    { t: 'Data We Collect', c: 'Email address, username, display name, profile photo, sent/received messages (encrypted). We do NOT collect: location data, contacts, call logs, or any other sensitive data without your explicit consent.' },
+    { t: 'How We Use Your Data', c: 'Providing communication services and improving your experience. Automatically classifying messages using AI. Sending notifications. Preventing abuse and fraud. We never sell or share your data with third parties for advertising.' },
+    { t: 'AI & Message Classification', c: 'We use AI only to classify your messages into appropriate inboxes (Work, Audience, Private). Classification is performed temporarily on message content; original text is not stored after classification.' },
     { t: 'Message Encryption', c: 'All messages are protected with TLS encryption in transit. Voice and video calls are encrypted using DTLS/SRTP via WebRTC. Your data is stored securely on protected servers with encryption at rest.' },
     { t: 'Your Rights (GDPR & CCPA)', c: 'You have the right to: access, modify, delete, export, and object to processing of your data at any time. You can delete your account and all data permanently from the Profile page. Deletion is final and irreversible.' },
     { t: 'Cookies', c: 'We use only essential cookies to operate the app (session and authentication). We do not use tracking, advertising, or third-party cookies.' },
