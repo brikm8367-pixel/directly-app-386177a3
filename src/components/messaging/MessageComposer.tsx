@@ -39,14 +39,12 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [recipient, setRecipient] = useState<Profile | null>(initialRecipient);
-  const [personalitySnippet, setPersonalitySnippet] = useState<string | null>(null);
 
   useEffect(() => {
     setRecipient(initialRecipient);
     if (initialRecipient) {
       setUsernameQuery('');
       setSearchResults([]);
-      loadPersonality(initialRecipient.id);
     }
   }, [initialRecipient]);
 
@@ -55,7 +53,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
       setContent('');
       setShowVoice(false);
       setMediaPreview(null);
-      setPersonalitySnippet(null);
       if (!initialRecipient) {
         setRecipient(null);
         setUsernameQuery('');
@@ -64,18 +61,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
     }
   }, [isOpen, initialRecipient]);
 
-  const loadPersonality = async (userId: string) => {
-    const { data } = await supabase
-      .from('weekly_analysis')
-      .select('analysis')
-      .eq('user_id', userId)
-      .order('week_start', { ascending: false })
-      .limit(1);
-    if (data?.[0]?.analysis) {
-      const analysis = data[0].analysis as any;
-      setPersonalitySnippet(analysis.personality_type || analysis.summary || null);
-    }
-  };
 
   // Username search with debounce
   useEffect(() => {
