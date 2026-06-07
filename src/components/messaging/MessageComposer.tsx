@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Send, Loader2, User, Mic, Image as ImageIcon, X, Search, AtSign, Sparkles, Shield } from 'lucide-react';
+import { Send, Loader2, User, Mic, Image as ImageIcon, X, Search, AtSign, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VoiceRecorder from './VoiceRecorder';
