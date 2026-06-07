@@ -21,12 +21,7 @@ interface Profile {
   is_public: boolean | null;
 }
 
-interface PersonalitySummary {
-  type?: string;
-  traits?: string[];
-  description?: string;
-  badge?: string;
-}
+
 
 const LABELS: Record<string, Record<string, string>> = {
   ar: {
@@ -76,7 +71,7 @@ export default function PublicProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
-  const [personality, setPersonality] = useState<PersonalitySummary | null>(null);
+  
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -175,7 +170,7 @@ export default function PublicProfile() {
     toast.success('✨');
   };
 
-  const personalityLabel = personality?.type?.replace(/^[\p{Emoji}\s]+/u, '').trim() || '';
+
 
   if (isLoading) {
     return (
@@ -261,34 +256,7 @@ export default function PublicProfile() {
               <p className="text-sm text-white/60 mb-4 max-w-xs mx-auto">{profile.bio}</p>
             )}
 
-            {/* Personality Card */}
-            {personality?.type && profile?.is_public && (
-              <div className="mb-4">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-amber-400" />
-                  <span className="text-sm font-semibold text-amber-400">{l.commStyle}</span>
-                </div>
-                <p className="text-xl font-bold text-white mb-2">{personality.type}</p>
-                {personality.description && (
-                  <p className="text-xs text-white/60 mb-3">{personality.description}</p>
-                )}
-                {personality.traits && personality.traits.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 justify-center mb-3">
-                    {personality.traits.map((t, i) => (
-                      <span key={i} className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {personality.badge && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/25">
-                    <Award className="h-3 w-3 text-amber-400" />
-                    <span className="text-[10px] font-semibold text-amber-300">{personality.badge}</span>
-                  </div>
-                )}
-              </div>
-            )}
+
 
             {/* E2E badge */}
             <div className="flex items-center justify-center gap-1.5 mb-2">
@@ -305,7 +273,7 @@ export default function PublicProfile() {
           {user && !isOwnProfile && (
             <Button onClick={() => setShowComposer(true)} className="rounded-xl h-12 px-6 text-base">
               <Send className="h-5 w-5 me-2" />
-              {personalityLabel ? `${l.talkTo} ${personalityLabel}` : l.sendMessage}
+              {l.sendMessage}
             </Button>
           )}
           {!user && (
