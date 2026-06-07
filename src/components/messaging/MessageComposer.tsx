@@ -84,7 +84,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
     setRecipient(profile);
     setUsernameQuery('');
     setSearchResults([]);
-    loadPersonality(profile.id);
   };
 
   const uploadMedia = async (file: File): Promise<{ url: string; type: string } | null> => {
@@ -351,12 +350,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-base truncate">{recipient.display_name || recipient.username}</p>
                   {recipient.username && <p className="text-sm text-muted-foreground">@{recipient.username}</p>}
-                  {personalitySnippet && (
-                    <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
-                      <Sparkles className="h-3 w-3" />
-                      {personalitySnippet}
-                    </p>
-                  )}
                 </div>
                 {!initialRecipient && (
                   <Button
