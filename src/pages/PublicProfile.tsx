@@ -110,30 +110,6 @@ export default function PublicProfile() {
       const displayName = data.display_name || cleanUsername;
       document.title = `${displayName} — Directly`;
 
-      if (data.is_public) {
-        const { data: analysis } = await supabase
-          .from('weekly_analysis')
-          .select('analysis, week_start')
-          .eq('user_id', data.id)
-          .order('week_start', { ascending: false })
-          .limit(1);
-
-        if (analysis?.[0]?.analysis) {
-          const a = analysis[0].analysis as any;
-          // Only show if analysis language matches viewer's UI language
-          if (!a._language || a._language === language) {
-            setPersonality({
-              type: a.type || undefined,
-              traits: (a.traits || []).slice(0, 3),
-              description: a.description || undefined,
-              badge: a.badge || undefined,
-            });
-            if (a.type) {
-              document.title = `${displayName} — "${a.type}" | Directly`;
-            }
-          }
-        }
-      }
       setIsLoading(false);
     };
     fetchProfile();
