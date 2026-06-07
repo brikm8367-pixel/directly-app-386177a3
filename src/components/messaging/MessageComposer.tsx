@@ -356,7 +356,7 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 rounded-full absolute top-2 end-2"
-                    onClick={() => { setRecipient(null); setPersonalitySnippet(null); }}
+                    onClick={() => { setRecipient(null); }}
                   >
                     <X className="h-4 w-4" />
                   </Button>
