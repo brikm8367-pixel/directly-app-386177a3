@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Send, Loader2, User, Mic, Image as ImageIcon, X, Search, AtSign, Sparkles, Shield } from 'lucide-react';
+import { Send, Loader2, User, Mic, Image as ImageIcon, X, Search, AtSign, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VoiceRecorder from './VoiceRecorder';
@@ -39,14 +39,12 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [recipient, setRecipient] = useState<Profile | null>(initialRecipient);
-  const [personalitySnippet, setPersonalitySnippet] = useState<string | null>(null);
 
   useEffect(() => {
     setRecipient(initialRecipient);
     if (initialRecipient) {
       setUsernameQuery('');
       setSearchResults([]);
-      loadPersonality(initialRecipient.id);
     }
   }, [initialRecipient]);
 
@@ -55,7 +53,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
       setContent('');
       setShowVoice(false);
       setMediaPreview(null);
-      setPersonalitySnippet(null);
       if (!initialRecipient) {
         setRecipient(null);
         setUsernameQuery('');
@@ -64,18 +61,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
     }
   }, [isOpen, initialRecipient]);
 
-  const loadPersonality = async (userId: string) => {
-    const { data } = await supabase
-      .from('weekly_analysis')
-      .select('analysis')
-      .eq('user_id', userId)
-      .order('week_start', { ascending: false })
-      .limit(1);
-    if (data?.[0]?.analysis) {
-      const analysis = data[0].analysis as any;
-      setPersonalitySnippet(analysis.personality_type || analysis.summary || null);
-    }
-  };
 
   // Username search with debounce
   useEffect(() => {
@@ -99,7 +84,6 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
     setRecipient(profile);
     setUsernameQuery('');
     setSearchResults([]);
-    loadPersonality(profile.id);
   };
 
   const uploadMedia = async (file: File): Promise<{ url: string; type: string } | null> => {
@@ -366,19 +350,13 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-base truncate">{recipient.display_name || recipient.username}</p>
                   {recipient.username && <p className="text-sm text-muted-foreground">@{recipient.username}</p>}
-                  {personalitySnippet && (
-                    <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
-                      <Sparkles className="h-3 w-3" />
-                      {personalitySnippet}
-                    </p>
-                  )}
                 </div>
                 {!initialRecipient && (
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 rounded-full absolute top-2 end-2"
-                    onClick={() => { setRecipient(null); setPersonalitySnippet(null); }}
+                    onClick={() => { setRecipient(null); }}
                   >
                     <X className="h-4 w-4" />
                   </Button>

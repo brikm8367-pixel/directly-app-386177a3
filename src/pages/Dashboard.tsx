@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Search, Loader2, User, Send, TrendingUp, Heart, PenSquare, Pin, X } from 'lucide-react';
-import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, CommunicationPatterns, MessageCategory, Message } from '@/components/messaging';
+import { InboxSection, MessageComposer, ConversationView, DirectAccessManager, MessageCategory, Message } from '@/components/messaging';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNavigation } from '@/components/BottomNavigation';
@@ -398,7 +398,7 @@ export default function Dashboard() {
           {[
             { id: 'inbox', icon: MessageSquare, label: isRTL ? 'الرسائل' : language === 'fr' ? 'Boîte' : language === 'es' ? 'Bandeja' : 'Inbox' },
             { id: 'search', icon: Search, label: isRTL ? 'بحث' : language === 'fr' ? 'Recherche' : language === 'es' ? 'Buscar' : 'Search' },
-            { id: 'patterns', icon: TrendingUp, label: isRTL ? 'نمطك' : language === 'fr' ? 'Schéma' : language === 'es' ? 'Patrón' : 'Pattern' },
+            { id: 'patterns', icon: TrendingUp, label: isRTL ? 'الفلاتر' : language === 'fr' ? 'Filtres' : language === 'es' ? 'Filtros' : 'Filters' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -570,10 +570,7 @@ export default function Dashboard() {
 
         {activeTab === 'patterns' && user && (
           <div className="space-y-6">
-            <CommunicationPatterns userId={user.id} />
-            <div className="pt-2 border-t border-border">
-              <RecipientFiltersManager />
-            </div>
+            <RecipientFiltersManager />
           </div>
         )}
       </main>

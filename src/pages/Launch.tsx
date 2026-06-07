@@ -8,7 +8,7 @@ import { Shield, Zap, Brain, Users, ArrowRight, Star, Lock, Globe, Sparkles, Che
 const FEATURES = [
   { icon: Brain, title: 'AI-Powered Inbox', desc: 'Messages auto-sorted into Work, Audience & Direct using AI classification' },
   { icon: Shield, title: 'E2E Encrypted', desc: 'Every message encrypted with AES-256-GCM + ECDH key exchange' },
-  { icon: Sparkles, title: 'Personality Analytics', desc: 'Weekly AI analysis of your communication style — shareable cards' },
+  { icon: Sparkles, title: 'Golden Hour', desc: 'Priority windows to reach the people who matter most' },
   { icon: Lock, title: 'Access Control', desc: 'You decide who gets your attention — not algorithms' },
   { icon: Zap, title: 'Instant & Lightweight', desc: 'PWA — no download needed, works on any device instantly' },
   { icon: Globe, title: '4 Languages', desc: 'English, Arabic, French & Spanish — fully localized with RTL' },
@@ -24,7 +24,7 @@ const COMPARISON = [
   { feature: 'AI Message Sorting', directly: true, whatsapp: false, telegram: false },
   { feature: 'E2E Encryption', directly: true, whatsapp: true, telegram: false },
   { feature: 'Access Control Levels', directly: true, whatsapp: false, telegram: false },
-  { feature: 'Personality Analytics', directly: true, whatsapp: false, telegram: false },
+  { feature: 'Golden Hour Priority', directly: true, whatsapp: false, telegram: false },
   { feature: 'No Phone Number Required', directly: true, whatsapp: false, telegram: false },
   { feature: 'Open Web (PWA)', directly: true, whatsapp: false, telegram: true },
 ];

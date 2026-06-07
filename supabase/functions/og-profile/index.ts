@@ -39,34 +39,13 @@ serve(async (req) => {
     });
   }
 
-  // Fetch latest analysis
-  let personalityType = '';
-  let description = '';
-  let traits: string[] = [];
-
-  const { data: analysis } = await supabase
-    .from('weekly_analysis')
-    .select('analysis')
-    .eq('user_id', profile.id)
-    .order('week_start', { ascending: false })
-    .limit(1);
-
-  if (analysis?.[0]?.analysis) {
-    const a = analysis[0].analysis as any;
-    personalityType = a.type || a.personalityType || '';
-    description = a.description || '';
-    traits = a.traits || [];
-  }
-
   const displayName = profile.display_name || username;
-  const ogTitle = personalityType
-    ? `${displayName} — "${personalityType}" | Directly`
-    : `${displayName} | Directly`;
-  const ogDescription = description
-    || (traits.length > 0 ? traits.join(' · ') : `${displayName}'s communication profile on Directly`);
-  
+  const ogTitle = `${displayName} | Directly`;
+  const ogDescription = profile.bio || `${displayName} on Directly`;
+
   const ogImage = profile.avatar_url || 'https://ddirectly-com.lovable.app/pwa-512x512.png';
   const profileUrl = `https://ddirectly-com.lovable.app/@${username}`;
+
 
   // Return HTML with proper OG tags for crawlers
   const html = `<!DOCTYPE html>

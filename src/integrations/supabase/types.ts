@@ -497,30 +497,6 @@ export type Database = {
         }
         Relationships: []
       }
-      weekly_analysis: {
-        Row: {
-          analysis: Json
-          created_at: string
-          id: string
-          user_id: string
-          week_start: string
-        }
-        Insert: {
-          analysis: Json
-          created_at?: string
-          id?: string
-          user_id: string
-          week_start: string
-        }
-        Update: {
-          analysis?: Json
-          created_at?: string
-          id?: string
-          user_id?: string
-          week_start?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never

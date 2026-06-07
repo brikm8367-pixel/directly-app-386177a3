@@ -55,13 +55,10 @@ export async function copyToClipboard(text: string, successMsg = 'Copied!'): Pro
 export async function shareProfile(
   displayName: string,
   username: string,
-  personalityType?: string,
   successMsg = 'Link copied!'
 ) {
   const url = getProfileUrl(username);
-  const shareText = personalityType
-    ? `${displayName} is a "${personalityType}" communicator on Directly ✨`
-    : `Check out ${displayName} on Directly`;
+  const shareText = `Check out ${displayName} on Directly`;
 
   const shared = await nativeShare(
     { title: `${displayName} — Directly`, text: shareText, url },
@@ -74,23 +71,6 @@ export async function shareProfile(
   }
 }
 
-/**
- * Share analysis text - always opens native share sheet.
- */
-export async function shareAnalysisText(
-  analysis: { type: string; description: string; traits: string[]; advice: string },
-  profileUrl: string,
-  successMsg = 'Copied! Share it on your Story ✨'
-) {
-  const text = `✨ ${analysis.type}\n${analysis.description}\n\n${analysis.traits.join(' · ')}\n\n💡 ${analysis.advice}`;
-  const shared = await nativeShare(
-    { title: 'My Communication Pattern — Directly', text, url: profileUrl },
-    successMsg
-  );
-  if (!shared) {
-    await copyToClipboard(`${text}\n\n${profileUrl}`, successMsg);
-  }
-}
 
 /**
  * Copy username - clipboard only, no share sheet.
