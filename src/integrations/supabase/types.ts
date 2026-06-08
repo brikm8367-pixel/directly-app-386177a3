@@ -193,6 +193,33 @@ export type Database = {
         }
         Relationships: []
       }
+      manager_links: {
+        Row: {
+          celebrity_id: string
+          created_at: string
+          id: string
+          manager_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          celebrity_id: string
+          created_at?: string
+          id?: string
+          manager_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          celebrity_id?: string
+          created_at?: string
+          id?: string
+          manager_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       message_limits: {
         Row: {
           category: Database["public"]["Enums"]["message_category"]
@@ -322,6 +349,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"]
           avatar_url: string | null
           bio: string | null
           created_at: string | null
@@ -335,6 +363,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"]
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -348,6 +377,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"]
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -502,6 +532,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      active_manager_of: {
+        Args: { _celebrity: string; _manager: string }
+        Returns: boolean
+      }
       can_receive_message: {
         Args: {
           _category: Database["public"]["Enums"]["message_category"]
@@ -537,10 +571,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_celebrity: { Args: { _uid: string }; Returns: boolean }
+      my_managed_celebrity: { Args: { _uid: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      account_type: "celebrity" | "sender"
       app_role: "admin" | "moderator" | "user"
       message_category: "work" | "audience" | "direct"
     }
@@ -670,6 +707,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["celebrity", "sender"],
       app_role: ["admin", "moderator", "user"],
       message_category: ["work", "audience", "direct"],
     },
