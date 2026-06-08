@@ -330,6 +330,11 @@ export default function ProfilePage() {
           {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : isRTL ? 'حفظ التغييرات' : 'Save Changes'}
         </Button>
 
+        {/* Sovereign role layer */}
+        <SovereignRolePanel />
+
+
+
         {/* Links */}
         <div className="mt-6 p-4 rounded-2xl bg-card border border-border space-y-2">
           <a href="/security" className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors touch-feedback">
