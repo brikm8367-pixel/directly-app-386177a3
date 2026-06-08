@@ -39,6 +39,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isOnline, canCall } = usePresence(user?.id);
+  const { role } = useRole();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('directly_onboarded'));
 
   const getInitialTab = () => {
