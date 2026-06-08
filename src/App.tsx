@@ -89,6 +89,7 @@ const App = () => {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/subscribe" element={<Subscribe />} />
                     <Route path="/security/bounty" element={<BugBounty />} />
+                    <Route path="/join-manager/:celebrityId" element={<JoinManager />} />
                     <Route path="/:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
