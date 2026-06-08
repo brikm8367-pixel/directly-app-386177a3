@@ -15,6 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { SovereignRolePanel } from '@/components/profile/SovereignRolePanel';
 
 interface Profile {
   id: string;
