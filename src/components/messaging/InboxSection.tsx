@@ -51,27 +51,27 @@ interface InboxSectionProps {
 const categoryConfig = {
   work: {
     icon: Briefcase,
-    label: { ar: 'العمل', en: 'Work' },
-    subtitle: { ar: 'تركيزك المهني', en: 'Your professional focus' },
+    label: { ar: 'العمل', en: 'Business' },
+    subtitle: { ar: 'العروض الاحترافية', en: 'Professional offers only' },
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
     emoji: '💼',
   },
   audience: {
     icon: Users,
-    label: { ar: 'العلاقات', en: 'Relationships' },
-    subtitle: { ar: 'الناس الذين يهمونك', en: 'People who matter to you' },
+    label: { ar: 'الجماهير', en: 'Fans' },
+    subtitle: { ar: 'الجمهور والمعجبون', en: 'Your audience & fans' },
     color: 'text-violet-500',
     bgColor: 'bg-violet-500/10',
     emoji: '👥',
   },
   direct: {
-    icon: Heart,
+    icon: Lock,
     label: { ar: 'الخاص', en: 'Private' },
-    subtitle: { ar: 'مساحتك أنت فقط', en: 'Your space only' },
+    subtitle: { ar: 'مساحتك أنت فقط — بلا ذكاء اصطناعي', en: 'Your private space — no AI' },
     color: 'text-amber-500',
     bgColor: 'bg-amber-500/10',
-    emoji: '🤍',
+    emoji: '🔒',
   },
 };
 

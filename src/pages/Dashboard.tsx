@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { usePresence } from '@/hooks/usePresence';
+import { useRole } from '@/hooks/useRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +39,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isOnline, canCall } = usePresence(user?.id);
+  const { role } = useRole();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('directly_onboarded'));
 
   const getInitialTab = () => {
@@ -494,10 +496,16 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Inbox categories - only show when not searching */}
+            {/* Inbox categories — visibility driven by Sovereign role */}
             {messageSearchQuery.length < 2 && (
               <>
-                {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
+                {(
+                  role === 'manager'
+                    ? (['work'] as MessageCategory[]) // Manager → Business box only
+                    : role === 'celebrity'
+                      ? (['direct', 'work', 'audience'] as MessageCategory[]) // Celebrity → Private + Business + Fans
+                      : (['direct', 'work', 'audience'] as MessageCategory[]) // Sender/Fan → own conversations
+                ).map(category => (
                   <InboxSection
                     key={category}
                     category={category}
@@ -514,6 +522,7 @@ export default function Dashboard() {
               </>
             )}
           </div>
+
         )}
 
         {activeTab === 'search' && (

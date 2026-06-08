@@ -15,6 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { SovereignRolePanel } from '@/components/profile/SovereignRolePanel';
 
 interface Profile {
   id: string;
@@ -328,6 +329,11 @@ export default function ProfilePage() {
         <Button onClick={handleSave} disabled={isSaving} className="w-full h-13 mt-6 text-base font-semibold rounded-2xl glow-gold">
           {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : isRTL ? 'حفظ التغييرات' : 'Save Changes'}
         </Button>
+
+        {/* Sovereign role layer */}
+        <SovereignRolePanel />
+
+
 
         {/* Links */}
         <div className="mt-6 p-4 rounded-2xl bg-card border border-border space-y-2">
