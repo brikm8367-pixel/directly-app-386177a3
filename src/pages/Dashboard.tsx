@@ -496,10 +496,16 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Inbox categories - only show when not searching */}
+            {/* Inbox categories — visibility driven by Sovereign role */}
             {messageSearchQuery.length < 2 && (
               <>
-                {(['direct', 'work', 'audience'] as MessageCategory[]).map(category => (
+                {(
+                  role === 'manager'
+                    ? (['work'] as MessageCategory[]) // Manager → Business box only
+                    : role === 'celebrity'
+                      ? (['direct', 'work', 'audience'] as MessageCategory[]) // Celebrity → Private + Business + Fans
+                      : (['direct', 'work', 'audience'] as MessageCategory[]) // Sender/Fan → own conversations
+                ).map(category => (
                   <InboxSection
                     key={category}
                     category={category}
@@ -516,6 +522,7 @@ export default function Dashboard() {
               </>
             )}
           </div>
+
         )}
 
         {activeTab === 'search' && (
