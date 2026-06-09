@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
+import { DealCardComposer } from '@/components/deals/DealCardComposer';
 import { copyUsername, copyToClipboard } from '@/utils/sharing';
 import { shareCardAsImage } from '@/utils/shareCard';
 
@@ -72,6 +73,7 @@ export default function PublicProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
+  const [showDealCard, setShowDealCard] = useState(false);
   
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
