@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Crown, UserCog, KeyRound, Check, ShieldOff } from 'lucide-react';
+import { Crown, UserCog, KeyRound, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { InviteManagerDialog } from './InviteManagerDialog';
 
