@@ -21,7 +21,7 @@ export function SovereignRolePanel() {
   const { accountType, role, managedCelebrityId, loading, refresh } = useRole();
   const { isRTL } = useLanguage();
   const [updating, setUpdating] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [managers, setManagers] = useState<ManagerRow[]>([]);
   const [celebName, setCelebName] = useState<string | null>(null);
 
@@ -65,13 +65,7 @@ export function SovereignRolePanel() {
     await refresh();
   };
 
-  const copyInvite = () => {
-    const url = `${window.location.origin}/join-manager/${user?.id}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast.success(isRTL ? 'تم نسخ رابط دعوة الوكيل' : 'Manager invite link copied');
-  };
+
 
   const revoke = async (id: string) => {
     const { error } = await supabase.from('manager_links').update({ status: 'revoked' } as any).eq('id', id);
@@ -124,10 +118,11 @@ export function SovereignRolePanel() {
       {/* Celebrity: invite + manage managers */}
       {accountType === 'celebrity' && (
         <div className="space-y-3">
-          <Button onClick={copyInvite} variant="outline" className="w-full rounded-xl">
-            {copied ? <Check className="h-4 w-4 me-2 text-emerald-500" /> : <Link2 className="h-4 w-4 me-2" />}
-            {isRTL ? 'نسخ رابط دعوة وكيل' : 'Copy Manager Invite Link'}
+          <Button onClick={() => setInviteOpen(true)} variant="outline" className="w-full rounded-xl">
+            <KeyRound className="h-4 w-4 me-2" />
+            {isRTL ? 'دعوة وكيل' : 'Invite Manager'}
           </Button>
+          <InviteManagerDialog open={inviteOpen} onOpenChange={setInviteOpen} />
 
           {managers.length > 0 && (
             <div className="space-y-2">
