@@ -4,8 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Crown, UserCog, Link2, Copy, Check, ShieldOff, Loader2 } from 'lucide-react';
+import { Crown, UserCog, KeyRound, Check, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { InviteManagerDialog } from './InviteManagerDialog';
 
 interface ManagerRow {
   id: string;
