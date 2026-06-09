@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Loader2, Copy, Check, Link2, ShieldCheck, Clock, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
