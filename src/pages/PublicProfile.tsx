@@ -279,6 +279,12 @@ export default function PublicProfile() {
               {l.sendMessage}
             </Button>
           )}
+          {user && !isOwnProfile && profile?.account_type === 'celebrity' && (
+            <Button onClick={() => setShowDealCard(true)} variant="outline" className="rounded-xl h-12 px-6 text-base border-blue-500/40 text-blue-600">
+              <Sparkles className="h-5 w-5 me-2" />
+              {language === 'ar' ? 'إرسال عرض عمل' : 'Send Deal'}
+            </Button>
+          )}
           {!user && (
             <Button onClick={() => navigate('/')} className="rounded-xl h-12 px-6 text-base">
               <MessageCircle className="h-5 w-5 me-2" />
@@ -316,6 +322,14 @@ export default function PublicProfile() {
           onClose={() => setShowComposer(false)}
           recipient={profile}
           onMessageSent={() => { setShowComposer(false); toast.success('Sent ✨'); }}
+        />
+      )}
+      {profile && (
+        <DealCardComposer
+          open={showDealCard}
+          onOpenChange={setShowDealCard}
+          celebrityId={profile.id}
+          celebrityName={profile.username}
         />
       )}
     </div>
