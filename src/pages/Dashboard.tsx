@@ -24,6 +24,7 @@ import { ClassificationBanner } from '@/components/ClassificationBanner';
 import { decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
 import RecipientFiltersManager from '@/components/messaging/RecipientFiltersManager';
 import StoriesRow from '@/components/messaging/StoriesRow';
+import { BusinessDeals } from '@/components/deals/BusinessDeals';
 
 
 interface Profile {
@@ -39,7 +40,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isOnline, canCall } = usePresence(user?.id);
-  const { role } = useRole();
+  const { role, managedCelebrityId } = useRole();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('directly_onboarded'));
 
   const getInitialTab = () => {
@@ -494,6 +495,14 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
+            )}
+
+            {/* Deal Cards — Business box (celebrity sees own, manager sees linked celebrity) */}
+            {messageSearchQuery.length < 2 && (role === 'celebrity' || role === 'manager') && (
+              <BusinessDeals
+                celebrityId={role === 'manager' ? managedCelebrityId : user?.id}
+                canManage={role === 'celebrity' || role === 'manager'}
+              />
             )}
 
             {/* Inbox categories — visibility driven by Sovereign role */}

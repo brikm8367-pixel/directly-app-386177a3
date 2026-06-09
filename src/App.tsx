@@ -27,6 +27,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Subscribe = lazy(() => import("./pages/Subscribe"));
 const BugBounty = lazy(() => import("./pages/BugBounty"));
 const JoinManager = lazy(() => import("./pages/JoinManager"));
+const RedeemManagerInvite = lazy(() => import("./pages/RedeemManagerInvite"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +91,7 @@ const App = () => {
                     <Route path="/subscribe" element={<Subscribe />} />
                     <Route path="/security/bounty" element={<BugBounty />} />
                     <Route path="/join-manager/:celebrityId" element={<JoinManager />} />
+                    <Route path="/m/:token" element={<RedeemManagerInvite />} />
                     <Route path="/:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

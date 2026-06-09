@@ -116,6 +116,62 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_cards: {
+        Row: {
+          budget_range: string | null
+          celebrity_id: string
+          created_at: string
+          deal_type: string
+          details: string | null
+          golden_hour: boolean
+          golden_hour_expires_at: string | null
+          id: string
+          message_id: string | null
+          sender_id: string
+          status: Database["public"]["Enums"]["deal_status"]
+          timeline: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget_range?: string | null
+          celebrity_id: string
+          created_at?: string
+          deal_type: string
+          details?: string | null
+          golden_hour?: boolean
+          golden_hour_expires_at?: string | null
+          id?: string
+          message_id?: string | null
+          sender_id: string
+          status?: Database["public"]["Enums"]["deal_status"]
+          timeline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget_range?: string | null
+          celebrity_id?: string
+          created_at?: string
+          deal_type?: string
+          details?: string | null
+          golden_hour?: boolean
+          golden_hour_expires_at?: string | null
+          id?: string
+          message_id?: string | null
+          sender_id?: string
+          status?: Database["public"]["Enums"]["deal_status"]
+          timeline?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_cards_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deleted_messages: {
         Row: {
           created_at: string
@@ -190,6 +246,42 @@ export type Database = {
           created_at?: string
           id?: string
           owner_id?: string
+        }
+        Relationships: []
+      }
+      manager_invitations: {
+        Row: {
+          celebrity_id: string
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          status: string
+          token: string
+          updated_at: string
+          used_by: string | null
+        }
+        Insert: {
+          celebrity_id: string
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          token: string
+          updated_at?: string
+          used_by?: string | null
+        }
+        Update: {
+          celebrity_id?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          token?: string
+          updated_at?: string
+          used_by?: string | null
         }
         Relationships: []
       }
@@ -575,10 +667,12 @@ export type Database = {
       my_managed_celebrity: { Args: { _uid: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      validate_invitation: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       account_type: "celebrity" | "sender"
       app_role: "admin" | "moderator" | "user"
+      deal_status: "pending" | "accepted" | "declined" | "countered"
       message_category: "work" | "audience" | "direct"
     }
     CompositeTypes: {
@@ -709,6 +803,7 @@ export const Constants = {
     Enums: {
       account_type: ["celebrity", "sender"],
       app_role: ["admin", "moderator", "user"],
+      deal_status: ["pending", "accepted", "declined", "countered"],
       message_category: ["work", "audience", "direct"],
     },
   },

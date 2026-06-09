@@ -1,54 +1,74 @@
-## الهدف
-بناء **طبقة الأدوار** (Celebrity / Manager / Sender·Fan) وربطها بـ**الصناديق الثلاثة** (Business / Private / Fans) كأساس يبني عليه كل ما بعده (Deal Card, Golden Hour, Kill Switch, Activity Log, Pilot, Scout). هذه المرحلة لا تبني Deal Card ولا Golden Hour بعد — فقط الأساس الصلب.
+# خطة التنفيذ — Sovereign: الأدوار + الدعوات + Deal Card + Golden Hour
 
-## الوضع الحالي (المُكتشف)
-- `message_category` enum = `work / audience / direct`. سنعتمد التطابق التالي بدون كسر خط الرسائل: **Business = work**، **Fans = audience**، **Private = direct**.
-- `app_role` enum = `admin / moderator / user` (يبقى للإدارة فقط، لا يُستخدم لأدوار Sovereign).
-- جدول `direct_access` موجود ويصلح ليكون **Whitelist للـ Private Box** (المالك يسمح لأشخاص محددين).
-- لا يوجد أي مفهوم Celebrity/Manager/Sender في قاعدة البيانات حالياً.
+أبني هذا بأولوية **Backend** (قاعدة بيانات + Edge Functions + RLS) ثم **Frontend**، بجودة عالية وأمان حقيقي. نُنفّذ على 4 مراحل متسلسلة.
 
-## ما سنبنيه
-
-### 1. قاعدة البيانات (Migration)
-- enum جديد `account_type` بقيم: `celebrity`, `sender` (الافتراضي `sender` للجميع — المعجب والشركة كلاهما sender في الأساس).
-- عمود `account_type` على `profiles` (default `'sender'`, NOT NULL).
-- جدول `manager_links` لربط الوكيل بالمشهور:
-  - `celebrity_id`, `manager_id`, `status` (`active` / `revoked`), `created_at`, `updated_at`.
-  - يمثّل صلاحية الوكيل لإدارة Business Box لمشهور محدد، وهو نقطة عمل **Kill Switch** لاحقاً (تحويل الحالة إلى `revoked`).
-- دوال SECURITY DEFINER (لتفادي الـ recursion في RLS):
-  - `is_celebrity(_uid)` — هل الحساب مشهور.
-  - `active_manager_of(_manager, _celebrity)` — هل الوكيل مرتبط فعلياً بالمشهور وبحالة `active`.
-  - `my_managed_celebrity(_uid)` — يرجع id المشهور الذي يديره هذا الوكيل (إن وُجد).
-- GRANT + RLS لكل جدول جديد (authenticated + service_role).
-- سياسات وصول الـ Business Box للوكيل: السماح للوكيل بقراءة رسائل `category='work'` الخاصة بالمشهور المرتبط به طالما الرابط `active`.
-
-### 2. طبقة الأدوار في الواجهة
-- `useRole()` hook: يجلب `account_type` + هل هو وكيل لمشهور (عبر `manager_links`) ويُرجع الدور الفعّال: `celebrity | manager | sender`.
-- إعادة تسمية/سكين الصناديق في `InboxSection.tsx`:
-  - **Business** (أيقونة Briefcase، ذهبي/أزرق) = `work`
-  - **Private** (Lock، ذهبي) = `direct`
-  - **Fans** (Users، بنفسجي) = `audience`
-- `Dashboard.tsx` يعرض الصناديق حسب الدور:
-  - **Celebrity**: Private + Fans كاملان، و Business **للقراءة فقط** (overview).
-  - **Manager**: **Business فقط** للمشهور المرتبط به (إدارة كاملة)، ولا يرى Private إطلاقاً.
-  - **Sender / Fan**: لا صناديق داخلية — يتواصل عبر الرابط العام؛ تظهر له محادثاته فقط.
-
-### 3. اختيار الدور والربط
-- في `OnboardingFlow` أو إعداد سريع: اختيار نوع الحساب (**مشهور** أو **حساب عادي/شركة**).
-- ربط الوكيل: المشهور يولّد رابط دعوة وكيل؛ عند فتحه يُنشأ صف في `manager_links` بحالة `active`. (واجهة الدعوة المبسطة ضمن هذه المرحلة؛ Kill Switch UI يأتي في المرحلة التالية لكن البنية جاهزة.)
-- اعتماد `direct_access` كـ Whitelist للـ Private Box (موجود مسبقاً، نوثّق الاستخدام فقط).
-
-## خارج نطاق هذه المرحلة (المراحل التالية)
-Deal Card، Golden Hour، Kill Switch UI، Activity Log، Pilot، Scout، NanoID، الجروبات — كلها تُبنى فوق هذا الأساس لاحقاً.
-
-## ملاحظات تقنية
 ```text
-account_type (profiles): celebrity | sender
-manager_links: celebrity_id ── active/revoked ── manager_id   → يحكم وصول Business + Kill Switch
-الصناديق:  Business=work · Private=direct · Fans=audience
-الرؤية:    Celebrity → Private+Fans+Business(قراءة)
-           Manager   → Business فقط (لمشهوره)
-           Sender    → بدون صناديق داخلية
-Whitelist للـ Private = جدول direct_access الحالي
+account_type (بسيط: celebrity | sender=user عادي)  ← ليس مصدر الدور الأساسي
+manager_links (active)  ← المصدر الأساسي لحساب الدور ديناميكياً
+الدور الفعّال = celebrity? → celebrity | active manager_link? → manager | غير ذلك → sender
 ```
-الـ Classifier يبقى يعمل كما هو ولا يُمسّ في هذه المرحلة.
+
+## المرحلة 1 — نظام دعوة الوكيل (Invitation System) [الأولوية الآن]
+
+### Backend
+- جدول جديد `manager_invitations`:
+  - `celebrity_id`, `code` (8–10 أحرف)، `token` (NanoID للرابط)، `status` (`pending`/`used`/`revoked`)، `expires_at` (= الآن + 15 دقيقة)، `used_by`، طوابع زمنية.
+  - GRANT + RLS: المشهور يقرأ دعواته فقط؛ لا إدراج/تعديل مباشر من العميل (كل العمليات عبر Edge Functions بمفتاح الخدمة).
+- دالة تحقق `validate_invitation(code/token)` (SECURITY DEFINER) للتحقق من الصلاحية وعدم الانتهاء.
+- **Edge Function `create-manager-invite`**:
+  1. يستقبل كلمة مرور المشهور ويتحقق منها فعلياً (إعادة مصادقة عبر `signInWithPassword` على عميل مؤقت).
+  2. عند النجاح: يولّد `code` + `token` (NanoID)، ويُنشئ صفاً في `manager_invitations` بصلاحية 15 دقيقة.
+  3. يُرجع الكود + الرابط القابل للمشاركة.
+- **Edge Function `redeem-manager-invite`**:
+  1. يستقبل الكود من الوكيل (مستخدم مسجّل دخول).
+  2. يتحقق: موجود، `pending`، غير منتهٍ، والوكيل ليس المشهور نفسه.
+  3. يُنشئ `manager_links` (`status='active'`) ويعلّم الدعوة `used` + `used_by`. كله بمفتاح الخدمة (الوكيل لا يكتب مباشرة في `manager_links`).
+
+### Frontend
+- في `SovereignRolePanel`: زر **"دعوة وكيل"** → نافذة تطلب كلمة المرور → تستدعي `create-manager-invite` → تعرض الكود + الرابط مع زر نسخ/مشاركة + **عدّاد تنازلي 15 دقيقة**.
+- صفحة استقبال الرابط `/m/:token` (NanoID): إن لم يسجّل الدخول → توجيه للمصادقة ثم الرجوع؛ إن سُجِّل → شاشة إدخال الكود (input-otp) → استدعاء `redeem-manager-invite` → نجاح → توجيه للـ Dashboard.
+- ذكاء الرابط (App/Store): صفحة وسيطة تكشف المنصة وتوجّه (نسخة الويب الآن؛ روابط Play/App Store كـ placeholders جاهزة للربط لاحقاً).
+- تحديث `JoinManager.tsx` الحالي ليستخدم تدفق الكود الآمن بدل الإدراج المباشر.
+
+## المرحلة 2 — طبقة الأدوار الديناميكية (Roles Layer)
+
+- `useRole()` يبقى المصدر الواحد للدور (موجود ويعمل بالمنطق المطلوب: celebrity → manager → sender). نُبقي `account_type` بسيطاً ولا نعتمد عليه إلا لتمييز المشهور.
+- **RLS على `messages`**: السماح للوكيل بقراءة (وإدارة) رسائل `category='work'` الخاصة بالمشهور المرتبط به عبر `active_manager_of()` — مع الإبقاء التام على عزل `direct` (Private) عن الوكيل.
+- **`Dashboard.tsx`** يعرض الصناديق حسب الدور:
+  - **Celebrity**: Private + Fans كاملان، Business **للقراءة فقط (overview)**.
+  - **Manager**: **Business فقط** للمشهور/المشاهير المرتبط بهم؛ لا يرى Private إطلاقاً. عند تعدّد، مُحدِّد لاختيار المشهور.
+  - **Sender**: لا صناديق داخلية — محادثاته فقط.
+- وسم "No AI" يبقى على Private، والـ Classifier يبقى يعمل دون مساس.
+
+## المرحلة 3 — Deal Card (العرض المنظّم)
+
+### Backend
+- جدول `deal_cards`:
+  - `sender_id`, `celebrity_id`, `message_id` (ربط برسالة في صندوق work)، `deal_type` (أزرار جاهزة: رعاية/ظهور/حضور فعالية/تعاون…)، `budget_range`, `timeline`, `details`, `status` (`pending`/`accepted`/`declined`/`countered`)، طوابع زمنية.
+  - GRANT + RLS: المرسِل يرى/ينشئ عروضه؛ المشهور **والوكيل النشِط** يريان ويغيّران حالة عروض ذلك المشهور (عبر `active_manager_of()`).
+- Trigger يربط إنشاء Deal Card برسالة `work` (حتى يظهر داخل صندوق العمل ويستفيد من E2E الحالي).
+
+### Frontend
+- مكوّن `DealCardComposer`: نموذج بأزرار جاهزة (بدون نص حر مفتوح للحقول الأساسية) لإنشاء عرض منظّم.
+- مكوّن `DealCardView`: عرض احترافي للبطاقة داخل Business Box مع أزرار **قبول / رفض / عرض مضاد** (متاحة للمشهور والوكيل).
+- دمجه في `MessageComposer`/`InboxSection` لصندوق العمل.
+
+## المرحلة 4 — Golden Hour (نافذة الـ60 دقيقة)
+
+### Backend
+- حقول على `deal_cards`: `golden_hour` (boolean)، `golden_hour_expires_at` (= الإنشاء + 60 دقيقة).
+- منطق: عرض Golden Hour يُثبَّت أعلى صندوق العمل ويُميَّز حتى انتهاء المؤقّت، ثم يعود لترتيبه الطبيعي. (بدون بوابة دفع الآن — مفعّل منطقياً كأولوية ظهور؛ ربط الدفع مؤجَّل حسب قرار سابق.)
+- دالة/فهرسة لترتيب الـwork: Golden Hour النشِط أولاً.
+
+### Frontend
+- شارة "Golden Hour" ذهبية + عدّاد 60 دقيقة على البطاقة، وتثبيتها أعلى Business Box.
+- خيار تفعيل Golden Hour عند إنشاء Deal Card.
+
+## ملاحظات تقنية وأمان
+- كل كتابة حسّاسة (دعوات، ربط الوكيل) تمرّ عبر Edge Functions بمفتاح الخدمة + التحقق من JWT داخل الكود + التحقق من المدخلات بـ Zod.
+- لا إدراج مباشر من العميل في `manager_links` ولا `manager_invitations`.
+- صلاحية الدعوة 15 دقيقة تُفرض في قاعدة البيانات (تحقق `expires_at`) وليس في الواجهة فقط.
+- NanoID للـ token عبر مكتبة `nanoid` (إضافة تبعية).
+- الـ Classifier وE2E يبقيان كما هما دون مساس.
+
+أبدأ بالمرحلة 1 (نظام الدعوات) فور موافقتك، ثم أُكمل تباعاً.

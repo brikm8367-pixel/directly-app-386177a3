@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { User, Loader2, ArrowLeft, Lock, Sparkles, Send, Share2, Copy, MessageCircle, Camera, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageComposer from '@/components/messaging/MessageComposer';
+import { DealCardComposer } from '@/components/deals/DealCardComposer';
 import { copyUsername, copyToClipboard } from '@/utils/sharing';
 import { shareCardAsImage } from '@/utils/shareCard';
 
@@ -19,6 +20,7 @@ interface Profile {
   avatar_url: string | null;
   bio: string | null;
   is_public: boolean | null;
+  account_type?: string | null;
 }
 
 
@@ -71,6 +73,7 @@ export default function PublicProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
+  const [showDealCard, setShowDealCard] = useState(false);
   
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +94,7 @@ export default function PublicProfile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, bio, is_public')
+        .select('id, username, display_name, avatar_url, bio, is_public, account_type')
         .eq('username', cleanUsername)
         .single();
 
@@ -276,6 +279,12 @@ export default function PublicProfile() {
               {l.sendMessage}
             </Button>
           )}
+          {user && !isOwnProfile && profile?.account_type === 'celebrity' && (
+            <Button onClick={() => setShowDealCard(true)} variant="outline" className="rounded-xl h-12 px-6 text-base border-blue-500/40 text-blue-600">
+              <Sparkles className="h-5 w-5 me-2" />
+              {language === 'ar' ? 'إرسال عرض عمل' : 'Send Deal'}
+            </Button>
+          )}
           {!user && (
             <Button onClick={() => navigate('/')} className="rounded-xl h-12 px-6 text-base">
               <MessageCircle className="h-5 w-5 me-2" />
@@ -313,6 +322,14 @@ export default function PublicProfile() {
           onClose={() => setShowComposer(false)}
           recipient={profile}
           onMessageSent={() => { setShowComposer(false); toast.success('Sent ✨'); }}
+        />
+      )}
+      {profile && (
+        <DealCardComposer
+          open={showDealCard}
+          onOpenChange={setShowDealCard}
+          celebrityId={profile.id}
+          celebrityName={profile.username}
         />
       )}
     </div>
