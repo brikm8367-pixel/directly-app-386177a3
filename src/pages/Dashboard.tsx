@@ -497,6 +497,14 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Deal Cards — Business box (celebrity sees own, manager sees linked celebrity) */}
+            {messageSearchQuery.length < 2 && (role === 'celebrity' || role === 'manager') && (
+              <BusinessDeals
+                celebrityId={role === 'manager' ? managedCelebrityId : user?.id}
+                canManage={role === 'celebrity' || role === 'manager'}
+              />
+            )}
+
             {/* Inbox categories — visibility driven by Sovereign role */}
             {messageSearchQuery.length < 2 && (
               <>
