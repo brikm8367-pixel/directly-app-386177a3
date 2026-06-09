@@ -24,6 +24,7 @@ import { ClassificationBanner } from '@/components/ClassificationBanner';
 import { decryptFromSender, isEncryptedMessage } from '@/utils/e2eManager';
 import RecipientFiltersManager from '@/components/messaging/RecipientFiltersManager';
 import StoriesRow from '@/components/messaging/StoriesRow';
+import { BusinessDeals } from '@/components/deals/BusinessDeals';
 
 
 interface Profile {
