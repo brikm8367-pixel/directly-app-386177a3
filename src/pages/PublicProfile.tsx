@@ -19,6 +19,7 @@ interface Profile {
   avatar_url: string | null;
   bio: string | null;
   is_public: boolean | null;
+  account_type?: string | null;
 }
 
 
@@ -91,7 +92,7 @@ export default function PublicProfile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, bio, is_public')
+        .select('id, username, display_name, avatar_url, bio, is_public, account_type')
         .eq('username', cleanUsername)
         .single();
 
