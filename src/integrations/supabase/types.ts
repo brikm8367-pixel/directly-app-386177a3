@@ -193,6 +193,42 @@ export type Database = {
         }
         Relationships: []
       }
+      manager_invitations: {
+        Row: {
+          celebrity_id: string
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          status: string
+          token: string
+          updated_at: string
+          used_by: string | null
+        }
+        Insert: {
+          celebrity_id: string
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          token: string
+          updated_at?: string
+          used_by?: string | null
+        }
+        Update: {
+          celebrity_id?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          token?: string
+          updated_at?: string
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       manager_links: {
         Row: {
           celebrity_id: string
@@ -575,6 +611,7 @@ export type Database = {
       my_managed_celebrity: { Args: { _uid: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      validate_invitation: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       account_type: "celebrity" | "sender"
