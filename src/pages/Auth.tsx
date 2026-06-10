@@ -35,10 +35,17 @@ export default function Auth() {
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Where to go after auth: honor a safe in-app ?redirect= path (e.g. manager invite links).
+  const rawRedirect = searchParams.get('redirect') || '';
+  const redirectTarget = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+    ? rawRedirect
+    : '/home';
 
   useEffect(() => {
-    if (!loading && user) navigate('/home');
-  }, [user, loading, navigate]);
+    if (!loading && user) navigate(redirectTarget, { replace: true });
+  }, [user, loading, navigate, redirectTarget]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
