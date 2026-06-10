@@ -295,7 +295,10 @@ export default function Auth() {
             onClick={async () => {
               setIsLoading(true);
               setError('');
-              const { error } = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+              const oauthRedirect = redirectTarget !== '/home'
+                ? `${window.location.origin}/?redirect=${encodeURIComponent(redirectTarget)}`
+                : window.location.origin;
+              const { error } = await lovable.auth.signInWithOAuth("google", { redirect_uri: oauthRedirect });
               if (error) setError('Failed to sign in with Google');
               setIsLoading(false);
             }}
