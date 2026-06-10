@@ -31,7 +31,7 @@ export function InviteManagerDialog({ open, onOpenChange }: Props) {
   const [remaining, setRemaining] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
-  const inviteLink = invite ? `${window.location.origin}/m/${invite.token}` : '';
+  const inviteLink = invite ? buildShareLink(`/m/${invite.token}`) : '';
 
   // Countdown to expiry.
   useEffect(() => {
