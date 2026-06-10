@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,10 +35,17 @@ export default function Auth() {
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Where to go after auth: honor a safe in-app ?redirect= path (e.g. manager invite links).
+  const rawRedirect = searchParams.get('redirect') || '';
+  const redirectTarget = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+    ? rawRedirect
+    : '/home';
 
   useEffect(() => {
-    if (!loading && user) navigate('/home');
-  }, [user, loading, navigate]);
+    if (!loading && user) navigate(redirectTarget, { replace: true });
+  }, [user, loading, navigate, redirectTarget]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,7 +295,10 @@ export default function Auth() {
             onClick={async () => {
               setIsLoading(true);
               setError('');
-              const { error } = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+              const oauthRedirect = redirectTarget !== '/home'
+                ? `${window.location.origin}/?redirect=${encodeURIComponent(redirectTarget)}`
+                : window.location.origin;
+              const { error } = await lovable.auth.signInWithOAuth("google", { redirect_uri: oauthRedirect });
               if (error) setError('Failed to sign in with Google');
               setIsLoading(false);
             }}
@@ -311,7 +321,10 @@ export default function Auth() {
             onClick={async () => {
               setIsLoading(true);
               setError('');
-              const { error } = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+              const oauthRedirect = redirectTarget !== '/home'
+                ? `${window.location.origin}/?redirect=${encodeURIComponent(redirectTarget)}`
+                : window.location.origin;
+              const { error } = await lovable.auth.signInWithOAuth("apple", { redirect_uri: oauthRedirect });
               if (error) setError('Failed to sign in with Apple');
               setIsLoading(false);
             }}
