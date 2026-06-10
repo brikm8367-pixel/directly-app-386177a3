@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Loader2, Copy, Check, Link2, ShieldCheck, Clock, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
+import { buildShareLink } from '@/lib/appUrl';
 
 interface Props {
   open: boolean;
