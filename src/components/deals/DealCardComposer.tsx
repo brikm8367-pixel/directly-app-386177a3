@@ -128,7 +128,13 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
     });
 
     setSending(false);
-    if (dealErr) { toast.error(isRTL ? 'تعذّر إنشاء البطاقة' : 'Could not create deal card'); return; }
+    if (dealErr) {
+      const gated = String((dealErr as any)?.message || '').includes('golden_hour_not_allowed');
+      toast.error(gated
+        ? (isRTL ? 'Golden Hour ميزة مدفوعة وغير مفعّلة لحسابك' : 'Golden Hour is a paid feature not enabled on your account')
+        : (isRTL ? 'تعذّر إنشاء البطاقة' : 'Could not create deal card'));
+      return;
+    }
 
     toast.success(isRTL ? 'تم إرسال بطاقة العرض' : 'Deal card sent');
     reset();
