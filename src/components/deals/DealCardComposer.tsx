@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Sparkles, Briefcase, Check } from 'lucide-react';
+import { Loader2, Sparkles, Briefcase, Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -46,6 +46,41 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
   const [details, setDetails] = useState('');
   const [goldenHour, setGoldenHour] = useState(false);
   const [sending, setSending] = useState(false);
+  const [goldenAllowed, setGoldenAllowed] = useState(false);
+  const [hasPending, setHasPending] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // On open: check Golden Hour entitlement (payment gate) + existing pending deal.
+  useEffect(() => {
+    if (!open || !user) return;
+    let active = true;
+    setChecking(true);
+    (async () => {
+      const [{ data: ent }, { data: pending }] = await Promise.all([
+        supabase
+          .from('feature_entitlements')
+          .select('granted, expires_at')
+          .eq('user_id', user.id)
+          .eq('feature', 'golden_hour')
+          .maybeSingle(),
+        supabase
+          .from('deal_cards')
+          .select('id')
+          .eq('sender_id', user.id)
+          .eq('celebrity_id', celebrityId)
+          .eq('status', 'pending')
+          .limit(1),
+      ]);
+      if (!active) return;
+      const e = ent as any;
+      const allowed = !!e?.granted && (!e.expires_at || new Date(e.expires_at) > new Date());
+      setGoldenAllowed(allowed);
+      setHasPending((pending?.length ?? 0) > 0);
+      if (!allowed) setGoldenHour(false);
+      setChecking(false);
+    })();
+    return () => { active = false; };
+  }, [open, user, celebrityId]);
 
   const reset = () => {
     setDealType(''); setBudget(''); setTimeline(''); setDetails(''); setGoldenHour(false);
@@ -54,6 +89,10 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
   const submit = async () => {
     if (!user) return;
     if (!dealType) { toast.error(isRTL ? 'اختر نوع العرض' : 'Choose a deal type'); return; }
+    if (hasPending) {
+      toast.error(isRTL ? 'لديك عرض قيد المراجعة بالفعل — انتظر الرد أولاً' : 'You already have a pending deal — wait for a reply first');
+      return;
+    }
     setSending(true);
 
     const typeLabel = DEAL_TYPES.find(t => t.id === dealType);
@@ -89,7 +128,13 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
     });
 
     setSending(false);
-    if (dealErr) { toast.error(isRTL ? 'تعذّر إنشاء البطاقة' : 'Could not create deal card'); return; }
+    if (dealErr) {
+      const gated = String((dealErr as any)?.message || '').includes('golden_hour_not_allowed');
+      toast.error(gated
+        ? (isRTL ? 'Golden Hour ميزة مدفوعة وغير مفعّلة لحسابك' : 'Golden Hour is a paid feature not enabled on your account')
+        : (isRTL ? 'تعذّر إنشاء البطاقة' : 'Could not create deal card'));
+      return;
+    }
 
     toast.success(isRTL ? 'تم إرسال بطاقة العرض' : 'Deal card sent');
     reset();
@@ -159,22 +204,34 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
             rows={3}
           />
 
-          <div className="flex items-center justify-between p-3 rounded-xl border border-amber-500/30 bg-amber-500/5">
+          <div className={cn('flex items-center justify-between p-3 rounded-xl border',
+            goldenAllowed ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/30')}>
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-500" />
+              {goldenAllowed ? <Sparkles className="h-4 w-4 text-amber-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
               <div>
-                <p className="text-sm font-medium">{isRTL ? 'Golden Hour' : 'Golden Hour'}</p>
-                <p className="text-[11px] text-muted-foreground">{isRTL ? 'تثبيت العرض أعلى صندوق العمل لمدة 60 دقيقة' : 'Pin atop the Business box for 60 minutes'}</p>
+                <p className="text-sm font-medium">Golden Hour</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {goldenAllowed
+                    ? (isRTL ? 'أولوية 60 دقيقة تبدأ عند أول رد' : 'A 60-min priority window that starts on the first reply')
+                    : (isRTL ? 'ميزة مدفوعة — تتطلب اشتراكاً لتفعيلها' : 'Paid feature — requires a subscription to unlock')}
+                </p>
               </div>
             </div>
-            <Switch checked={goldenHour} onCheckedChange={setGoldenHour} />
+            <Switch checked={goldenHour} onCheckedChange={setGoldenHour} disabled={!goldenAllowed || checking} />
           </div>
 
-          <Button onClick={submit} disabled={sending} className="w-full h-12 rounded-xl">
+          {hasPending && (
+            <p className="text-[11px] text-amber-600 text-center">
+              {isRTL ? 'لديك عرض قيد المراجعة — لا يمكن إرسال عرض جديد حتى يتم الرد.' : 'You have a pending deal — you cannot send a new one until it gets a reply.'}
+            </p>
+          )}
+
+          <Button onClick={submit} disabled={sending || checking || hasPending} className="w-full h-12 rounded-xl">
             {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : (
               <><Check className="h-4 w-4 me-2" />{isRTL ? 'إرسال العرض' : 'Send Deal'}</>
             )}
           </Button>
+
         </div>
       </DialogContent>
     </Dialog>

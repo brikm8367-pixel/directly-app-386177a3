@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Crown, UserCog, KeyRound, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { InviteManagerDialog } from './InviteManagerDialog';
+import { KillSwitch } from './KillSwitch';
+import { ManagerActivityLog } from './ManagerActivityLog';
 
 interface ManagerRow {
   id: string;
@@ -145,6 +147,12 @@ export function SovereignRolePanel() {
               ))}
             </div>
           )}
+
+          {managers.some((m) => m.status === 'active') && (
+            <KillSwitch onDone={loadManagers} />
+          )}
+
+          <ManagerActivityLog />
         </div>
       )}
     </div>

@@ -104,7 +104,11 @@ export function BusinessDeals({ celebrityId, canManage }: { celebrityId?: string
   const { isRTL } = useLanguage();
   const { deals, loading, updateStatus, isGoldenActive } = useDealCards(celebrityId);
 
-  if (loading || deals.length === 0) return null;
+  // A deal card lives in the Business box until the first reply.
+  // After a reply (status leaves "pending") it disappears — unless its Golden Hour is still running.
+  const visible = deals.filter((d) => d.status === 'pending' || isGoldenActive(d));
+
+  if (loading || visible.length === 0) return null;
 
   return (
     <div className="rounded-2xl border border-blue-500/20 bg-blue-500/[0.03] p-4 space-y-3">
@@ -116,7 +120,7 @@ export function BusinessDeals({ celebrityId, canManage }: { celebrityId?: string
         </div>
       </div>
       <div className="space-y-2">
-        {deals.map(d => (
+        {visible.map(d => (
           <DealRow key={d.id} deal={d} canManage={canManage} onStatus={updateStatus} isGoldenActive={isGoldenActive} />
         ))}
       </div>
