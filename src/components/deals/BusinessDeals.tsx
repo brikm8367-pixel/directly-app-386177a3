@@ -120,7 +120,7 @@ export function BusinessDeals({ celebrityId, canManage }: { celebrityId?: string
         </div>
       </div>
       <div className="space-y-2">
-        {deals.map(d => (
+        {visible.map(d => (
           <DealRow key={d.id} deal={d} canManage={canManage} onStatus={updateStatus} isGoldenActive={isGoldenActive} />
         ))}
       </div>
