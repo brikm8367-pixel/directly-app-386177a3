@@ -249,6 +249,63 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_entitlements: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          feature: string
+          granted: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          feature: string
+          granted?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          feature?: string
+          granted?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      manager_activity_log: {
+        Row: {
+          action: string
+          celebrity_id: string
+          created_at: string
+          detail: string | null
+          id: string
+          manager_id: string
+        }
+        Insert: {
+          action: string
+          celebrity_id: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          manager_id: string
+        }
+        Update: {
+          action?: string
+          celebrity_id?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          manager_id?: string
+        }
+        Relationships: []
+      }
       manager_invitations: {
         Row: {
           celebrity_id: string
@@ -656,6 +713,10 @@ export type Database = {
         }
         Returns: number
       }
+      has_entitlement: {
+        Args: { _feature: string; _uid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -664,6 +725,7 @@ export type Database = {
         Returns: boolean
       }
       is_celebrity: { Args: { _uid: string }; Returns: boolean }
+      kill_switch_revoke_all: { Args: { _celebrity: string }; Returns: number }
       my_managed_celebrity: { Args: { _uid: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
