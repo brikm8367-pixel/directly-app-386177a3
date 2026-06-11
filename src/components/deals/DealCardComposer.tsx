@@ -198,22 +198,34 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
             rows={3}
           />
 
-          <div className="flex items-center justify-between p-3 rounded-xl border border-amber-500/30 bg-amber-500/5">
+          <div className={cn('flex items-center justify-between p-3 rounded-xl border',
+            goldenAllowed ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/30')}>
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-500" />
+              {goldenAllowed ? <Sparkles className="h-4 w-4 text-amber-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
               <div>
-                <p className="text-sm font-medium">{isRTL ? 'Golden Hour' : 'Golden Hour'}</p>
-                <p className="text-[11px] text-muted-foreground">{isRTL ? 'تثبيت العرض أعلى صندوق العمل لمدة 60 دقيقة' : 'Pin atop the Business box for 60 minutes'}</p>
+                <p className="text-sm font-medium">Golden Hour</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {goldenAllowed
+                    ? (isRTL ? 'أولوية 60 دقيقة تبدأ عند أول رد' : 'A 60-min priority window that starts on the first reply')
+                    : (isRTL ? 'ميزة مدفوعة — تتطلب اشتراكاً لتفعيلها' : 'Paid feature — requires a subscription to unlock')}
+                </p>
               </div>
             </div>
-            <Switch checked={goldenHour} onCheckedChange={setGoldenHour} />
+            <Switch checked={goldenHour} onCheckedChange={setGoldenHour} disabled={!goldenAllowed || checking} />
           </div>
 
-          <Button onClick={submit} disabled={sending} className="w-full h-12 rounded-xl">
+          {hasPending && (
+            <p className="text-[11px] text-amber-600 text-center">
+              {isRTL ? 'لديك عرض قيد المراجعة — لا يمكن إرسال عرض جديد حتى يتم الرد.' : 'You have a pending deal — you cannot send a new one until it gets a reply.'}
+            </p>
+          )}
+
+          <Button onClick={submit} disabled={sending || checking || hasPending} className="w-full h-12 rounded-xl">
             {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : (
               <><Check className="h-4 w-4 me-2" />{isRTL ? 'إرسال العرض' : 'Send Deal'}</>
             )}
           </Button>
+
         </div>
       </DialogContent>
     </Dialog>
