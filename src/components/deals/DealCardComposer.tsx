@@ -46,6 +46,41 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
   const [details, setDetails] = useState('');
   const [goldenHour, setGoldenHour] = useState(false);
   const [sending, setSending] = useState(false);
+  const [goldenAllowed, setGoldenAllowed] = useState(false);
+  const [hasPending, setHasPending] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // On open: check Golden Hour entitlement (payment gate) + existing pending deal.
+  useEffect(() => {
+    if (!open || !user) return;
+    let active = true;
+    setChecking(true);
+    (async () => {
+      const [{ data: ent }, { data: pending }] = await Promise.all([
+        supabase
+          .from('feature_entitlements')
+          .select('granted, expires_at')
+          .eq('user_id', user.id)
+          .eq('feature', 'golden_hour')
+          .maybeSingle(),
+        supabase
+          .from('deal_cards')
+          .select('id')
+          .eq('sender_id', user.id)
+          .eq('celebrity_id', celebrityId)
+          .eq('status', 'pending')
+          .limit(1),
+      ]);
+      if (!active) return;
+      const e = ent as any;
+      const allowed = !!e?.granted && (!e.expires_at || new Date(e.expires_at) > new Date());
+      setGoldenAllowed(allowed);
+      setHasPending((pending?.length ?? 0) > 0);
+      if (!allowed) setGoldenHour(false);
+      setChecking(false);
+    })();
+    return () => { active = false; };
+  }, [open, user, celebrityId]);
 
   const reset = () => {
     setDealType(''); setBudget(''); setTimeline(''); setDetails(''); setGoldenHour(false);
@@ -54,6 +89,10 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
   const submit = async () => {
     if (!user) return;
     if (!dealType) { toast.error(isRTL ? 'اختر نوع العرض' : 'Choose a deal type'); return; }
+    if (hasPending) {
+      toast.error(isRTL ? 'لديك عرض قيد المراجعة بالفعل — انتظر الرد أولاً' : 'You already have a pending deal — wait for a reply first');
+      return;
+    }
     setSending(true);
 
     const typeLabel = DEAL_TYPES.find(t => t.id === dealType);
