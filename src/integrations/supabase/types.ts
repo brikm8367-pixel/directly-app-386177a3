@@ -508,6 +508,7 @@ export type Database = {
           public_key: string | null
           referral_code: string | null
           referred_by: string | null
+          slug: string | null
           updated_at: string | null
           username: string | null
         }
@@ -522,6 +523,7 @@ export type Database = {
           public_key?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          slug?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -536,6 +538,7 @@ export type Database = {
           public_key?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          slug?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -658,6 +661,18 @@ export type Database = {
         }
         Relationships: []
       }
+      reserved_slugs: {
+        Row: {
+          slug: string
+        }
+        Insert: {
+          slug: string
+        }
+        Update: {
+          slug?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -706,6 +721,7 @@ export type Database = {
         Returns: boolean
       }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
+      gen_unique_slug: { Args: never; Returns: string }
       get_message_count: {
         Args: {
           _category: Database["public"]["Enums"]["message_category"]
@@ -727,6 +743,7 @@ export type Database = {
       is_celebrity: { Args: { _uid: string }; Returns: boolean }
       kill_switch_revoke_all: { Args: { _celebrity: string }; Returns: number }
       my_managed_celebrity: { Args: { _uid: string }; Returns: string }
+      set_profile_slug: { Args: { _slug: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       validate_invitation: { Args: { _code: string }; Returns: string }
