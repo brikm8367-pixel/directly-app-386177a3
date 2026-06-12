@@ -16,7 +16,7 @@ const FEATURES = [
 
 const TESTIMONIALS = [
   { name: 'Sarah K.', role: 'Product Designer', text: '"Finally, a messaging app that respects my time. The AI inbox sorting is game-changing."', rating: 5 },
-  { name: 'Ahmed M.', role: 'Startup Founder', text: '"I replaced 3 apps with Directly. Work messages stay in Work, personal stays personal."', rating: 5 },
+  { name: 'Ahmed M.', role: 'Startup Founder', text: '"I replaced 3 apps with Sovereign. Work messages stay in Work, personal stays personal."', rating: 5 },
   { name: 'Emily R.', role: 'Content Creator', text: '"My audience can reach me without flooding my personal inbox. Brilliant."', rating: 5 },
 ];
 
@@ -34,7 +34,7 @@ export default function Launch() {
   const { language } = useLanguage();
 
   useEffect(() => {
-    document.title = 'Directly — Your Inbox, Your Rules | Product Hunt Launch';
+    document.title = 'Sovereign — Your Inbox, Your Rules | Product Hunt Launch';
   }, []);
 
   return (
@@ -116,14 +116,14 @@ export default function Launch() {
       {/* Comparison Table */}
       <section className="bg-muted/30 py-16">
         <div className="max-w-3xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">Why Directly?</h2>
+          <h2 className="text-3xl font-bold text-center mb-4">Why Sovereign?</h2>
           <p className="text-center text-muted-foreground mb-8">See how we compare to other messaging platforms</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-start py-3 px-4 font-semibold">Feature</th>
-                  <th className="text-center py-3 px-4 font-bold text-primary">Directly</th>
+                  <th className="text-center py-3 px-4 font-bold text-primary">Sovereign</th>
                   <th className="text-center py-3 px-4 text-muted-foreground">WhatsApp</th>
                   <th className="text-center py-3 px-4 text-muted-foreground">Telegram</th>
                 </tr>
@@ -234,7 +234,7 @@ export default function Launch() {
       {/* Footer */}
       <footer className="py-8 text-center border-t border-border">
         <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Directly. Smart Communication for Everyone.
+          © {new Date().getFullYear()} Sovereign. Smart Communication for Everyone.
         </p>
         <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
           <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>

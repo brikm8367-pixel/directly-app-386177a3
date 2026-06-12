@@ -37,7 +37,7 @@ export function ClassificationBanner({ senderName, category, isFirst }: Classifi
         >
           <p className="text-sm font-medium">
             {isFirst
-              ? (isRTL ? 'أول رسالة وصلت لمكانها — هذا هو Directly.' : 'First message landed in its place — this is Directly.')
+              ? (isRTL ? 'أول رسالة وصلت لمكانها — هذا هو Sovereign.' : 'First message landed in its place — this is Sovereign.')
               : (isRTL 
                   ? `رسالة من ${senderName} — فهمناها ووصلت لمكانها في ${c.ar} ${c.emoji}`
                   : `Message from ${senderName} — understood and placed in ${c.en} ${c.emoji}`

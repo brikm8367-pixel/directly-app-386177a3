@@ -29,7 +29,7 @@ export async function authenticateBiometric(reason = 'تأكيد الدفع'): P
         if (available?.isAvailable) {
           await NativeBiometric.verifyIdentity({
             reason,
-            title: 'Directly',
+            title: 'Sovereign',
             subtitle: 'وصول حصري',
             description: reason,
           });

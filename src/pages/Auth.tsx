@@ -149,7 +149,7 @@ export default function Auth() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
             <MessageSquare className="h-7 w-7" />
           </div>
-          <span className="text-2xl font-bold text-foreground">Directly</span>
+          <span className="text-2xl font-bold text-foreground">Sovereign</span>
           <p className="text-sm text-muted-foreground text-center max-w-[250px]">
             Smart Communication
           </p>
@@ -190,7 +190,7 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username" className="text-sm font-medium">
-                    Your name on Directly — people will find you by it.
+                    Your name on Sovereign — people will find you by it.
                   </Label>
                   <Input
                     id="username"
@@ -341,7 +341,7 @@ export default function Auth() {
             <span className="text-[11px] font-medium">End-to-end encrypted · Zero tracking</span>
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-2">
-            You must be 13 years or older to use Directly.
+            You must be 13 years or older to use Sovereign.
           </p>
 
           <div className="mt-5 text-center">
@@ -354,7 +354,7 @@ export default function Auth() {
 
         <div className="mt-6 text-center">
           <button onClick={() => navigate('/welcome')} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            What is Directly?
+            What is Sovereign?
           </button>
         </div>
       </div>

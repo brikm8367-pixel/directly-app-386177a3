@@ -249,6 +249,112 @@ export type Database = {
         }
         Relationships: []
       }
+      fan_group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fan_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "fan_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fan_group_messages: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fan_group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "fan_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fan_groups: {
+        Row: {
+          allow_member_posts: boolean
+          celebrity_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          messages_per_hour: number
+          name: string
+          slug: string
+          topic_of_day: string | null
+          updated_at: string
+        }
+        Insert: {
+          allow_member_posts?: boolean
+          celebrity_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          messages_per_hour?: number
+          name: string
+          slug: string
+          topic_of_day?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allow_member_posts?: boolean
+          celebrity_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          messages_per_hour?: number
+          name?: string
+          slug?: string
+          topic_of_day?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feature_entitlements: {
         Row: {
           created_at: string
@@ -508,6 +614,7 @@ export type Database = {
           public_key: string | null
           referral_code: string | null
           referred_by: string | null
+          slug: string | null
           updated_at: string | null
           username: string | null
         }
@@ -522,6 +629,7 @@ export type Database = {
           public_key?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          slug?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -536,6 +644,7 @@ export type Database = {
           public_key?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          slug?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -658,6 +767,18 @@ export type Database = {
         }
         Relationships: []
       }
+      reserved_slugs: {
+        Row: {
+          slug: string
+        }
+        Insert: {
+          slug: string
+        }
+        Update: {
+          slug?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -705,7 +826,36 @@ export type Database = {
         Args: { _invite_code: string; _invitee_id: string }
         Returns: boolean
       }
+      create_fan_group: {
+        Args: {
+          _allow_member_posts?: boolean
+          _description?: string
+          _messages_per_hour?: number
+          _name: string
+        }
+        Returns: {
+          allow_member_posts: boolean
+          celebrity_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          messages_per_hour: number
+          name: string
+          slug: string
+          topic_of_day: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "fan_groups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
+      gen_unique_group_slug: { Args: never; Returns: string }
+      gen_unique_slug: { Args: never; Returns: string }
       get_message_count: {
         Args: {
           _category: Database["public"]["Enums"]["message_category"]
@@ -713,6 +863,7 @@ export type Database = {
         }
         Returns: number
       }
+      group_owner: { Args: { _group: string }; Returns: string }
       has_entitlement: {
         Args: { _feature: string; _uid: string }
         Returns: boolean
@@ -725,8 +876,13 @@ export type Database = {
         Returns: boolean
       }
       is_celebrity: { Args: { _uid: string }; Returns: boolean }
+      is_group_member: {
+        Args: { _group: string; _uid: string }
+        Returns: boolean
+      }
       kill_switch_revoke_all: { Args: { _celebrity: string }; Returns: number }
       my_managed_celebrity: { Args: { _uid: string }; Returns: string }
+      set_profile_slug: { Args: { _slug: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       validate_invitation: { Args: { _code: string }; Returns: string }

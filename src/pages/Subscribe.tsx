@@ -202,9 +202,9 @@ export default function Subscribe() {
           className="mt-16 text-center"
         >
           <div className="inline-flex items-center gap-3 text-sm" style={{ color: '#6A6A6F' }}>
-            <span>بدون Directly: ضجيج</span>
+            <span>بدون Sovereign: ضجيج</span>
             <span style={{ color: GOLD }}>·</span>
-            <span style={{ color: '#fff' }}>مع Directly: وصول مضمون</span>
+            <span style={{ color: '#fff' }}>مع Sovereign: وصول مضمون</span>
           </div>
         </motion.div>
 

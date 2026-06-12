@@ -40,8 +40,8 @@ serve(async (req) => {
   }
 
   const displayName = profile.display_name || username;
-  const ogTitle = `${displayName} | Directly`;
-  const ogDescription = profile.bio || `${displayName} on Directly`;
+  const ogTitle = `${displayName} | Sovereign`;
+  const ogDescription = profile.bio || `${displayName} on Sovereign`;
 
   const ogImage = profile.avatar_url || 'https://ddirectly-com.lovable.app/pwa-512x512.png';
   const profileUrl = `https://ddirectly-com.lovable.app/@${username}`;
@@ -63,7 +63,7 @@ serve(async (req) => {
   <meta property="og:image" content="${ogImage}" />
   <meta property="og:image:width" content="512" />
   <meta property="og:image:height" content="512" />
-  <meta property="og:site_name" content="Directly" />
+  <meta property="og:site_name" content="Sovereign" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:locale:alternate" content="ar_SA" />
   <meta property="og:locale:alternate" content="fr_FR" />
@@ -74,7 +74,7 @@ serve(async (req) => {
   <meta name="twitter:title" content="${ogTitle}" />
   <meta name="twitter:description" content="${ogDescription}" />
   <meta name="twitter:image" content="${ogImage}" />
-  <meta name="twitter:site" content="@DirectlyApp" />
+  <meta name="twitter:site" content="@SovereignApp" />
   
   <!-- Profile structured data -->
   <script type="application/ld+json">

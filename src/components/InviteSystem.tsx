@@ -52,7 +52,7 @@ export default function InviteSystem({ isOpen, onClose }: InviteSystemProps) {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Directly',
+        title: 'Sovereign',
         text: isRTL
           ? 'أرسل لك هذا لأنك أول من أفكر فيه عند اختبار شيء مختلف'
           : "I'm sending you this because you're the first person I think of when trying something different",

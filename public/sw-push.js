@@ -1,6 +1,6 @@
-// Service Worker for Push Notifications — Directly
+// Service Worker for Push Notifications — Sovereign
 self.addEventListener('push', (event) => {
-  let data = { title: 'Directly', body: 'New message', icon: '/pwa-192x192.png' };
+  let data = { title: 'Sovereign', body: 'New message', icon: '/pwa-192x192.png' };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch (e) {}

@@ -12,7 +12,7 @@ export const en: Translations = {
     badge: 'Control. Clarity. Peace.',
     title1: 'Decide who gets access',
     title2: 'to you — and why',
-    subtitle: 'Not everyone deserves your attention. Directly is your gateway to control who can reach you.',
+    subtitle: 'Not everyone deserves your attention. Sovereign is your gateway to control who can reach you.',
     cta1: 'Take Control',
     cta2: 'See How it Works',
     trust1: 'Your Protection First',
@@ -70,7 +70,7 @@ export const en: Translations = {
       description: 'Decide who deserves access to you and why',
     },
     step2: {
-      title: 'Let Directly work',
+      title: 'Let Sovereign work',
       description: 'Every message is automatically routed to the right level',
     },
     step3: {
@@ -93,14 +93,14 @@ export const en: Translations = {
     howItWorks: 'How it Works',
     pricing: 'Pricing',
     contactUs: 'Contact Us',
-    copyright: '© 2024 Directly. All rights reserved.',
+    copyright: '© 2024 Sovereign. All rights reserved.',
   },
   demoModal: {
     persona: {
       name: 'Sarah Ahmed',
       role: 'Influencer & Entrepreneur',
       followers: '500K',
-      quote: 'Before Directly, I was losing important messages in the noise. Now I decide who reaches me.',
+      quote: 'Before Sovereign, I was losing important messages in the noise. Now I decide who reaches me.',
     },
     categories: {
       work: {

@@ -12,7 +12,7 @@ export const ar: Translations = {
     badge: 'تحكم. وضوح. راحة.',
     title1: 'قرر من يصل إليك',
     title2: 'ولماذا',
-    subtitle: 'ليس كل شخص يستحق انتباهك. Directly بوابتك للتحكم في من يمكنه الوصول إليك.',
+    subtitle: 'ليس كل شخص يستحق انتباهك. Sovereign بوابتك للتحكم في من يمكنه الوصول إليك.',
     cta1: 'تحكّم الآن',
     cta2: 'شاهد كيف يعمل',
     trust1: 'حمايتك أولاً',
@@ -70,7 +70,7 @@ export const ar: Translations = {
       description: 'قرر من يستحق الوصول إليك ولماذا',
     },
     step2: {
-      title: 'دع Directly يعمل',
+      title: 'دع Sovereign يعمل',
       description: 'كل رسالة تُوجّه تلقائياً للمستوى الصحيح',
     },
     step3: {
@@ -93,14 +93,14 @@ export const ar: Translations = {
     howItWorks: 'كيف يعمل',
     pricing: 'الأسعار',
     contactUs: 'تواصل معنا',
-    copyright: '© 2024 Directly. جميع الحقوق محفوظة.',
+    copyright: '© 2024 Sovereign. جميع الحقوق محفوظة.',
   },
   demoModal: {
     persona: {
       name: 'سارة الأحمد',
       role: 'مؤثرة ورائدة أعمال',
       followers: '500K',
-      quote: 'قبل Directly كنت أفقد الرسائل المهمة وسط الضوضاء. الآن أنا أقرر من يصل إليّ.',
+      quote: 'قبل Sovereign كنت أفقد الرسائل المهمة وسط الضوضاء. الآن أنا أقرر من يصل إليّ.',
     },
     categories: {
       work: {

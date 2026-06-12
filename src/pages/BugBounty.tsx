@@ -24,12 +24,12 @@ export default function BugBounty() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">برنامج Bug Bounty</h1>
-            <p className="text-sm text-muted-foreground">أمان Directly مسؤولية مشتركة</p>
+            <p className="text-sm text-muted-foreground">أمان Sovereign مسؤولية مشتركة</p>
           </div>
         </div>
 
         <p className="mt-8 text-base leading-relaxed text-muted-foreground">
-          نؤمن أن خصوصية المستخدم لا تُختزل. إذا اكتشفت ثغرة أمنية في Directly،
+          نؤمن أن خصوصية المستخدم لا تُختزل. إذا اكتشفت ثغرة أمنية في Sovereign،
           نُقدّر إبلاغنا قبل الإفصاح العلني.
         </p>
 

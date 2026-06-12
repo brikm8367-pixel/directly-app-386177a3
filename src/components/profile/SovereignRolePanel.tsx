@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { InviteManagerDialog } from './InviteManagerDialog';
 import { KillSwitch } from './KillSwitch';
 import { ManagerActivityLog } from './ManagerActivityLog';
+import { CustomLinkCard } from './CustomLinkCard';
+import { FanGroupsManager } from '@/components/groups/FanGroupsManager';
 
 interface ManagerRow {
   id: string;
@@ -79,7 +81,8 @@ export function SovereignRolePanel() {
   if (loading) return null;
 
   return (
-    <div className="mt-6 p-4 rounded-2xl bg-card border border-border space-y-4">
+    <div className="mt-6 space-y-4">
+    <div className="p-4 rounded-2xl bg-card border border-border space-y-4">
       <div className="flex items-center gap-2">
         <Crown className="h-4 w-4 text-amber-500" />
         <p className="font-semibold text-sm">{isRTL ? 'الدور في Sovereign' : 'Sovereign Role'}</p>
@@ -155,6 +158,10 @@ export function SovereignRolePanel() {
           <ManagerActivityLog />
         </div>
       )}
+    </div>
+
+      <CustomLinkCard />
+      {accountType === 'celebrity' && <FanGroupsManager />}
     </div>
   );
 }
