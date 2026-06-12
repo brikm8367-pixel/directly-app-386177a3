@@ -70,7 +70,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             transition={{ delay: 0.6, duration: 0.5 }}
             className="absolute bottom-24 text-center"
           >
-            <p className="text-2xl font-bold gold-shine tracking-wide mb-2">Directly</p>
+            <p className="text-2xl font-bold gold-shine tracking-wide mb-2">Sovereign</p>
             <p className="text-sm text-white/50">Everything in its place</p>
           </motion.div>
         </motion.div>

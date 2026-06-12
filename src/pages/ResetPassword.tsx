@@ -57,7 +57,7 @@ export default function ResetPassword() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
             <MessageSquare className="h-7 w-7" />
           </div>
-          <span className="text-2xl font-bold text-foreground">Directly</span>
+          <span className="text-2xl font-bold text-foreground">Sovereign</span>
         </div>
 
         <div className="bg-card rounded-2xl p-6 border border-border shadow-lg">

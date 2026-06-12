@@ -58,10 +58,10 @@ export async function shareProfile(
   successMsg = 'Link copied!'
 ) {
   const url = getProfileUrl(username);
-  const shareText = `Check out ${displayName} on Directly`;
+  const shareText = `Check out ${displayName} on Sovereign`;
 
   const shared = await nativeShare(
-    { title: `${displayName} — Directly`, text: shareText, url },
+    { title: `${displayName} — Sovereign`, text: shareText, url },
     successMsg
   );
 

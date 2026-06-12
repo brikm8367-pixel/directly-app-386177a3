@@ -112,7 +112,7 @@ serve(async (req) => {
     }
 
     // ============ LAYER 2: AI classification ============
-    const prompt = `أنت نظام تصنيف رسائل لتطبيق Directly. صنّف إلى "work" أو "audience" فقط.
+    const prompt = `أنت نظام تصنيف رسائل لتطبيق Sovereign. صنّف إلى "work" أو "audience" فقط.
 
 السياق:
 - آخر رسالة: ${lastMessage || 'لا توجد'}

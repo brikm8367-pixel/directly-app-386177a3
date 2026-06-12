@@ -250,7 +250,7 @@ export default function Dashboard() {
         if (msg) {
           const categoryLabel = msg.category === 'work' ? '💼' : msg.category === 'direct' ? '⭐' : '👥';
           showInAppNotification(
-            `${categoryLabel} Directly`,
+            `${categoryLabel} Sovereign`,
             msg.voice_url ? '🎤 Voice message' : msg.media_url ? '📷 Media' : msg.content?.substring(0, 50) || 'New message'
           );
           // Classification banner
@@ -427,8 +427,8 @@ export default function Dashboard() {
               </p>
               <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
                 {isRTL 
-                  ? 'ادعُ فقط من تريد التواصل معه، ودع الباقي على Directly.'
-                  : 'Invite only who you want to connect with. Leave the rest to Directly.'}
+                  ? 'ادعُ فقط من تريد التواصل معه، ودع الباقي على Sovereign.'
+                  : 'Invite only who you want to connect with. Leave the rest to Sovereign.'}
               </p>
             </div>
 

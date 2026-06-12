@@ -30,7 +30,7 @@ const LABELS: Record<string, Record<string, string>> = {
     sendMessage: 'إرسال رسالة', talkTo: 'تحدث مع', goBack: 'العودة',
     privateProfile: 'هذا الملف خاص', userNotFound: 'لم يتم العثور على هذا المستخدم',
     commStyle: 'نمط التواصل', shareProfile: 'مشاركة', linkCopied: 'تم نسخ الرابط!',
-    usernameCopied: 'تم نسخ اسم المستخدم', joinDirectly: 'انضم إلى Directly',
+    usernameCopied: 'تم نسخ اسم المستخدم', joinSovereign: 'انضم إلى Sovereign',
     changeAvatar: 'تغيير الصورة', removeAvatar: 'إزالة الصورة',
     encrypted: 'مشفّر من طرف إلى طرف',
     discoverStyle: 'اكتشف نمط تواصلك',
@@ -39,7 +39,7 @@ const LABELS: Record<string, Record<string, string>> = {
     sendMessage: 'Send Message', talkTo: 'Talk to', goBack: 'Go back',
     privateProfile: 'This profile is private', userNotFound: 'User not found',
     commStyle: 'Communication Style', shareProfile: 'Share', linkCopied: 'Link copied!',
-    usernameCopied: 'Username copied', joinDirectly: 'Join Directly',
+    usernameCopied: 'Username copied', joinSovereign: 'Join Sovereign',
     changeAvatar: 'Change Photo', removeAvatar: 'Remove Photo',
     encrypted: 'End-to-end encrypted',
     discoverStyle: 'Discover your communication style',
@@ -48,7 +48,7 @@ const LABELS: Record<string, Record<string, string>> = {
     sendMessage: 'Envoyer un message', talkTo: 'Parler à', goBack: 'Retour',
     privateProfile: 'Ce profil est privé', userNotFound: 'Utilisateur introuvable',
     commStyle: 'Style de communication', shareProfile: 'Partager', linkCopied: 'Lien copié!',
-    usernameCopied: 'Nom copié', joinDirectly: 'Rejoindre Directly',
+    usernameCopied: 'Nom copié', joinSovereign: 'Rejoindre Sovereign',
     changeAvatar: 'Changer la photo', removeAvatar: 'Supprimer la photo',
     encrypted: 'Chiffré de bout en bout',
     discoverStyle: 'Découvrez votre style de communication',
@@ -57,7 +57,7 @@ const LABELS: Record<string, Record<string, string>> = {
     sendMessage: 'Enviar mensaje', talkTo: 'Hablar con', goBack: 'Volver',
     privateProfile: 'Este perfil es privado', userNotFound: 'Usuario no encontrado',
     commStyle: 'Estilo de comunicación', shareProfile: 'Compartir', linkCopied: 'Enlace copiado!',
-    usernameCopied: 'Usuario copiado', joinDirectly: 'Unirse a Directly',
+    usernameCopied: 'Usuario copiado', joinSovereign: 'Unirse a Sovereign',
     changeAvatar: 'Cambiar foto', removeAvatar: 'Eliminar foto',
     encrypted: 'Cifrado de extremo a extremo',
     discoverStyle: 'Descubre tu estilo de comunicación',
@@ -106,7 +106,7 @@ export default function PublicProfile() {
 
       setProfile(data as Profile);
       const displayName = data.display_name || cleanUsername;
-      document.title = `${displayName} — Directly`;
+      document.title = `${displayName} — Sovereign`;
 
       setIsLoading(false);
     };
@@ -118,8 +118,8 @@ export default function PublicProfile() {
     const displayName = profile.display_name || profile.username;
     shareCardAsImage(
       'profile-share-card',
-      `${displayName} — Directly`,
-      `Check out ${displayName}'s communication style on Directly!\n${window.location.origin}/@${profile.username}`
+      `${displayName} — Sovereign`,
+      `Check out ${displayName}'s communication style on Sovereign!\n${window.location.origin}/@${profile.username}`
     );
   };
 
@@ -267,7 +267,7 @@ export default function PublicProfile() {
               <span className="text-xs text-white/40">{l.encrypted}</span>
             </div>
 
-            <p className="text-[10px] text-white/20 mt-3">Directly — Smart Communication</p>
+            <p className="text-[10px] text-white/20 mt-3">Sovereign — Smart Communication</p>
           </div>
         </div>
 
@@ -288,7 +288,7 @@ export default function PublicProfile() {
           {!user && (
             <Button onClick={() => navigate('/')} className="rounded-xl h-12 px-6 text-base">
               <MessageCircle className="h-5 w-5 me-2" />
-              {l.joinDirectly}
+              {l.joinSovereign}
             </Button>
           )}
           <Button variant="outline" onClick={handleShare} className="rounded-xl h-12 px-5 text-sm">
@@ -306,13 +306,13 @@ export default function PublicProfile() {
             <Sparkles className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-sm font-semibold mb-2">{l.discoverStyle}</p>
             <Button onClick={() => navigate('/')} size="sm" className="rounded-xl">
-              {l.joinDirectly}
+              {l.joinSovereign}
             </Button>
           </Card>
         )}
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          Directly — Smart Communication
+          Sovereign — Smart Communication
         </p>
       </div>
 

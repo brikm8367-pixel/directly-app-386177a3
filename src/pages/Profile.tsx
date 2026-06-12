@@ -141,10 +141,10 @@ export default function ProfilePage() {
   const handleShareUsername = async () => {
     const link = `${window.location.origin}/@${username}`;
     const shareData = {
-      title: 'Directly',
+      title: 'Sovereign',
       text: isRTL 
-        ? `تواصل معي على Directly: @${username}` 
-        : `Reach me on Directly: @${username}`,
+        ? `تواصل معي على Sovereign: @${username}` 
+        : `Reach me on Sovereign: @${username}`,
       url: link,
     };
 
@@ -386,7 +386,7 @@ export default function ProfilePage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <p className="text-center text-xs text-muted-foreground mt-4 mb-2">Directly v1.0 · © 2026</p>
+        <p className="text-center text-xs text-muted-foreground mt-4 mb-2">Sovereign v1.0 · © 2026</p>
       </main>
 
       <BottomNavigation />

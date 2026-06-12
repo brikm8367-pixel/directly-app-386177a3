@@ -26,10 +26,10 @@ export function HeroSection() {
   };
 
   const tagline = {
-    ar: "ادعُ فقط من تريد التواصل معه، ودع الباقي على Directly.",
-    en: "Invite only who you want to connect with. Let Directly handle the rest.",
-    fr: "Invitez seulement ceux que vous voulez. Directly s'occupe du reste.",
-    es: "Invita solo a quienes quieres. Directly se encarga del resto."
+    ar: "ادعُ فقط من تريد التواصل معه، ودع الباقي على Sovereign.",
+    en: "Invite only who you want to connect with. Let Sovereign handle the rest.",
+    fr: "Invitez seulement ceux que vous voulez. Sovereign s'occupe du reste.",
+    es: "Invita solo a quienes quieres. Sovereign se encarga del resto."
   };
 
   const trustItems = [

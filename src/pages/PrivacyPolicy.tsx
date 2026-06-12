@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
   const navigate = useNavigate();
 
   const sections = isRTL ? [
-    { t: 'مقدمة', c: 'تطبيق Directly يحترم خصوصيتك. نلتزم بحماية بياناتك الشخصية وفقاً لأعلى المعايير الدولية بما في ذلك GDPR (الاتحاد الأوروبي) و CCPA (كاليفورنيا) و COPPA (حماية الأطفال).' },
+    { t: 'مقدمة', c: 'تطبيق Sovereign يحترم خصوصيتك. نلتزم بحماية بياناتك الشخصية وفقاً لأعلى المعايير الدولية بما في ذلك GDPR (الاتحاد الأوروبي) و CCPA (كاليفورنيا) و COPPA (حماية الأطفال).' },
     { t: 'البيانات التي نجمعها', c: 'البريد الإلكتروني، اسم المستخدم، الاسم الظاهر، صورة الملف الشخصي، الرسائل المرسلة والمستلمة (مشفرة). لا نجمع: بيانات الموقع، جهات الاتصال، سجل المكالمات، أو أي بيانات حساسة أخرى دون إذنك الصريح.' },
     { t: 'كيف نستخدم بياناتك', c: 'تقديم خدمة التواصل وتحسين تجربتك. تصنيف الرسائل تلقائياً باستخدام الذكاء الاصطناعي. إرسال الإشعارات. منع الإساءة والاحتيال. لا نبيع أو نشارك بياناتك مع أطراف ثالثة لأغراض إعلانية مطلقاً.' },
     { t: 'الذكاء الاصطناعي وتصنيف الرسائل', c: 'نستخدم الذكاء الاصطناعي لتصنيف رسائلك إلى الصناديق المناسبة (عمل، علاقات، خاص) فقط. التصنيف يتم على محتوى الرسائل مؤقتاً ولا يُخزّن النص الأصلي بعد التصنيف.' },
@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
     { t: 'التغييرات على هذه السياسة', c: 'سنخطرك بأي تغييرات جوهرية عبر إشعار داخل التطبيق. استمرارك في استخدام التطبيق بعد التحديث يعني موافقتك على السياسة المحدّثة.' },
     { t: 'التواصل معنا', c: 'لأي استفسارات حول الخصوصية: privacy@directly.app' },
   ] : [
-    { t: 'Introduction', c: 'Directly respects your privacy. We are committed to protecting your personal data in accordance with the highest international standards including GDPR (EU), CCPA (California), and COPPA (Children\'s Privacy).' },
+    { t: 'Introduction', c: 'Sovereign respects your privacy. We are committed to protecting your personal data in accordance with the highest international standards including GDPR (EU), CCPA (California), and COPPA (Children\'s Privacy).' },
     { t: 'Data We Collect', c: 'Email address, username, display name, profile photo, sent/received messages (encrypted). We do NOT collect: location data, contacts, call logs, or any other sensitive data without your explicit consent.' },
     { t: 'How We Use Your Data', c: 'Providing communication services and improving your experience. Automatically classifying messages using AI. Sending notifications. Preventing abuse and fraud. We never sell or share your data with third parties for advertising.' },
     { t: 'AI & Message Classification', c: 'We use AI only to classify your messages into appropriate inboxes (Work, Audience, Private). Classification is performed temporarily on message content; original text is not stored after classification.' },

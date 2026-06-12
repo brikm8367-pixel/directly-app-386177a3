@@ -32,7 +32,7 @@ serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
-    let title = senderName || 'Directly';
+    let title = senderName || 'Sovereign';
     let body = content || '';
     let tag = `directly-${receiverId}`;
     let requireInteraction = false;
@@ -45,17 +45,17 @@ serve(async (req) => {
         tag = `directly-work-${receiverId}`;
         break;
       case 'direct_message':
-        title = senderName || 'Directly';
+        title = senderName || 'Sovereign';
         body = '📩 New private message';
         tag = `directly-direct-${receiverId}`;
         break;
       case 'audience_message':
-        title = 'Directly';
+        title = 'Sovereign';
         body = `${senderName}: ${(content || '').substring(0, 40)}`;
         tag = `directly-audience-${receiverId}`;
         break;
       case 'direct_access_added':
-        title = '⭐ Directly';
+        title = '⭐ Sovereign';
         body = `${senderName} added you to their private circle`;
         tag = `directly-access-${receiverId}`;
         break;
@@ -81,13 +81,13 @@ serve(async (req) => {
         body = '🎥 Video';
         break;
       case 'pattern_report':
-        title = '✨ Directly';
+        title = '✨ Sovereign';
         body = 'Your weekly communication pattern is ready!';
         tag = `directly-pattern-${receiverId}`;
         silent = true;
         break;
       case 'inbox_full':
-        title = '📬 Directly';
+        title = '📬 Sovereign';
         body = content || 'Your inbox has reached its limit';
         tag = `directly-limit-${receiverId}`;
         break;

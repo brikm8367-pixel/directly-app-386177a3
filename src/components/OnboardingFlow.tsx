@@ -86,7 +86,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               Quiet now. Ready for what comes.
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Invite your first person — and watch how Directly understands.
+              Invite your first person — and watch how Sovereign understands.
             </p>
           </motion.div>
         )}

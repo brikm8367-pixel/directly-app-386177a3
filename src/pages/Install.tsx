@@ -66,7 +66,7 @@ const Install = () => {
             </div>
             <CardTitle className="text-2xl">تم التثبيت بنجاح! 🎉</CardTitle>
             <CardDescription className="text-slate-300">
-              يمكنك الآن استخدام Directly من شاشتك الرئيسية
+              يمكنك الآن استخدام Sovereign من شاشتك الرئيسية
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -89,7 +89,7 @@ const Install = () => {
           <div className="mx-auto w-20 h-20 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-4">
             <Download className="w-10 h-10 text-indigo-400" />
           </div>
-          <CardTitle className="text-2xl">ثبّت Directly</CardTitle>
+          <CardTitle className="text-2xl">ثبّت Sovereign</CardTitle>
           <CardDescription className="text-slate-300">
             احصل على تجربة أفضل بتثبيت التطبيق على جهازك
           </CardDescription>

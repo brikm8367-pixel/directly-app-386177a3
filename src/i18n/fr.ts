@@ -12,7 +12,7 @@ export const fr: Translations = {
     badge: 'Contrôle. Clarté. Sérénité.',
     title1: "Décidez qui a accès",
     title2: 'à vous — et pourquoi',
-    subtitle: "Tout le monde ne mérite pas votre attention. Directly est votre portail pour contrôler qui peut vous atteindre.",
+    subtitle: "Tout le monde ne mérite pas votre attention. Sovereign est votre portail pour contrôler qui peut vous atteindre.",
     cta1: 'Prenez le Contrôle',
     cta2: 'Voir comment ça marche',
     trust1: 'Votre Protection',
@@ -70,7 +70,7 @@ export const fr: Translations = {
       description: "Décidez qui mérite l'accès à vous et pourquoi",
     },
     step2: {
-      title: 'Laissez Directly travailler',
+      title: 'Laissez Sovereign travailler',
       description: 'Chaque message est automatiquement acheminé au bon niveau',
     },
     step3: {
@@ -93,14 +93,14 @@ export const fr: Translations = {
     howItWorks: 'Comment ça marche',
     pricing: 'Tarifs',
     contactUs: 'Contactez-nous',
-    copyright: '© 2024 Directly. Tous droits réservés.',
+    copyright: '© 2024 Sovereign. Tous droits réservés.',
   },
   demoModal: {
     persona: {
       name: 'Sarah Ahmed',
       role: 'Influenceuse & Entrepreneure',
       followers: '500K',
-      quote: "Avant Directly, je perdais les messages importants dans le bruit. Maintenant, c'est moi qui décide qui me contacte.",
+      quote: "Avant Sovereign, je perdais les messages importants dans le bruit. Maintenant, c'est moi qui décide qui me contacte.",
     },
     categories: {
       work: {

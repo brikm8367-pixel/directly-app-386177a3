@@ -146,7 +146,7 @@ export default function Security() {
       sendCode: 'إرسال رمز التحقق',
       verifyCode: 'تحقق',
       enterCode: 'أدخل الرمز المرسل إلى بريدك',
-      ageNotice: 'يجب أن يكون عمرك 13 سنة أو أكثر لاستخدام Directly.',
+      ageNotice: 'يجب أن يكون عمرك 13 سنة أو أكثر لاستخدام Sovereign.',
       sections: [
         { icon: <Lock className="h-5 w-5 text-primary" />, title: 'تشفير من طرف إلى طرف', description: 'كل رسالة مشفرة باستخدام AES-256-GCM مع مفاتيح ECDH فريدة.', badge: 'AES-256' },
         { icon: <KeyRound className="h-5 w-5 text-primary" />, title: 'مفاتيح تشفير خاصة بك', description: 'يتم إنشاء زوج مفاتيح ECDH (P-256) فريد لكل مستخدم. المفتاح الخاص لا يغادر جهازك أبداً.' },
@@ -157,7 +157,7 @@ export default function Security() {
         { icon: <Database className="h-5 w-5 text-primary" />, title: 'حذف البيانات بالكامل', description: 'يمكنك حذف حسابك وجميع بياناتك بشكل نهائي في أي وقت.' },
         { icon: <Ban className="h-5 w-5 text-primary" />, title: 'حماية من الرسائل المزعجة', description: 'نظام حدود ذكي لكل صندوق يمنع الفيضان ويحمي تركيزك.' },
       ],
-      comparison: 'كيف يقارن Directly؟',
+      comparison: 'كيف يقارن Sovereign؟',
     },
     en: {
       title: 'Security & Privacy',
@@ -173,7 +173,7 @@ export default function Security() {
       sendCode: 'Send verification code',
       verifyCode: 'Verify',
       enterCode: 'Enter the code sent to your email',
-      ageNotice: 'You must be 13 years or older to use Directly.',
+      ageNotice: 'You must be 13 years or older to use Sovereign.',
       sections: [
         { icon: <Lock className="h-5 w-5 text-primary" />, title: 'End-to-End Encryption', description: 'Every message is encrypted using AES-256-GCM with unique ECDH keys.', badge: 'AES-256' },
         { icon: <KeyRound className="h-5 w-5 text-primary" />, title: 'Your Keys, Your Device', description: 'A unique ECDH (P-256) key pair is generated for each user. Your private key never leaves your device.' },
@@ -184,7 +184,7 @@ export default function Security() {
         { icon: <Database className="h-5 w-5 text-primary" />, title: 'Full Data Deletion', description: 'Delete your account and all data permanently at any time. We retain nothing.' },
         { icon: <Ban className="h-5 w-5 text-primary" />, title: 'Spam Protection', description: 'Smart per-inbox limits prevent flooding and protect your focus.' },
       ],
-      comparison: 'How does Directly compare?',
+      comparison: 'How does Sovereign compare?',
     },
   };
 
@@ -320,7 +320,7 @@ export default function Security() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-start py-2 font-medium text-muted-foreground"></th>
-                  <th className="py-2 font-semibold text-primary">Directly</th>
+                  <th className="py-2 font-semibold text-primary">Sovereign</th>
                   <th className="py-2 font-medium text-muted-foreground">WhatsApp</th>
                   <th className="py-2 font-medium text-muted-foreground">Telegram</th>
                   <th className="py-2 font-medium text-muted-foreground">Signal</th>
@@ -346,8 +346,8 @@ export default function Security() {
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="text-center text-xs text-muted-foreground mt-4 leading-relaxed">
           {isRTL 
-            ? 'Directly مبني على بنية تحتية مفتوحة المصدر مع التزام كامل بمعايير الأمان العالمية.'
-            : 'Directly is built on open-source infrastructure with full commitment to global security standards.'}
+            ? 'Sovereign مبني على بنية تحتية مفتوحة المصدر مع التزام كامل بمعايير الأمان العالمية.'
+            : 'Sovereign is built on open-source infrastructure with full commitment to global security standards.'}
         </motion.p>
       </main>
 
