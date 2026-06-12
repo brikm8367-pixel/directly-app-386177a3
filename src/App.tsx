@@ -28,6 +28,8 @@ const Subscribe = lazy(() => import("./pages/Subscribe"));
 const BugBounty = lazy(() => import("./pages/BugBounty"));
 const JoinManager = lazy(() => import("./pages/JoinManager"));
 const RedeemManagerInvite = lazy(() => import("./pages/RedeemManagerInvite"));
+const SlugRedirect = lazy(() => import("./pages/SlugRedirect"));
+const FanGroup = lazy(() => import("./pages/FanGroup"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +94,8 @@ const App = () => {
                     <Route path="/security/bounty" element={<BugBounty />} />
                     <Route path="/join-manager/:celebrityId" element={<JoinManager />} />
                     <Route path="/m/:token" element={<RedeemManagerInvite />} />
+                    <Route path="/s/:slug" element={<SlugRedirect />} />
+                    <Route path="/g/:slug" element={<FanGroup />} />
                     <Route path="/:username" element={<PublicProfile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
