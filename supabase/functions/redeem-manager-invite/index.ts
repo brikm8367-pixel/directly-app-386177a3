@@ -77,6 +77,15 @@ Deno.serve(async (req) => {
       .update({ status: 'used', used_by: manager.id })
       .eq('id', invite.id)
 
+    // Audit log: a new manager joined.
+    await admin.from('manager_activity_log').insert({
+      celebrity_id: invite.celebrity_id,
+      manager_id: manager.id,
+      action: 'manager_joined',
+      detail: 'Manager accepted invitation',
+    })
+
+
     // Return celebrity info for confirmation UI.
     const { data: celeb } = await admin
       .from('profiles')
