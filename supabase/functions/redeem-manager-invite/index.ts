@@ -27,12 +27,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // Match by token (from link) or by code, must be pending + not expired.
+    const MAX_ATTEMPTS = 5
+
+    // Match by token (from link) or by code, must be pending + not expired + not locked.
     let query = admin
       .from('manager_invitations')
-      .select('id, celebrity_id, expires_at, status, code, token')
+      .select('id, celebrity_id, expires_at, status, code, token, failed_attempts')
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
+      .lt('failed_attempts', MAX_ATTEMPTS)
       .limit(1)
 
     query = token ? query.eq('token', token) : query.ilike('code', raw)
@@ -41,14 +44,23 @@ Deno.serve(async (req) => {
     if (findErr) { console.error(findErr); return json({ error: 'Lookup failed' }, 500) }
     if (!invite) return json({ error: 'Invalid or expired invitation' }, 404)
 
-    // If both token and code provided, ensure code matches.
+    // If both token and code provided, ensure code matches; count failed tries and lock out.
     if (token && raw && invite.code.toUpperCase() !== raw.toUpperCase()) {
+      const attempts = (invite.failed_attempts ?? 0) + 1
+      await admin
+        .from('manager_invitations')
+        .update({
+          failed_attempts: attempts,
+          status: attempts >= MAX_ATTEMPTS ? 'revoked' : 'pending',
+        })
+        .eq('id', invite.id)
       return json({ error: 'Code does not match' }, 403)
     }
 
     if (invite.celebrity_id === manager.id) {
       return json({ error: "You can't manage yourself" }, 400)
     }
+
 
     // Create / reactivate the manager link.
     const { error: linkErr } = await admin
@@ -64,6 +76,15 @@ Deno.serve(async (req) => {
       .from('manager_invitations')
       .update({ status: 'used', used_by: manager.id })
       .eq('id', invite.id)
+
+    // Audit log: a new manager joined.
+    await admin.from('manager_activity_log').insert({
+      celebrity_id: invite.celebrity_id,
+      manager_id: manager.id,
+      action: 'manager_joined',
+      detail: 'Manager accepted invitation',
+    })
+
 
     // Return celebrity info for confirmation UI.
     const { data: celeb } = await admin

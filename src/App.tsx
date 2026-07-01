@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
@@ -26,7 +26,7 @@ const Security = lazy(() => import("./pages/Security"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Subscribe = lazy(() => import("./pages/Subscribe"));
 const BugBounty = lazy(() => import("./pages/BugBounty"));
-const JoinManager = lazy(() => import("./pages/JoinManager"));
+
 const RedeemManagerInvite = lazy(() => import("./pages/RedeemManagerInvite"));
 const SlugRedirect = lazy(() => import("./pages/SlugRedirect"));
 const FanGroup = lazy(() => import("./pages/FanGroup"));
@@ -92,7 +92,7 @@ const App = () => {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/subscribe" element={<Subscribe />} />
                     <Route path="/security/bounty" element={<BugBounty />} />
-                    <Route path="/join-manager/:celebrityId" element={<JoinManager />} />
+                    <Route path="/join-manager/:celebrityId" element={<Navigate to="/home" replace />} />
                     <Route path="/m/:token" element={<RedeemManagerInvite />} />
                     <Route path="/s/:slug" element={<SlugRedirect />} />
                     <Route path="/g/:slug" element={<FanGroup />} />
