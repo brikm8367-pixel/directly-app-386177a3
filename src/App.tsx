@@ -26,7 +26,7 @@ const Security = lazy(() => import("./pages/Security"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Subscribe = lazy(() => import("./pages/Subscribe"));
 const BugBounty = lazy(() => import("./pages/BugBounty"));
-const JoinManager = lazy(() => import("./pages/JoinManager"));
+
 const RedeemManagerInvite = lazy(() => import("./pages/RedeemManagerInvite"));
 const SlugRedirect = lazy(() => import("./pages/SlugRedirect"));
 const FanGroup = lazy(() => import("./pages/FanGroup"));
