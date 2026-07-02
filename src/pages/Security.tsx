@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { toast } from 'sonner';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { KeyBackupCard } from '@/components/profile/KeyBackupCard';
 
 const ease: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
 
@@ -304,6 +305,9 @@ export default function Security() {
             </Button>
           </motion.div>
         )}
+
+        {/* E2EE Key Backup (only for signed-in users) */}
+        {user && <KeyBackupCard />}
 
         {/* Security Features Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
