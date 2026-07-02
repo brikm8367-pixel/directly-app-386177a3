@@ -305,6 +305,9 @@ export default function Security() {
           </motion.div>
         )}
 
+        {/* E2EE Key Backup (only for signed-in users) */}
+        {user && <KeyBackupCard />}
+
         {/* Security Features Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
           {c.sections.map((section, i) => (
