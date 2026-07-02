@@ -30,7 +30,7 @@ export function KeyBackupCard() {
     setBusy(false);
     if (!res.success) {
       toast.error(
-        res.reason === 'no_local_keys'
+        (res as any).reason === 'no_local_keys'
           ? t('لا توجد مفاتيح على هذا الجهاز', 'No keys found on this device')
           : t('تعذّر إنشاء النسخة الاحتياطية', 'Could not create backup'),
       );
@@ -66,9 +66,9 @@ export function KeyBackupCard() {
     setBusy(false);
     if (!res.success) {
       toast.error(
-        res.reason === 'wrong_passphrase'
+        (res as any).reason === 'wrong_passphrase'
           ? t('عبارة المرور غير صحيحة', 'Wrong passphrase')
-          : res.reason === 'invalid_file'
+          : (res as any).reason === 'invalid_file'
             ? t('ملف النسخة الاحتياطية غير صالح', 'Invalid backup file')
             : t('تعذّر الاستيراد', 'Import failed'),
       );
