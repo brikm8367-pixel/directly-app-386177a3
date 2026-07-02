@@ -1,11 +1,23 @@
 // Public, shareable base URL of the app.
+// Priority:
+//   1. VITE_APP_BASE_URL (explicit build-time override, e.g. a custom domain)
+//   2. The current origin — unless we're on a non-public host (Lovable preview,
+//      localhost) in which case we fall back to the published domain.
 // The Lovable *preview* origin (id-preview--*.lovable.app) requires a Lovable
 // login, so any link built from it would wrongly send recipients to Lovable.
-// For shareable links we always fall back to the public published domain when
-// running inside the preview, while keeping custom domains / production origins.
 const PUBLIC_APP_URL = 'https://directly-app.lovable.app';
 
+function envBaseUrl(): string | null {
+  const raw = (import.meta as any)?.env?.VITE_APP_BASE_URL;
+  if (typeof raw === 'string' && /^https?:\/\//i.test(raw.trim())) {
+    return raw.trim().replace(/\/$/, '');
+  }
+  return null;
+}
+
 export function getPublicAppUrl(): string {
+  const override = envBaseUrl();
+  if (override) return override;
   if (typeof window === 'undefined') return PUBLIC_APP_URL;
   const origin = window.location.origin;
   // Preview/sandbox hosts are not publicly accessible — use the published URL.
