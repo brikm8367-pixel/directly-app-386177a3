@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { toast } from 'sonner';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { KeyBackupCard } from '@/components/profile/KeyBackupCard';
 
 const ease: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
 
