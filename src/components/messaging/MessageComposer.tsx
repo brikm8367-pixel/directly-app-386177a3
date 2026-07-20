@@ -183,15 +183,15 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
       }
 
       if (shouldDeductCredit) {
-        // Check recipient inbox mode (closed / limited)
+        // Check recipient inbox mode: only 'closed' blocks; 'unlimited' passes.
         const { data: limitRow } = await supabase
           .from('message_limits')
-          .select('inbox_mode, max_messages')
+          .select('inbox_mode')
           .eq('user_id', recipient.id)
           .eq('category', category)
           .maybeSingle();
 
-        if (limitRow?.inbox_mode === 'closed' || limitRow?.max_messages === 0) {
+        if ((limitRow as any)?.inbox_mode === 'closed') {
           toast.error(
             isRTL
               ? `لم تصل رسالتك — المستلم أغلق صندوق "${category === 'work' ? 'العمل' : category === 'direct' ? 'الخاص' : 'العلاقات'}".`
@@ -201,19 +201,8 @@ export default function MessageComposer({ isOpen, onClose, recipient: initialRec
           setIsSending(false);
           return;
         }
-
-        // Skip can_receive check if unlimited
-        if (limitRow?.inbox_mode !== 'unlimited') {
-          const { data: canReceive } = await supabase.rpc('can_receive_message', {
-            _user_id: recipient.id, _category: category,
-          });
-          if (!canReceive) {
-            toast.error(isRTL ? 'صندوق المستلم ممتلئ' : "Recipient's inbox is full. They need to increase their limit.");
-            setIsSending(false);
-            return;
-          }
-        }
       }
+
 
       // Encrypt the message content
       const contentToSend = text || (mediaType === 'video' ? '🎥' : mediaType === 'image' ? '📷' : '🎤');
