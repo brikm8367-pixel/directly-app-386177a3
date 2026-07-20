@@ -10,18 +10,27 @@ export interface DealCard {
   celebrity_id: string;
   message_id: string | null;
   deal_type: string;
-  budget_range: string | null;
-  timeline: string | null;
+  deal_type_other: string | null;
+  company_name: string | null;
+  website: string | null;
+  campaign_description: string | null;
+  budget_amount: number | null;
+  budget_cycle: string | null;
+  budget_cycle_other: string | null;
+  commitments: string[] | null;
+  commitment_other: string | null;
+  duration: string | null;
+  duration_date: string | null;
+  exclusivity: string | null;
+  exclusivity_category: string | null;
+  why_talent: string | null;
   details: string | null;
   status: DealStatus;
-  golden_hour: boolean;
-  golden_hour_expires_at: string | null;
+  seen_at: string | null;
+  decline_reason: string | null;
+  shared_with_talent_at: string | null;
   created_at: string;
   sender_profile?: { id: string; display_name: string | null; username: string | null; avatar_url: string | null };
-}
-
-function isGoldenActive(d: DealCard) {
-  return d.golden_hour && d.golden_hour_expires_at != null && new Date(d.golden_hour_expires_at).getTime() > Date.now();
 }
 
 /** Deal cards addressed to a celebrity (visible to celebrity + active manager). */
@@ -49,24 +58,35 @@ export function useDealCards(celebrityId?: string | null) {
     }
     const withProfiles = rows.map(r => ({ ...r, sender_profile: profiles.find(p => p.id === r.sender_id) }));
 
-    // Golden Hour active first, then newest.
-    withProfiles.sort((a, b) => {
-      const ga = isGoldenActive(a) ? 1 : 0;
-      const gb = isGoldenActive(b) ? 1 : 0;
-      if (ga !== gb) return gb - ga;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
     setDeals(withProfiles);
     setLoading(false);
   }, [celebrityId, user]);
 
   useEffect(() => { load(); }, [load]);
 
-  const updateStatus = async (id: string, status: DealStatus) => {
-    await (supabase as any).from('deal_cards').update({ status }).eq('id', id);
+  const updateStatus = async (id: string, status: DealStatus, extra?: { decline_reason?: string }) => {
+    const payload: any = { status };
+    if (extra?.decline_reason) payload.decline_reason = extra.decline_reason;
+    await (supabase as any).from('deal_cards').update(payload).eq('id', id);
     load();
   };
 
-  return { deals, loading, refresh: load, updateStatus, isGoldenActive };
+  const markSeen = async (id: string) => {
+    await (supabase as any).from('deal_cards').update({ seen_at: new Date().toISOString() }).eq('id', id).is('seen_at', null);
+  };
+
+  const shareWithTalent = async (deal: DealCard) => {
+    // Copy card to the celebrity's Private box as a message referencing the same deal.
+    await (supabase as any).from('deal_cards').update({ shared_with_talent_at: new Date().toISOString() }).eq('id', deal.id);
+    await supabase.from('messages').insert({
+      sender_id: deal.sender_id,
+      receiver_id: deal.celebrity_id,
+      category: 'direct',
+      subject: 'Deal Card (shared by manager)',
+      content: `Deal from ${deal.company_name ?? 'a company'} — ${deal.deal_type}`,
+    } as any);
+    load();
+  };
+
+  return { deals, loading, refresh: load, updateStatus, markSeen, shareWithTalent };
 }
