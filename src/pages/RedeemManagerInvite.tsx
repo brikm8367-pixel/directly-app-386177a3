@@ -63,13 +63,16 @@ export default function RedeemManagerInvite() {
         ) : (
           <>
             <div className="flex justify-center">
-              <InputOTP maxLength={8} value={code} onChange={(v) => setCode(v.toUpperCase())}>
-                <InputOTPGroup>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <InputOTPSlot key={i} index={i} className="w-9 h-11 text-base font-mono" />
-                  ))}
-                </InputOTPGroup>
-              </InputOTP>
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s/g, '').slice(0, 8))}
+              placeholder="ABCD1234"
+              className="text-center text-2xl font-mono tracking-[0.4em] h-14 rounded-2xl uppercase"
+              autoFocus
+              autoComplete="off"
+              inputMode="text"
+            />
+
             </div>
             <Button onClick={redeem} disabled={joining || loading} className="w-full h-12 rounded-2xl">
               {joining ? <Loader2 className="h-5 w-5 animate-spin" /> : isRTL ? 'تأكيد وأصبح وكيلاً' : 'Confirm & Become Manager'}
