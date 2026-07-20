@@ -118,49 +118,88 @@ export type Database = {
       }
       deal_cards: {
         Row: {
-          budget_range: string | null
+          budget_amount: number | null
+          budget_cycle: string | null
+          budget_cycle_other: string | null
+          campaign_description: string | null
           celebrity_id: string
+          commitment_other: string | null
+          commitments: string[] | null
+          company_name: string | null
           created_at: string
           deal_type: string
+          deal_type_other: string | null
+          decline_reason: string | null
           details: string | null
-          golden_hour: boolean
-          golden_hour_expires_at: string | null
+          duration: string | null
+          duration_date: string | null
+          exclusivity: string | null
+          exclusivity_category: string | null
           id: string
           message_id: string | null
+          seen_at: string | null
           sender_id: string
+          shared_with_talent_at: string | null
           status: Database["public"]["Enums"]["deal_status"]
-          timeline: string | null
           updated_at: string
+          website: string | null
+          why_talent: string | null
         }
         Insert: {
-          budget_range?: string | null
+          budget_amount?: number | null
+          budget_cycle?: string | null
+          budget_cycle_other?: string | null
+          campaign_description?: string | null
           celebrity_id: string
+          commitment_other?: string | null
+          commitments?: string[] | null
+          company_name?: string | null
           created_at?: string
           deal_type: string
+          deal_type_other?: string | null
+          decline_reason?: string | null
           details?: string | null
-          golden_hour?: boolean
-          golden_hour_expires_at?: string | null
+          duration?: string | null
+          duration_date?: string | null
+          exclusivity?: string | null
+          exclusivity_category?: string | null
           id?: string
           message_id?: string | null
+          seen_at?: string | null
           sender_id: string
+          shared_with_talent_at?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
-          timeline?: string | null
           updated_at?: string
+          website?: string | null
+          why_talent?: string | null
         }
         Update: {
-          budget_range?: string | null
+          budget_amount?: number | null
+          budget_cycle?: string | null
+          budget_cycle_other?: string | null
+          campaign_description?: string | null
           celebrity_id?: string
+          commitment_other?: string | null
+          commitments?: string[] | null
+          company_name?: string | null
           created_at?: string
           deal_type?: string
+          deal_type_other?: string | null
+          decline_reason?: string | null
           details?: string | null
-          golden_hour?: boolean
-          golden_hour_expires_at?: string | null
+          duration?: string | null
+          duration_date?: string | null
+          exclusivity?: string | null
+          exclusivity_category?: string | null
           id?: string
           message_id?: string | null
+          seen_at?: string | null
           sender_id?: string
+          shared_with_talent_at?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
-          timeline?: string | null
           updated_at?: string
+          website?: string | null
+          why_talent?: string | null
         }
         Relationships: [
           {
@@ -483,21 +522,18 @@ export type Database = {
           category: Database["public"]["Enums"]["message_category"]
           id: string
           inbox_mode: string
-          max_messages: number | null
           user_id: string
         }
         Insert: {
           category: Database["public"]["Enums"]["message_category"]
           id?: string
           inbox_mode?: string
-          max_messages?: number | null
           user_id: string
         }
         Update: {
           category?: Database["public"]["Enums"]["message_category"]
           id?: string
           inbox_mode?: string
-          max_messages?: number | null
           user_id?: string
         }
         Relationships: []
@@ -809,13 +845,6 @@ export type Database = {
         Args: { _celebrity: string; _manager: string }
         Returns: boolean
       }
-      can_receive_message: {
-        Args: {
-          _category: Database["public"]["Enums"]["message_category"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
       can_send_to_direct: {
         Args: { _receiver_id: string; _sender_id: string }
         Returns: boolean
@@ -859,13 +888,6 @@ export type Database = {
       delete_user_data: { Args: { _user_id: string }; Returns: undefined }
       gen_unique_group_slug: { Args: never; Returns: string }
       gen_unique_slug: { Args: never; Returns: string }
-      get_message_count: {
-        Args: {
-          _category: Database["public"]["Enums"]["message_category"]
-          _user_id: string
-        }
-        Returns: number
-      }
       group_owner: { Args: { _group: string }; Returns: string }
       has_entitlement: {
         Args: { _feature: string; _uid: string }

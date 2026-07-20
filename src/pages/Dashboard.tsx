@@ -224,14 +224,17 @@ export default function Dashboard() {
 
     const { data: limitsData } = await supabase
       .from('message_limits')
-      .select('category, max_messages')
+      .select('category, inbox_mode')
       .eq('user_id', user.id);
 
     if (limitsData) {
-      const newLimits = { work: 100, audience: 100, direct: 100 };
-      limitsData.forEach(l => { newLimits[l.category as MessageCategory] = l.max_messages; });
+      const newLimits = { work: 999999, audience: 999999, direct: 999999 };
+      (limitsData as any[]).forEach(l => {
+        newLimits[l.category as MessageCategory] = l.inbox_mode === 'closed' ? 0 : 999999;
+      });
       setLimits(newLimits);
     }
+
 
     setIsLoadingMessages(false);
   }, [user]);
