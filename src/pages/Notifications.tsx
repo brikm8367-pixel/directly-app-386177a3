@@ -75,7 +75,7 @@ export default function NotificationsPage() {
 
       // Fetch recent messages (last 7 days) as notifications
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-      const [{ data: messages }, { data: limits }, { data: directAccess }] = await Promise.all([
+      const [{ data: messages }, { data: directAccess }] = await Promise.all([
         supabase.from('messages')
           .select('id, sender_id, category, content, voice_url, media_url, created_at, is_read')
           .eq('receiver_id', user.id)
@@ -83,9 +83,6 @@ export default function NotificationsPage() {
           .gte('created_at', weekAgo)
           .order('created_at', { ascending: false })
           .limit(50),
-        supabase.from('message_limits')
-          .select('category, max_messages')
-          .eq('user_id', user.id),
         supabase.from('direct_access')
           .select('allowed_user_id, created_at')
           .eq('owner_id', user.id)
@@ -139,39 +136,7 @@ export default function NotificationsPage() {
         });
       });
 
-      // Inbox limit warnings
-      if (limits) {
-        for (const lim of limits) {
-          const { count } = await supabase
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('receiver_id', user.id)
-            .eq('category', lim.category);
-          const current = count || 0;
-          const max = lim.max_messages || 100;
-          if (current >= max) {
-            items.push({
-              id: `full-${lim.category}`,
-              type: 'inbox_warning',
-              title: l.inboxFull,
-              description: `${current}/${max} · ${lim.category === 'work' ? l.work : lim.category === 'direct' ? l.private : l.audience}`,
-              category: lim.category,
-              timestamp: new Date().toISOString(),
-              isRead: false,
-            });
-          } else if (current >= max * 0.8) {
-            items.push({
-              id: `warn-${lim.category}`,
-              type: 'inbox_warning',
-              title: l.inboxAlmostFull,
-              description: `${current}/${max} · ${lim.category === 'work' ? l.work : lim.category === 'direct' ? l.private : l.audience}`,
-              category: lim.category,
-              timestamp: new Date().toISOString(),
-              isRead: false,
-            });
-          }
-        }
-      }
+
 
       // Sort by timestamp desc
       items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
