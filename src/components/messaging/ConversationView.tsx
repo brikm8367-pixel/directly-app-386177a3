@@ -271,15 +271,7 @@ export default function ConversationView({ message, isOpen, onClose, onMessageRe
       }
 
       const shouldDeductCredit = isInactive;
-      if (shouldDeductCredit) {
-        const { data: canReceive } = await supabase.rpc('can_receive_message', { _user_id: otherUserId!, _category: message.category });
-        if (!canReceive) {
-          toast.error(isRTL ? 'صندوق المستلم ممتلئ' : "Recipient's inbox is full");
-          setThread(prev => prev.filter(m => m.id !== tempId));
-          setIsSending(false); setSendingMsgId(null);
-          return;
-        }
-      }
+
 
       let finalCategory = message.category;
       if (shouldDeductCredit && text.trim()) {
