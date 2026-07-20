@@ -88,8 +88,7 @@ export default function InboxSection({
 }: InboxSectionProps) {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const [tempLimit, setTempLimit] = useState(messageLimit);
-  const [tempMode, setTempMode] = useState<'unlimited' | 'limited' | 'closed'>('limited');
+  const [tempMode, setTempMode] = useState<'unlimited' | 'closed'>('unlimited');
   const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
 
   const config = categoryConfig[category];
@@ -101,14 +100,12 @@ export default function InboxSection({
     (async () => {
       const { data } = await supabase
         .from('message_limits')
-        .select('inbox_mode, max_messages')
+        .select('inbox_mode')
         .eq('user_id', user.id)
         .eq('category', category)
         .maybeSingle();
-      if (data) {
-        setTempMode((data.inbox_mode as any) || 'limited');
-        setTempLimit(data.max_messages || 100);
-      }
+      const mode = (data as any)?.inbox_mode;
+      setTempMode(mode === 'closed' ? 'closed' : 'unlimited');
     })();
   }, [user, isLimitDialogOpen, category]);
 
@@ -127,16 +124,15 @@ export default function InboxSection({
 
   const handleSaveLimit = async () => {
     if (!user) return;
-    const finalLimit = tempMode === 'unlimited' ? 999999 : tempMode === 'closed' ? 0 : tempLimit;
     await supabase.from('message_limits').upsert({
       user_id: user.id,
       category,
-      max_messages: finalLimit,
       inbox_mode: tempMode,
-    }, { onConflict: 'user_id,category' });
-    onSetLimit(finalLimit);
+    } as any, { onConflict: 'user_id,category' });
+    onSetLimit(tempMode === 'closed' ? 0 : 999999);
     setIsLimitDialogOpen(false);
   };
+
 
   const unreadCount = messages.filter(m => !m.is_read).length;
 
