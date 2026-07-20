@@ -184,18 +184,12 @@ export default function InboxSection({
               <DialogTitle className="text-lg font-semibold">{isRTL ? 'أنت تتحكم في من يصل' : 'You control who reaches you'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setTempMode('unlimited')}
                   className={cn('flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all touch-feedback',
                     tempMode === 'unlimited' ? 'border-primary bg-primary/5' : 'border-border bg-card')}>
                   <InfinityIcon className="h-5 w-5 text-primary" />
                   <span className="text-[11px] font-semibold">{isRTL ? 'غير محدود' : 'Unlimited'}</span>
-                </button>
-                <button onClick={() => setTempMode('limited')}
-                  className={cn('flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all touch-feedback',
-                    tempMode === 'limited' ? 'border-primary bg-primary/5' : 'border-border bg-card')}>
-                  <Settings2 className="h-5 w-5 text-primary" />
-                  <span className="text-[11px] font-semibold">{isRTL ? 'محدود' : 'Limited'}</span>
                 </button>
                 <button onClick={() => setTempMode('closed')}
                   className={cn('flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all touch-feedback',
@@ -205,32 +199,19 @@ export default function InboxSection({
                 </button>
               </div>
 
-              {tempMode === 'unlimited' && (
+              {tempMode === 'unlimited' ? (
                 <div className="text-center p-4 bg-muted rounded-xl">
-                  <p className="text-sm font-medium">{isRTL ? 'تستقبل رسائل بلا حد' : 'Receive unlimited messages'}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'لا يوجد سقف لعدد الرسائل' : 'No cap on incoming messages'}</p>
+                  <p className="text-sm font-medium">{isRTL ? 'تستقبل الرسائل بشكل طبيعي' : 'Receive messages normally'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'لا يوجد سقف — الصندوق مفتوح' : 'No cap — inbox open'}</p>
                 </div>
-              )}
-              {tempMode === 'limited' && (
-                <>
-                  <div className="text-center p-4 bg-muted rounded-xl">
-                    <span className="text-4xl font-bold">{tempLimit}</span>
-                    <p className="text-sm text-muted-foreground mt-1">{isRTL ? 'الحد الأقصى للرسائل' : 'Max messages'}</p>
-                  </div>
-                  <Slider value={[tempLimit]} onValueChange={([v]) => setTempLimit(v)} min={0} max={1000} step={10} />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>0</span>
-                    <span>1000</span>
-                  </div>
-                </>
-              )}
-              {tempMode === 'closed' && (
+              ) : (
                 <div className="text-center p-4 bg-muted rounded-xl">
                   <Lock className="h-6 w-6 text-primary mx-auto mb-2" />
                   <p className="text-sm font-medium">{isRTL ? 'مغلق تماماً' : 'Fully closed'}</p>
                   <p className="text-xs text-muted-foreground mt-1">{isRTL ? 'لا يمكن لأي أحد أن يرسل لك في هذا الصندوق' : 'No one can send you messages in this box'}</p>
                 </div>
               )}
+
 
               <Button onClick={handleSaveLimit} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
             </div>
