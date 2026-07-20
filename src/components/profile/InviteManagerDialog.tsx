@@ -87,9 +87,10 @@ export function InviteManagerDialog({ open, onOpenChange }: Props) {
           </DialogTitle>
           <DialogDescription>
             {isRTL
-              ? 'أكّد كلمة مرورك لإنشاء كود ورابط صالحين لمدة 15 دقيقة.'
-              : 'Confirm your password to generate a code & link valid for 15 minutes.'}
+              ? 'أكّد كلمة مرورك لإنشاء كود ورابط صالحين لمدة 10 دقائق.'
+              : 'Confirm your password to generate a code & link valid for 10 minutes.'}
           </DialogDescription>
+
         </DialogHeader>
 
         {!invite ? (
