@@ -5,13 +5,13 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Sparkles, Briefcase, Check, Lock } from 'lucide-react';
+import { Loader2, Briefcase, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { DealCardView } from './BusinessDeals';
 
 interface Props {
   open: boolean;
@@ -22,84 +22,133 @@ interface Props {
 }
 
 const DEAL_TYPES = [
-  { id: 'sponsorship', ar: 'رعاية', en: 'Sponsorship' },
-  { id: 'appearance', ar: 'ظهور إعلاني', en: 'Brand Appearance' },
-  { id: 'event', ar: 'حضور فعالية', en: 'Event Attendance' },
-  { id: 'collab', ar: 'تعاون', en: 'Collaboration' },
-  { id: 'endorsement', ar: 'ترويج منتج', en: 'Product Endorsement' },
-  { id: 'other', ar: 'أخرى', en: 'Other' },
+  { id: 'ad', ar: 'إعلان', en: 'Ad' },
+  { id: 'post', ar: 'منشور', en: 'Post' },
+  { id: 'event', ar: 'حدث', en: 'Event' },
+  { id: 'name_image', ar: 'صورة/اسم', en: 'Name & Image' },
+  { id: 'other', ar: 'غير ذلك', en: 'Other' },
 ];
-const BUDGETS = ['< $5K', '$5K–$25K', '$25K–$100K', '$100K+'];
-const TIMELINES = [
-  { id: 'asap', ar: 'عاجل', en: 'ASAP' },
-  { id: '1m', ar: 'خلال شهر', en: 'Within a month' },
-  { id: '3m', ar: 'خلال 3 أشهر', en: 'Within 3 months' },
-  { id: 'flex', ar: 'مرن', en: 'Flexible' },
+
+const BUDGET_CYCLES = [
+  { id: 'per_post', ar: 'لكل منشور', en: 'Per post' },
+  { id: 'campaign', ar: 'للحملة', en: 'Campaign' },
+  { id: 'monthly', ar: 'شهرياً', en: 'Monthly' },
+  { id: 'yearly', ar: 'سنوياً', en: 'Yearly' },
+  { id: 'other', ar: 'غير ذلك', en: 'Other' },
 ];
+
+const COMMITMENTS = [
+  { id: 'ig_post', ar: 'منشور إنستغرام', en: 'Instagram post' },
+  { id: 'tt_3', ar: '3 منشورات تيك توك', en: '3 TikTok posts' },
+  { id: 'ad_video', ar: 'فيديو إعلاني', en: 'Ad video' },
+  { id: 'travel', ar: 'سفر', en: 'Travel' },
+  { id: 'press', ar: 'مؤتمر صحفي', en: 'Press conference' },
+  { id: 'other', ar: 'غير ذلك', en: 'Other' },
+];
+
+const DURATIONS = [
+  { id: '1m', ar: 'شهر', en: '1 month' },
+  { id: '3m', ar: '3 أشهر', en: '3 months' },
+  { id: '6m', ar: '6 أشهر', en: '6 months' },
+  { id: '12m', ar: '12 شهر', en: '12 months' },
+  { id: 'date', ar: 'تاريخ محدد', en: 'Specific date' },
+];
+
+const EXCLUSIVITY = [
+  { id: 'none', ar: 'بدون', en: 'None' },
+  { id: 'full', ar: 'كاملة', en: 'Full' },
+  { id: 'category', ar: 'فئة', en: 'Category' },
+];
+
+type Step = 'form' | 'preview';
 
 export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityName, onSent }: Props) {
   const { user } = useAuth();
   const { isRTL } = useLanguage();
-  const [dealType, setDealType] = useState('');
-  const [budget, setBudget] = useState('');
-  const [timeline, setTimeline] = useState('');
-  const [details, setDetails] = useState('');
-  const [goldenHour, setGoldenHour] = useState(false);
+  const [step, setStep] = useState<Step>('form');
   const [sending, setSending] = useState(false);
-  const [goldenAllowed, setGoldenAllowed] = useState(false);
-  const [hasPending, setHasPending] = useState(false);
-  const [checking, setChecking] = useState(true);
 
-  // On open: check Golden Hour entitlement (payment gate) + existing pending deal.
+  const [companyName, setCompanyName] = useState('');
+  const [website, setWebsite] = useState('');
+  const [dealType, setDealType] = useState('');
+  const [dealTypeOther, setDealTypeOther] = useState('');
+  const [campaign, setCampaign] = useState('');
+  const [budgetAmount, setBudgetAmount] = useState('');
+  const [budgetCycle, setBudgetCycle] = useState('');
+  const [budgetCycleOther, setBudgetCycleOther] = useState('');
+  const [commitments, setCommitments] = useState<string[]>([]);
+  const [commitmentOther, setCommitmentOther] = useState('');
+  const [duration, setDuration] = useState('');
+  const [durationDate, setDurationDate] = useState('');
+  const [exclusivity, setExclusivity] = useState('');
+  const [exclusivityCat, setExclusivityCat] = useState('');
+  const [whyTalent, setWhyTalent] = useState('');
+
   useEffect(() => {
-    if (!open || !user) return;
-    let active = true;
-    setChecking(true);
-    (async () => {
-      const [{ data: ent }, { data: pending }] = await Promise.all([
-        supabase
-          .from('feature_entitlements')
-          .select('granted, expires_at')
-          .eq('user_id', user.id)
-          .eq('feature', 'golden_hour')
-          .maybeSingle(),
-        supabase
-          .from('deal_cards')
-          .select('id')
-          .eq('sender_id', user.id)
-          .eq('celebrity_id', celebrityId)
-          .eq('status', 'pending')
-          .limit(1),
-      ]);
-      if (!active) return;
-      const e = ent as any;
-      const allowed = !!e?.granted && (!e.expires_at || new Date(e.expires_at) > new Date());
-      setGoldenAllowed(allowed);
-      setHasPending((pending?.length ?? 0) > 0);
-      if (!allowed) setGoldenHour(false);
-      setChecking(false);
-    })();
-    return () => { active = false; };
-  }, [open, user, celebrityId]);
+    if (!open) {
+      setStep('form'); setCompanyName(''); setWebsite(''); setDealType(''); setDealTypeOther('');
+      setCampaign(''); setBudgetAmount(''); setBudgetCycle(''); setBudgetCycleOther('');
+      setCommitments([]); setCommitmentOther(''); setDuration(''); setDurationDate('');
+      setExclusivity(''); setExclusivityCat(''); setWhyTalent('');
+    }
+  }, [open]);
 
-  const reset = () => {
-    setDealType(''); setBudget(''); setTimeline(''); setDetails(''); setGoldenHour(false);
+  const validate = (): string | null => {
+    if (!companyName.trim()) return isRTL ? 'اسم الشركة مطلوب' : 'Company name required';
+    if (!website.trim()) return isRTL ? 'الموقع الإلكتروني مطلوب' : 'Website required';
+    if (!dealType) return isRTL ? 'نوع التعاون مطلوب' : 'Deal type required';
+    if (dealType === 'other' && !dealTypeOther.trim()) return isRTL ? 'اوصف نوع التعاون' : 'Describe the deal type';
+    if (!campaign.trim()) return isRTL ? 'وصف الحملة مطلوب' : 'Campaign description required';
+    if (!budgetAmount || Number(budgetAmount) <= 0) return isRTL ? 'الميزانية مطلوبة' : 'Budget required';
+    if (!budgetCycle) return isRTL ? 'دورة الميزانية مطلوبة' : 'Budget cycle required';
+    if (budgetCycle === 'other' && !budgetCycleOther.trim()) return isRTL ? 'حدد دورة الميزانية' : 'Specify the cycle';
+    if (commitments.includes('other') && !commitmentOther.trim()) return isRTL ? 'اوصف الالتزام' : 'Describe the commitment';
+    if (!duration) return isRTL ? 'المدة مطلوبة' : 'Duration required';
+    if (duration === 'date' && !durationDate) return isRTL ? 'اختر التاريخ' : 'Pick a date';
+    if (!exclusivity) return isRTL ? 'الحصرية مطلوبة' : 'Exclusivity required';
+    if (exclusivity === 'category' && !exclusivityCat.trim()) return isRTL ? 'حدد الفئة' : 'Specify the category';
+    return null;
   };
+
+  const toPreview = () => {
+    const err = validate();
+    if (err) { toast.error(err); return; }
+    setStep('preview');
+  };
+
+  const buildPreviewDeal = () => ({
+    id: 'preview',
+    sender_id: user?.id || '',
+    celebrity_id: celebrityId,
+    message_id: null,
+    deal_type: DEAL_TYPES.find(t => t.id === dealType)?.[isRTL ? 'ar' : 'en'] || dealType,
+    deal_type_other: dealTypeOther || null,
+    company_name: companyName,
+    website,
+    campaign_description: campaign,
+    budget_amount: Number(budgetAmount),
+    budget_cycle: BUDGET_CYCLES.find(b => b.id === budgetCycle)?.[isRTL ? 'ar' : 'en'] || budgetCycle,
+    budget_cycle_other: budgetCycleOther || null,
+    commitments: commitments.filter(c => c !== 'other').map(id => COMMITMENTS.find(x => x.id === id)?.[isRTL ? 'ar' : 'en'] || id),
+    commitment_other: commitmentOther || null,
+    duration: DURATIONS.find(d => d.id === duration)?.[isRTL ? 'ar' : 'en'] || duration,
+    duration_date: durationDate || null,
+    exclusivity: EXCLUSIVITY.find(e => e.id === exclusivity)?.[isRTL ? 'ar' : 'en'] || exclusivity,
+    exclusivity_category: exclusivityCat || null,
+    why_talent: whyTalent || null,
+    details: null,
+    status: 'pending' as const,
+    seen_at: null,
+    decline_reason: null,
+    shared_with_talent_at: null,
+    created_at: new Date().toISOString(),
+  });
 
   const submit = async () => {
     if (!user) return;
-    if (!dealType) { toast.error(isRTL ? 'اختر نوع العرض' : 'Choose a deal type'); return; }
-    if (hasPending) {
-      toast.error(isRTL ? 'لديك عرض قيد المراجعة بالفعل — انتظر الرد أولاً' : 'You already have a pending deal — wait for a reply first');
-      return;
-    }
     setSending(true);
+    const summary = `${isRTL ? 'بطاقة عرض' : 'Deal card'}: ${companyName} — ${dealTypeOther || dealType}`;
 
-    const typeLabel = DEAL_TYPES.find(t => t.id === dealType);
-    const summary = `${isRTL ? 'عرض عمل' : 'Deal'}: ${typeLabel ? typeLabel[isRTL ? 'ar' : 'en'] : dealType}`
-      + (budget ? ` · ${budget}` : '');
-
-    // 1) Create the linked work message so it lands in the Business box.
     const { data: msg, error: msgErr } = await supabase
       .from('messages')
       .insert({
@@ -108,38 +157,42 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
         category: 'work',
         subject: isRTL ? 'بطاقة عرض' : 'Deal Card',
         content: summary,
-        is_important: goldenHour,
-      })
+      } as any)
       .select('id')
       .single();
 
     if (msgErr) { setSending(false); toast.error(isRTL ? 'تعذّر الإرسال' : 'Could not send'); return; }
 
-    // 2) Create the structured deal card.
     const { error: dealErr } = await (supabase as any).from('deal_cards').insert({
       sender_id: user.id,
       celebrity_id: celebrityId,
       message_id: msg.id,
       deal_type: dealType,
-      budget_range: budget || null,
-      timeline: timeline || null,
-      details: details.trim() || null,
-      golden_hour: goldenHour,
+      deal_type_other: dealTypeOther || null,
+      company_name: companyName,
+      website,
+      campaign_description: campaign,
+      budget_amount: Number(budgetAmount),
+      budget_cycle: budgetCycle,
+      budget_cycle_other: budgetCycleOther || null,
+      commitments: commitments.filter(c => c !== 'other'),
+      commitment_other: commitmentOther || null,
+      duration,
+      duration_date: durationDate || null,
+      exclusivity,
+      exclusivity_category: exclusivityCat || null,
+      why_talent: whyTalent || null,
     });
 
     setSending(false);
-    if (dealErr) {
-      const gated = String((dealErr as any)?.message || '').includes('golden_hour_not_allowed');
-      toast.error(gated
-        ? (isRTL ? 'Golden Hour ميزة مدفوعة وغير مفعّلة لحسابك' : 'Golden Hour is a paid feature not enabled on your account')
-        : (isRTL ? 'تعذّر إنشاء البطاقة' : 'Could not create deal card'));
-      return;
-    }
-
+    if (dealErr) { toast.error(isRTL ? 'تعذّر إنشاء البطاقة' : 'Could not create deal card'); return; }
     toast.success(isRTL ? 'تم إرسال بطاقة العرض' : 'Deal card sent');
-    reset();
     onOpenChange(false);
     onSent?.();
+  };
+
+  const toggleCommitment = (id: string) => {
+    setCommitments(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   return (
@@ -148,92 +201,136 @@ export function DealCardComposer({ open, onOpenChange, celebrityId, celebrityNam
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-blue-500" />
-            {isRTL ? 'بطاقة عرض عمل' : 'Deal Card'}
+            {step === 'preview' ? (isRTL ? 'معاينة البطاقة' : 'Deal preview') : (isRTL ? 'بطاقة عرض عمل' : 'Deal Card')}
           </DialogTitle>
           <DialogDescription>
             {(isRTL ? 'عرض منظّم إلى ' : 'A structured offer to ') + (celebrityName ? `@${celebrityName}` : '')}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
-          <div>
-            <p className="text-xs font-medium mb-2 text-muted-foreground">{isRTL ? 'نوع العرض' : 'Deal type'}</p>
+        {step === 'preview' ? (
+          <div className="space-y-4">
+            <DealCardView deal={buildPreviewDeal() as any} isRTL={isRTL} />
             <div className="grid grid-cols-2 gap-2">
-              {DEAL_TYPES.map(t => (
-                <button key={t.id} onClick={() => setDealType(t.id)}
-                  className={cn('p-2.5 rounded-xl border text-sm text-start transition-colors',
-                    dealType === t.id ? 'border-blue-500 bg-blue-500/10 font-medium' : 'border-border hover:bg-muted/50')}>
-                  {t[isRTL ? 'ar' : 'en']}
-                </button>
-              ))}
+              <Button variant="outline" onClick={() => setStep('form')} className="rounded-xl">{isRTL ? 'رجوع' : 'Back'}</Button>
+              <Button onClick={submit} disabled={sending} className="rounded-xl">
+                {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Check className="h-4 w-4 me-2" />{isRTL ? 'إرسال العرض' : 'Send Deal'}</>}
+              </Button>
             </div>
           </div>
+        ) : (
+          <div className="space-y-4 py-1">
+            <Field label={isRTL ? 'اسم الشركة *' : 'Company name *'}>
+              <Input value={companyName} onChange={e => setCompanyName(e.target.value)} className="rounded-xl" />
+            </Field>
+            <Field label={isRTL ? 'الموقع الإلكتروني *' : 'Website *'}>
+              <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://" className="rounded-xl" />
+            </Field>
 
-          <div>
-            <p className="text-xs font-medium mb-2 text-muted-foreground">{isRTL ? 'الميزانية' : 'Budget'}</p>
-            <div className="grid grid-cols-4 gap-2">
-              {BUDGETS.map(b => (
-                <button key={b} onClick={() => setBudget(b)}
-                  className={cn('p-2 rounded-xl border text-xs transition-colors',
-                    budget === b ? 'border-blue-500 bg-blue-500/10 font-medium' : 'border-border hover:bg-muted/50')}>
-                  {b}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-medium mb-2 text-muted-foreground">{isRTL ? 'الجدول الزمني' : 'Timeline'}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {TIMELINES.map(t => (
-                <button key={t.id} onClick={() => setTimeline(t.id)}
-                  className={cn('p-2 rounded-xl border text-sm transition-colors',
-                    timeline === t.id ? 'border-blue-500 bg-blue-500/10 font-medium' : 'border-border hover:bg-muted/50')}>
-                  {t[isRTL ? 'ar' : 'en']}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Textarea
-            placeholder={isRTL ? 'تفاصيل إضافية (اختياري)' : 'Additional details (optional)'}
-            value={details}
-            maxLength={1000}
-            onChange={(e) => setDetails(e.target.value)}
-            className="rounded-xl resize-none"
-            rows={3}
-          />
-
-          <div className={cn('flex items-center justify-between p-3 rounded-xl border',
-            goldenAllowed ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/30')}>
-            <div className="flex items-center gap-2">
-              {goldenAllowed ? <Sparkles className="h-4 w-4 text-amber-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
-              <div>
-                <p className="text-sm font-medium">Golden Hour</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {goldenAllowed
-                    ? (isRTL ? 'أولوية 60 دقيقة تبدأ عند أول رد' : 'A 60-min priority window that starts on the first reply')
-                    : (isRTL ? 'ميزة مدفوعة — تتطلب اشتراكاً لتفعيلها' : 'Paid feature — requires a subscription to unlock')}
-                </p>
+            <Field label={isRTL ? 'نوع التعاون *' : 'Deal type *'}>
+              <div className="grid grid-cols-3 gap-2">
+                {DEAL_TYPES.map(t => (
+                  <ChoiceBtn key={t.id} active={dealType === t.id} onClick={() => setDealType(t.id)}>
+                    {t[isRTL ? 'ar' : 'en']}
+                  </ChoiceBtn>
+                ))}
               </div>
-            </div>
-            <Switch checked={goldenHour} onCheckedChange={setGoldenHour} disabled={!goldenAllowed || checking} />
+              {dealType === 'other' && (
+                <Input value={dealTypeOther} onChange={e => setDealTypeOther(e.target.value)}
+                  placeholder={isRTL ? 'اوصف نوع التعاون' : 'Describe deal type'} className="rounded-xl mt-2" />
+              )}
+            </Field>
+
+            <Field label={isRTL ? `وصف مختصر للحملة * (${campaign.length}/300)` : `Campaign description * (${campaign.length}/300)`}>
+              <Textarea value={campaign} maxLength={300} onChange={e => setCampaign(e.target.value)} rows={3} className="rounded-xl resize-none" />
+            </Field>
+
+            <Field label={isRTL ? 'الميزانية المعروضة *' : 'Budget *'}>
+              <Input type="number" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)}
+                placeholder="0" className="rounded-xl" />
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {BUDGET_CYCLES.map(b => (
+                  <ChoiceBtn key={b.id} active={budgetCycle === b.id} onClick={() => setBudgetCycle(b.id)}>
+                    {b[isRTL ? 'ar' : 'en']}
+                  </ChoiceBtn>
+                ))}
+              </div>
+              {budgetCycle === 'other' && (
+                <Input value={budgetCycleOther} onChange={e => setBudgetCycleOther(e.target.value)}
+                  placeholder={isRTL ? 'حدد الدورة' : 'Specify cycle'} className="rounded-xl mt-2" />
+              )}
+            </Field>
+
+            <Field label={isRTL ? 'الالتزامات المطلوبة' : 'Commitments'}>
+              <div className="grid grid-cols-2 gap-2">
+                {COMMITMENTS.map(c => (
+                  <ChoiceBtn key={c.id} active={commitments.includes(c.id)} onClick={() => toggleCommitment(c.id)}>
+                    {c[isRTL ? 'ar' : 'en']}
+                  </ChoiceBtn>
+                ))}
+              </div>
+              {commitments.includes('other') && (
+                <Input value={commitmentOther} onChange={e => setCommitmentOther(e.target.value)}
+                  placeholder={isRTL ? 'اوصف الالتزام' : 'Describe commitment'} className="rounded-xl mt-2" />
+              )}
+            </Field>
+
+            <Field label={isRTL ? 'المدة المتوقعة *' : 'Duration *'}>
+              <div className="grid grid-cols-3 gap-2">
+                {DURATIONS.map(d => (
+                  <ChoiceBtn key={d.id} active={duration === d.id} onClick={() => setDuration(d.id)}>
+                    {d[isRTL ? 'ar' : 'en']}
+                  </ChoiceBtn>
+                ))}
+              </div>
+              {duration === 'date' && (
+                <Input type="date" value={durationDate} onChange={e => setDurationDate(e.target.value)} className="rounded-xl mt-2" />
+              )}
+            </Field>
+
+            <Field label={isRTL ? 'الحصرية *' : 'Exclusivity *'}>
+              <div className="grid grid-cols-3 gap-2">
+                {EXCLUSIVITY.map(e => (
+                  <ChoiceBtn key={e.id} active={exclusivity === e.id} onClick={() => setExclusivity(e.id)}>
+                    {e[isRTL ? 'ar' : 'en']}
+                  </ChoiceBtn>
+                ))}
+              </div>
+              {exclusivity === 'category' && (
+                <Input value={exclusivityCat} onChange={e => setExclusivityCat(e.target.value)}
+                  placeholder={isRTL ? 'حدد الفئة' : 'Specify category'} className="rounded-xl mt-2" />
+              )}
+            </Field>
+
+            <Field label={isRTL ? `لماذا هذا الموهوب؟ (${whyTalent.length}/200)` : `Why this talent? (${whyTalent.length}/200)`}>
+              <Textarea value={whyTalent} maxLength={200} onChange={e => setWhyTalent(e.target.value)} rows={2} className="rounded-xl resize-none" />
+            </Field>
+
+            <Button onClick={toPreview} className="w-full h-12 rounded-xl">
+              {isRTL ? 'معاينة' : 'Preview'}
+            </Button>
           </div>
-
-          {hasPending && (
-            <p className="text-[11px] text-amber-600 text-center">
-              {isRTL ? 'لديك عرض قيد المراجعة — لا يمكن إرسال عرض جديد حتى يتم الرد.' : 'You have a pending deal — you cannot send a new one until it gets a reply.'}
-            </p>
-          )}
-
-          <Button onClick={submit} disabled={sending || checking || hasPending} className="w-full h-12 rounded-xl">
-            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-              <><Check className="h-4 w-4 me-2" />{isRTL ? 'إرسال العرض' : 'Send Deal'}</>
-            )}
-          </Button>
-
-        </div>
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-medium mb-2 text-muted-foreground">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+function ChoiceBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cn('p-2 rounded-xl border text-xs text-center transition-colors',
+        active ? 'border-blue-500 bg-blue-500/10 font-medium' : 'border-border hover:bg-muted/40')}>
+      {children}
+    </button>
   );
 }
