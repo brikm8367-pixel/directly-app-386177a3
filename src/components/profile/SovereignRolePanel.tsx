@@ -153,8 +153,6 @@ export function SovereignRolePanel() {
           {managers.some((m) => m.status === 'active') && (
             <KillSwitch onDone={loadManagers} />
           )}
-
-          <ManagerActivityLog />
         </div>
       )}
     </div>
