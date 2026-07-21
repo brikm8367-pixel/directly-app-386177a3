@@ -214,7 +214,7 @@ export default function InboxSection({
               )}
 
 
-              <Button onClick={handleSaveLimit} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
+              <Button onClick={handleSaveMode} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
             </div>
           </DialogContent>
         </Dialog>
