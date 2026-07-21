@@ -35,11 +35,13 @@ export interface Message {
   voice_url?: string | null;
 }
 
+export type InboxMode = 'unlimited' | 'closed';
+
 interface InboxSectionProps {
   category: MessageCategory;
   messages: Message[];
-  messageLimit: number;
-  onSetLimit: (limit: number) => void;
+  inboxMode: InboxMode;
+  onSetMode: (mode: InboxMode) => void;
   onMessageClick: (message: Message) => void;
   isLoading?: boolean;
   isOnline?: (userId: string) => boolean;
