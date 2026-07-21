@@ -41,7 +41,14 @@ export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const { isOnline, canCall } = usePresence(user?.id);
   const { role, managedCelebrityId } = useRole();
-  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('directly_onboarded'));
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    // Migrate legacy onboarding flag
+    if (localStorage.getItem('directly_onboarded') && !localStorage.getItem('sovereign_onboarded')) {
+      localStorage.setItem('sovereign_onboarded', 'true');
+      localStorage.removeItem('directly_onboarded');
+    }
+    return !localStorage.getItem('sovereign_onboarded');
+  });
 
   const getInitialTab = () => {
     const tab = searchParams.get('tab');
