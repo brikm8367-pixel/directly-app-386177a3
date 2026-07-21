@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { supabase } from '@/integrations/supabase/client';
 import { Briefcase, Users, Heart, Settings2, Mail, MailOpen, Check, CheckCheck, ShieldCheck, Pin, Infinity as InfinityIcon, Lock } from 'lucide-react';
 import {
@@ -36,11 +35,13 @@ export interface Message {
   voice_url?: string | null;
 }
 
+export type InboxMode = 'unlimited' | 'closed';
+
 interface InboxSectionProps {
   category: MessageCategory;
   messages: Message[];
-  messageLimit: number;
-  onSetLimit: (limit: number) => void;
+  inboxMode: InboxMode;
+  onSetMode: (mode: InboxMode) => void;
   onMessageClick: (message: Message) => void;
   isLoading?: boolean;
   isOnline?: (userId: string) => boolean;
@@ -78,8 +79,8 @@ const categoryConfig = {
 export default function InboxSection({
   category,
   messages,
-  messageLimit,
-  onSetLimit,
+  inboxMode,
+  onSetMode,
   onMessageClick,
   isLoading = false,
   isOnline,
@@ -88,13 +89,13 @@ export default function InboxSection({
 }: InboxSectionProps) {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const [tempMode, setTempMode] = useState<'unlimited' | 'closed'>('unlimited');
+  const [tempMode, setTempMode] = useState<InboxMode>('unlimited');
   const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
 
   const config = categoryConfig[category];
   const Icon = config.icon;
 
-  // Load current mode
+  // Load current mode when dialog opens
   useEffect(() => {
     if (!user || !isLimitDialogOpen) return;
     (async () => {
@@ -122,14 +123,14 @@ export default function InboxSection({
     return isRTL ? `${diffDays} ي` : `${diffDays}d`;
   };
 
-  const handleSaveLimit = async () => {
+  const handleSaveMode = async () => {
     if (!user) return;
     await supabase.from('message_limits').upsert({
       user_id: user.id,
       category,
       inbox_mode: tempMode,
     } as any, { onConflict: 'user_id,category' });
-    onSetLimit(tempMode === 'closed' ? 0 : 999999);
+    onSetMode(tempMode);
     setIsLimitDialogOpen(false);
   };
 
@@ -161,7 +162,7 @@ export default function InboxSection({
               )}
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {messageLimit === 0
+              {inboxMode === 'closed'
                 ? (isRTL ? 'مغلق — لا يصلك أحد' : 'Closed — no one reaches you')
                 : (isRTL ? `مساحتك — ${messages.length} (لا محدود)` : `Your space — ${messages.length} (unlimited)`)}
 
@@ -213,7 +214,7 @@ export default function InboxSection({
               )}
 
 
-              <Button onClick={handleSaveLimit} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
+              <Button onClick={handleSaveMode} className="w-full h-11 rounded-xl">{isRTL ? 'حفظ' : 'Save'}</Button>
             </div>
           </DialogContent>
         </Dialog>

@@ -41,7 +41,14 @@ export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const { isOnline, canCall } = usePresence(user?.id);
   const { role, managedCelebrityId } = useRole();
-  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('directly_onboarded'));
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    // Migrate legacy onboarding flag
+    if (localStorage.getItem('directly_onboarded') && !localStorage.getItem('sovereign_onboarded')) {
+      localStorage.setItem('sovereign_onboarded', 'true');
+      localStorage.removeItem('directly_onboarded');
+    }
+    return !localStorage.getItem('sovereign_onboarded');
+  });
 
   const getInitialTab = () => {
     const tab = searchParams.get('tab');
@@ -52,7 +59,7 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState<'inbox' | 'search' | 'patterns'>(getInitialTab());
   const [messages, setMessages] = useState<{ work: Message[]; audience: Message[]; direct: Message[] }>({ work: [], audience: [], direct: [] });
-  const [limits, setLimits] = useState<{ work: number; audience: number; direct: number }>({ work: 100, audience: 100, direct: 100 });
+  const [inboxModes, setInboxModes] = useState<{ work: 'unlimited' | 'closed'; audience: 'unlimited' | 'closed'; direct: 'unlimited' | 'closed' }>({ work: 'unlimited', audience: 'unlimited', direct: 'unlimited' });
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
@@ -228,11 +235,12 @@ export default function Dashboard() {
       .eq('user_id', user.id);
 
     if (limitsData) {
-      const newLimits = { work: 999999, audience: 999999, direct: 999999 };
+      const newModes = { work: 'unlimited', audience: 'unlimited', direct: 'unlimited' } as const;
+      const modes: { work: 'unlimited' | 'closed'; audience: 'unlimited' | 'closed'; direct: 'unlimited' | 'closed' } = { ...newModes };
       (limitsData as any[]).forEach(l => {
-        newLimits[l.category as MessageCategory] = l.inbox_mode === 'closed' ? 0 : 999999;
+        modes[l.category as MessageCategory] = l.inbox_mode === 'closed' ? 'closed' : 'unlimited';
       });
-      setLimits(newLimits);
+      setInboxModes(modes);
     }
 
 
@@ -320,12 +328,12 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, [messageSearchQuery, user]);
 
-  const handleSetLimit = async (category: MessageCategory, limit: number) => {
+  const handleSetMode = async (category: MessageCategory, mode: 'unlimited' | 'closed') => {
     if (!user) return;
     await supabase.from('message_limits').upsert({
-      user_id: user.id, category, max_messages: limit,
+      user_id: user.id, category, inbox_mode: mode,
     }, { onConflict: 'user_id,category' });
-    setLimits(prev => ({ ...prev, [category]: limit }));
+    setInboxModes(prev => ({ ...prev, [category]: mode }));
   };
 
   // Sort messages: pinned first
@@ -522,8 +530,8 @@ export default function Dashboard() {
                     key={category}
                     category={category}
                     messages={sortWithPins(messages[category]) as any}
-                    messageLimit={limits[category]}
-                    onSetLimit={(limit) => handleSetLimit(category, limit)}
+                    inboxMode={inboxModes[category]}
+                    onSetMode={(mode) => handleSetMode(category, mode)}
                     onMessageClick={setSelectedMessage}
                     isLoading={isLoadingMessages}
                     isOnline={category === 'direct' ? isOnline : undefined}
