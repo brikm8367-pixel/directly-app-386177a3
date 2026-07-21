@@ -59,7 +59,7 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState<'inbox' | 'search' | 'patterns'>(getInitialTab());
   const [messages, setMessages] = useState<{ work: Message[]; audience: Message[]; direct: Message[] }>({ work: [], audience: [], direct: [] });
-  const [limits, setLimits] = useState<{ work: number; audience: number; direct: number }>({ work: 100, audience: 100, direct: 100 });
+  const [inboxModes, setInboxModes] = useState<{ work: InboxMode; audience: InboxMode; direct: InboxMode }>({ work: 'unlimited', audience: 'unlimited', direct: 'unlimited' });
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
