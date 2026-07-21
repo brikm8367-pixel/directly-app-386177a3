@@ -1,74 +1,60 @@
-# خطة التنفيذ — Sovereign: الأدوار + الدعوات + Deal Card + Golden Hour
+تم التحقق من حالة المشروع فعلياً. هذه الخطة تعالج الفجوات التي لم تُغلق بعد.
 
-أبني هذا بأولوية **Backend** (قاعدة بيانات + Edge Functions + RLS) ثم **Frontend**، بجودة عالية وأمان حقيقي. نُنفّذ على 4 مراحل متسلسلة.
+## ما تمّ تحقيقه فعلياً (مؤكد من الكود والمخطط)
+- قاعدة البيانات: أعمدة Golden Hour و max_messages حُذفت فعلياً. جدول `deal_cards` يحتوي على الحقول العشرة الجديدة. جدول `message_limits` يحتوي فقط على `user_id`, `category`, `inbox_mode`.
+- `DealCardComposer.tsx`: أُعيد بناؤه بالكامل مع الحقول العشرة ومعاينة غنية.
+- `BusinessDeals.tsx`: يعرض البطاقات بشكل Rich Card مع أزرار Interested / Not suitable / Share.
+- `useDealCards.tsx`: يطابق الأعمدة الجديدة.
+- `InviteManagerDialog.tsx` + `RedeemManagerInvite.tsx`: إدخال كود يسمح باللصق بسهولة.
+- `InboxSection.tsx`: أصبح هناك وضعان فقط Unlimited/Closed بدون أشرطة أعداد.
+- `MessageComposer.tsx` و `ConversationView.tsx`: لم يعد يتحقق من `can_receive_message`، ويتوقف فقط عند `inbox_mode === 'closed'`.
 
-```text
-account_type (بسيط: celebrity | sender=user عادي)  ← ليس مصدر الدور الأساسي
-manager_links (active)  ← المصدر الأساسي لحساب الدور ديناميكياً
-الدور الفعّال = celebrity? → celebrity | active manager_link? → manager | غير ذلك → sender
-```
+## الفجوات المؤكدة التي تحتاج إصلاحاً
+1. `Dashboard.tsx` يحتوي على `handleSetLimit` يكتب `max_messages` إلى `message_limits`، وهذا العمود حُذف من المخطط. هذا خطأ وظيفي حقيقي: تغيير الإعدادات من Dashboard لن يحفظ.
+2. `ManagerActivityLog.tsx` ما زال موجوداً وما زال يُعرض داخل `SovereignRolePanel.tsx` للمشهور. يجب حذفه من الواجهة الأمامية.
+3. `Notifications.tsx` ما زال يحتوي على تعريف نوع `inbox_warning` والنصوص المرتبطة به ("صندوقك يقترب من الامتلاء" / "صندوقك ممتلئ"). يجب تنظيفه.
+4. بقايا اسم "Directly" ما زالت موجودة في عدة ملفات (`App.tsx`, `Dashboard.tsx`, `shareCard.ts`, `appUrl.ts`, `cryptoHelpers.ts`, `pushNotifications.ts`, `offlineQueue.ts`, `signalProtocol.ts`, `OnboardingFlow.tsx`, `Launch.tsx`, `BugBounty.tsx`, `Profile.tsx`، إلخ). يجب استبدالها بـ "Sovereign".
+5. التسجيل الموحد بـ `username@` لم يُطبق بعد. النموذج الحالي يطلب `username` و `display_name` و `email` بشكل منفصل.
+6. `InboxSection.tsx` يستورد `Slider` دون استخدامه — مخلف بسيط.
+7. `MessageComposer.tsx` يحتوي على منطق `shouldDeductCredit` المسمى باسم سابق، يتعلق بـ "credit" المحذوفة.
 
-## المرحلة 1 — نظام دعوة الوكيل (Invitation System) [الأولوية الآن]
+## الخطة التنفيذية
 
-### Backend
-- جدول جديد `manager_invitations`:
-  - `celebrity_id`, `code` (8–10 أحرف)، `token` (NanoID للرابط)، `status` (`pending`/`used`/`revoked`)، `expires_at` (= الآن + 15 دقيقة)، `used_by`، طوابع زمنية.
-  - GRANT + RLS: المشهور يقرأ دعواته فقط؛ لا إدراج/تعديل مباشر من العميل (كل العمليات عبر Edge Functions بمفتاح الخدمة).
-- دالة تحقق `validate_invitation(code/token)` (SECURITY DEFINER) للتحقق من الصلاحية وعدم الانتهاء.
-- **Edge Function `create-manager-invite`**:
-  1. يستقبل كلمة مرور المشهور ويتحقق منها فعلياً (إعادة مصادقة عبر `signInWithPassword` على عميل مؤقت).
-  2. عند النجاح: يولّد `code` + `token` (NanoID)، ويُنشئ صفاً في `manager_invitations` بصلاحية 15 دقيقة.
-  3. يُرجع الكود + الرابط القابل للمشاركة.
-- **Edge Function `redeem-manager-invite`**:
-  1. يستقبل الكود من الوكيل (مستخدم مسجّل دخول).
-  2. يتحقق: موجود، `pending`، غير منتهٍ، والوكيل ليس المشهور نفسه.
-  3. يُنشئ `manager_links` (`status='active'`) ويعلّم الدعوة `used` + `used_by`. كله بمفتاح الخدمة (الوكيل لا يكتب مباشرة في `manager_links`).
+### 1. إصلاح حفظ إعدادات الصندوق في Dashboard.tsx
+- تعديل `handleSetLimit` لتكتب `inbox_mode` (`'unlimited'` أو `'closed'`) بدلاً من `max_messages`.
+- تحديث `limits` state ليكون واضحاً كأنه يمثل الوضع (mode) وليس عدد الرسائل، أو إزالة الحاجة للـ `messageLimit` العددي بالكامل.
+- التأكد من أن `InboxSection` يستقبل الوضع الحالي ويعكسه بدقة.
 
-### Frontend
-- في `SovereignRolePanel`: زر **"دعوة وكيل"** → نافذة تطلب كلمة المرور → تستدعي `create-manager-invite` → تعرض الكود + الرابط مع زر نسخ/مشاركة + **عدّاد تنازلي 15 دقيقة**.
-- صفحة استقبال الرابط `/m/:token` (NanoID): إن لم يسجّل الدخول → توجيه للمصادقة ثم الرجوع؛ إن سُجِّل → شاشة إدخال الكود (input-otp) → استدعاء `redeem-manager-invite` → نجاح → توجيه للـ Dashboard.
-- ذكاء الرابط (App/Store): صفحة وسيطة تكشف المنصة وتوجّه (نسخة الويب الآن؛ روابط Play/App Store كـ placeholders جاهزة للربط لاحقاً).
-- تحديث `JoinManager.tsx` الحالي ليستخدم تدفق الكود الآمن بدل الإدراج المباشر.
+### 2. حذف Activity Log من الواجهة الأمامية
+- حذف ملف `src/components/profile/ManagerActivityLog.tsx`.
+- إزالة استيراده واستخدامه من `SovereignRolePanel.tsx`.
+- تحديث الملصقات والنصوص في `SovereignRolePanel` بحيث لا تشير إلى Activity Log.
 
-## المرحلة 2 — طبقة الأدوار الديناميكية (Roles Layer)
+### 3. تنظيف Notifications.tsx
+- إزالة نوع `inbox_warning` من واجهة `NotificationItem`.
+- حذف نصوص `inboxAlmostFull` و `inboxFull` و `adjustLimit` من جميع اللغات.
+- حذف منطق الـ click handler لـ `inbox_warning`.
+- حذف أيقينة/حالة `inbox_warning` في rendering.
 
-- `useRole()` يبقى المصدر الواحد للدور (موجود ويعمل بالمنطق المطلوب: celebrity → manager → sender). نُبقي `account_type` بسيطاً ولا نعتمد عليه إلا لتمييز المشهور.
-- **RLS على `messages`**: السماح للوكيل بقراءة (وإدارة) رسائل `category='work'` الخاصة بالمشهور المرتبط به عبر `active_manager_of()` — مع الإبقاء التام على عزل `direct` (Private) عن الوكيل.
-- **`Dashboard.tsx`** يعرض الصناديق حسب الدور:
-  - **Celebrity**: Private + Fans كاملان، Business **للقراءة فقط (overview)**.
-  - **Manager**: **Business فقط** للمشهور/المشاهير المرتبط بهم؛ لا يرى Private إطلاقاً. عند تعدّد، مُحدِّد لاختيار المشهور.
-  - **Sender**: لا صناديق داخلية — محادثاته فقط.
-- وسم "No AI" يبقى على Private، والـ Classifier يبقى يعمل دون مساس.
+### 4. إزالة بقايا اسم Directly
+- البحث عن كل "Directly" في `src/` (بما فيها التعليقات، المتغيرات، localStorage keys، strings).
+- استبدالها بـ "Sovereign" مع الحفاظ على المعنى.
+- استبدال `localStorage` key `directly_onboarded` بـ `sovereign_onboarded` مع التعامل مع migration.
+- تحديث أي نصوص تسويقية أو قانونية (PrivacyPolicy, Launch, BugBounty) تذكر Directly.
 
-## المرحلة 3 — Deal Card (العرض المنظّم)
+### 5. تطبيق التسجيل الموحد بـ username@
+- تعديل `Auth.tsx` بحيث يكون `username` هو المعرف الرئيسي ويعرض للمستخدم بصيغة `username@` (مثل `john@`).
+- تحديث التحقق (validation) لتسمح بالحروف والأرقام والشرطة السفلية فقط، وعدم طلب `display_name` إذا كان المستخدم يريد التسجيل بـ username@ فقط، أو جعل username@ هو المعرف الوحيد.
+- تحديث ملفات البحث والملف الشخصي لعرض المعرف بالشكل الجديد.
+- تحديث رسائل الترحيب والأمثلة في الواجهة لتعكس `username@`.
+- تحديث نموذج `profiles` إذا لزم الأمر (ربما إضافة `username` formatting helper وليس عمود جديد).
 
-### Backend
-- جدول `deal_cards`:
-  - `sender_id`, `celebrity_id`, `message_id` (ربط برسالة في صندوق work)، `deal_type` (أزرار جاهزة: رعاية/ظهور/حضور فعالية/تعاون…)، `budget_range`, `timeline`, `details`, `status` (`pending`/`accepted`/`declined`/`countered`)، طوابع زمنية.
-  - GRANT + RLS: المرسِل يرى/ينشئ عروضه؛ المشهور **والوكيل النشِط** يريان ويغيّران حالة عروض ذلك المشهور (عبر `active_manager_of()`).
-- Trigger يربط إنشاء Deal Card برسالة `work` (حتى يظهر داخل صندوق العمل ويستفيد من E2E الحالي).
+### 6. تنظيف مخلفات صغيرة
+- إزالة استيراد `Slider` غير المستخدم من `InboxSection.tsx`.
+- إعادة تسمية `shouldDeductCredit` في `MessageComposer.tsx` إلى شيء منطقي للنظام الجديد (مثل `isNewThread`) أو إزالة المنطق إذا لم يعد ضرورياً.
+- التأكد من أن `buildShareLink` في `appUrl.ts` يستخدم `VITE_APP_BASE_URL` بشكل صحيح للنطاق المخصص.
 
-### Frontend
-- مكوّن `DealCardComposer`: نموذج بأزرار جاهزة (بدون نص حر مفتوح للحقول الأساسية) لإنشاء عرض منظّم.
-- مكوّن `DealCardView`: عرض احترافي للبطاقة داخل Business Box مع أزرار **قبول / رفض / عرض مضاد** (متاحة للمشهور والوكيل).
-- دمجه في `MessageComposer`/`InboxSection` لصندوق العمل.
-
-## المرحلة 4 — Golden Hour (نافذة الـ60 دقيقة)
-
-### Backend
-- حقول على `deal_cards`: `golden_hour` (boolean)، `golden_hour_expires_at` (= الإنشاء + 60 دقيقة).
-- منطق: عرض Golden Hour يُثبَّت أعلى صندوق العمل ويُميَّز حتى انتهاء المؤقّت، ثم يعود لترتيبه الطبيعي. (بدون بوابة دفع الآن — مفعّل منطقياً كأولوية ظهور؛ ربط الدفع مؤجَّل حسب قرار سابق.)
-- دالة/فهرسة لترتيب الـwork: Golden Hour النشِط أولاً.
-
-### Frontend
-- شارة "Golden Hour" ذهبية + عدّاد 60 دقيقة على البطاقة، وتثبيتها أعلى Business Box.
-- خيار تفعيل Golden Hour عند إنشاء Deal Card.
-
-## ملاحظات تقنية وأمان
-- كل كتابة حسّاسة (دعوات، ربط الوكيل) تمرّ عبر Edge Functions بمفتاح الخدمة + التحقق من JWT داخل الكود + التحقق من المدخلات بـ Zod.
-- لا إدراج مباشر من العميل في `manager_links` ولا `manager_invitations`.
-- صلاحية الدعوة 15 دقيقة تُفرض في قاعدة البيانات (تحقق `expires_at`) وليس في الواجهة فقط.
-- NanoID للـ token عبر مكتبة `nanoid` (إضافة تبعية).
-- الـ Classifier وE2E يبقيان كما هما دون مساس.
-
-أبدأ بالمرحلة 1 (نظام الدعوات) فور موافقتك، ثم أُكمل تباعاً.
+### 7. التحقق النهائي
+- تشغيل build للتأكد من عدم وجود أخطاء TypeScript.
+- البحث مجدداً عن `Directly`, `Golden Hour`, `max_messages`, `inbox_warning`, `ManagerActivityLog` للتأكد من عدم وجود بقايا.
+- فحص سريع على Preview لتحديد أن التسجيل وإعدادات الصندوق يعملان.
