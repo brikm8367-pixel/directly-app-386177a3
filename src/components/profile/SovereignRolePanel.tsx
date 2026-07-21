@@ -8,7 +8,6 @@ import { Crown, UserCog, KeyRound, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { InviteManagerDialog } from './InviteManagerDialog';
 import { KillSwitch } from './KillSwitch';
-import { ManagerActivityLog } from './ManagerActivityLog';
 import { CustomLinkCard } from './CustomLinkCard';
 import { FanGroupsManager } from '@/components/groups/FanGroupsManager';
 
