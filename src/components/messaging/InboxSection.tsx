@@ -162,7 +162,7 @@ export default function InboxSection({
               )}
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {messageLimit === 0
+              {inboxMode === 'closed'
                 ? (isRTL ? 'مغلق — لا يصلك أحد' : 'Closed — no one reaches you')
                 : (isRTL ? `مساحتك — ${messages.length} (لا محدود)` : `Your space — ${messages.length} (unlimited)`)}
 
