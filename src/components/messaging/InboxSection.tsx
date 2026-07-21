@@ -79,8 +79,8 @@ const categoryConfig = {
 export default function InboxSection({
   category,
   messages,
-  messageLimit,
-  onSetLimit,
+  inboxMode,
+  onSetMode,
   onMessageClick,
   isLoading = false,
   isOnline,
@@ -89,13 +89,13 @@ export default function InboxSection({
 }: InboxSectionProps) {
   const { isRTL } = useLanguage();
   const { user } = useAuth();
-  const [tempMode, setTempMode] = useState<'unlimited' | 'closed'>('unlimited');
+  const [tempMode, setTempMode] = useState<InboxMode>('unlimited');
   const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
 
   const config = categoryConfig[category];
   const Icon = config.icon;
 
-  // Load current mode
+  // Load current mode when dialog opens
   useEffect(() => {
     if (!user || !isLimitDialogOpen) return;
     (async () => {
@@ -123,14 +123,14 @@ export default function InboxSection({
     return isRTL ? `${diffDays} ي` : `${diffDays}d`;
   };
 
-  const handleSaveLimit = async () => {
+  const handleSaveMode = async () => {
     if (!user) return;
     await supabase.from('message_limits').upsert({
       user_id: user.id,
       category,
       inbox_mode: tempMode,
     } as any, { onConflict: 'user_id,category' });
-    onSetLimit(tempMode === 'closed' ? 0 : 999999);
+    onSetMode(tempMode);
     setIsLimitDialogOpen(false);
   };
 
