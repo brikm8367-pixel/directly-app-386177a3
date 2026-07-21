@@ -530,8 +530,8 @@ export default function Dashboard() {
                     key={category}
                     category={category}
                     messages={sortWithPins(messages[category]) as any}
-                    messageLimit={limits[category]}
-                    onSetLimit={(limit) => handleSetLimit(category, limit)}
+                    inboxMode={inboxModes[category]}
+                    onSetMode={(mode) => handleSetMode(category, mode)}
                     onMessageClick={setSelectedMessage}
                     isLoading={isLoadingMessages}
                     isOnline={category === 'direct' ? isOnline : undefined}
