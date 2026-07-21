@@ -235,11 +235,12 @@ export default function Dashboard() {
       .eq('user_id', user.id);
 
     if (limitsData) {
-      const newLimits = { work: 999999, audience: 999999, direct: 999999 };
+      const newModes = { work: 'unlimited', audience: 'unlimited', direct: 'unlimited' } as const;
+      const modes: { work: 'unlimited' | 'closed'; audience: 'unlimited' | 'closed'; direct: 'unlimited' | 'closed' } = { ...newModes };
       (limitsData as any[]).forEach(l => {
-        newLimits[l.category as MessageCategory] = l.inbox_mode === 'closed' ? 0 : 999999;
+        modes[l.category as MessageCategory] = l.inbox_mode === 'closed' ? 'closed' : 'unlimited';
       });
-      setLimits(newLimits);
+      setInboxModes(modes);
     }
 
 
