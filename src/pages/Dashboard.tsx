@@ -328,12 +328,12 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, [messageSearchQuery, user]);
 
-  const handleSetLimit = async (category: MessageCategory, limit: number) => {
+  const handleSetMode = async (category: MessageCategory, mode: 'unlimited' | 'closed') => {
     if (!user) return;
     await supabase.from('message_limits').upsert({
-      user_id: user.id, category, max_messages: limit,
+      user_id: user.id, category, inbox_mode: mode,
     }, { onConflict: 'user_id,category' });
-    setLimits(prev => ({ ...prev, [category]: limit }));
+    setInboxModes(prev => ({ ...prev, [category]: mode }));
   };
 
   // Sort messages: pinned first
