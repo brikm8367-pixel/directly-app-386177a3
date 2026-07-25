@@ -84,13 +84,21 @@ export default function Auth() {
           setIsLoading(false);
           return;
         }
-        const { error: signUpError } = await signUp(email, password, username, displayName);
+        const { error: signUpError, needsEmailConfirmation } = await signUp(email, password, username, displayName);
         if (signUpError) {
-          if (signUpError.message.includes('already registered')) {
+          const msg = signUpError.message || '';
+          if (msg.includes('already registered') || msg.toLowerCase().includes('already')) {
             setError('Looks like you already have an account — sign in.');
+          } else if (msg.toLowerCase().includes('password')) {
+            setError(signUpError.message);
           } else {
-            setError('Something didn\'t work — your messages are safe.');
+            setError(signUpError.message || "Something didn't work — your messages are safe.");
           }
+        } else if (needsEmailConfirmation) {
+          setResetSent(false);
+          setError('');
+          setIsLogin(true);
+          alert('Check your email to confirm your account, then sign in.');
         }
       }
     } catch {
