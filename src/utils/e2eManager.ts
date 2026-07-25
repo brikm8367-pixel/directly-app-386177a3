@@ -87,7 +87,7 @@ export async function getRecipientPublicKey(recipientId: string): Promise<string
   } catch {
     /* fall through */
   }
-  const { data } = await supabase.from('profiles').select('public_key').eq('id', recipientId).single();
+  const { data } = await supabase.from('profiles').select('public_key').eq('id', recipientId).maybeSingle();
   return data?.public_key || null;
 }
 
