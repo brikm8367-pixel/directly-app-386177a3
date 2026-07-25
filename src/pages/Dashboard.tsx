@@ -351,6 +351,8 @@ export default function Dashboard() {
 
   const handleSetMode = async (category: MessageCategory, mode: 'unlimited' | 'closed') => {
     if (!user) return;
+    // Managers cannot change the celebrity's inbox modes — the toggle is hidden below.
+    if (viewingAsManager) return;
     await supabase.from('message_limits').upsert({
       user_id: user.id, category, inbox_mode: mode,
     }, { onConflict: 'user_id,category' });
