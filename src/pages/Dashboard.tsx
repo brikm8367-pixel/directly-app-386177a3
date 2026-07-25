@@ -268,23 +268,25 @@ export default function Dashboard() {
 
   useEffect(() => { if (user) fetchMessages(); }, [user, fetchMessages]);
 
-  // Realtime: category-specific notifications
+  // Realtime: category-specific notifications. Manager subscribes to their linked celebrity's work inbox.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !viewId) return;
+    const channelName = viewingAsManager ? `messages-realtime-manager-${viewId}` : `messages-realtime-${viewId}`;
     const channel = supabase
-      .channel('messages-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, async (payload) => {
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${viewId}` }, async (payload) => {
+        const msg = payload.new as any;
+        // Manager view is scoped to work-category only.
+        if (viewingAsManager && msg?.category !== 'work') return;
         fetchMessages();
         playNotificationSound();
-        const msg = payload.new as any;
         if (msg) {
           const categoryLabel = msg.category === 'work' ? '💼' : msg.category === 'direct' ? '⭐' : '👥';
           showInAppNotification(
             `${categoryLabel} Sovereign`,
             msg.voice_url ? '🎤 Voice message' : msg.media_url ? '📷 Media' : msg.content?.substring(0, 50) || 'New message'
           );
-          // Classification banner
-          const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', msg.sender_id).single();
+          const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', msg.sender_id).maybeSingle();
           const totalMsgs = messages.work.length + messages.audience.length + messages.direct.length;
           setClassificationBanner({
             name: senderProfile?.display_name || 'Someone',
@@ -295,7 +297,7 @@ export default function Dashboard() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchMessages]);
+  }, [user, viewId, viewingAsManager, fetchMessages]);
 
   // Search for users
   useEffect(() => {
