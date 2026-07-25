@@ -174,15 +174,15 @@ export default function ProfilePage() {
   const handleDeleteAccount = async () => {
     if (!user) return;
     try {
-      // Permanent deletion runs server-side: wipes all data AND removes the auth
-      // account, so the email becomes available again for a new signup.
       const { data, error } = await supabase.functions.invoke('delete-account');
-      if (error || (data as any)?.error) throw error || new Error((data as any).error);
+      const errMsg = (error as any)?.message || (data as any)?.error;
+      if (errMsg) throw new Error(errMsg);
       await signOut();
       toast.success(isRTL ? 'تم حذف حسابك بالكامل' : 'Your account has been deleted');
       navigate('/');
-    } catch {
-      toast.error(isRTL ? 'فشل حذف الحساب' : 'Failed to delete account');
+    } catch (e: any) {
+      console.error('[delete-account]', e);
+      toast.error((isRTL ? 'فشل حذف الحساب: ' : 'Failed to delete account: ') + (e?.message || ''));
     }
   };
 
