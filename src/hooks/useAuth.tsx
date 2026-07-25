@@ -26,9 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        // Initialize E2E encryption keys on login
-        if (session?.user?.id) {
-          setTimeout(() => initE2EKeys(session.user.id), 500);
+        // Initialize E2E encryption keys after a real sign-in only.
+        if (session?.user?.id && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+          const uid = session.user.id;
+          // Defer to next tick so Supabase finishes writing storage before we call it.
+          setTimeout(() => {
+            initE2EKeys(uid).catch((e) => console.warn('[E2E] init failed', e));
+          }, 0);
         }
       }
     );
@@ -45,8 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, username: string, displayName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -58,7 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
-    return { error: error as Error | null };
+    // If Supabase created the user but did not return a session, email confirmation is required.
+    const needsEmailConfirmation = !error && !!data?.user && !data?.session;
+    return { error: error as Error | null, needsEmailConfirmation };
   };
 
   const signIn = async (email: string, password: string) => {
