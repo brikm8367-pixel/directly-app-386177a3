@@ -190,30 +190,48 @@ export default function Dashboard() {
     return () => { callChannels.forEach(ch => supabase.removeChannel(ch)); };
   }, [user]);
 
+  // Sovereign role view routing:
+  // - Manager: reads their linked celebrity's Business inbox ONLY (work-category messages received by the celebrity).
+  // - Everyone else: reads their own inbox across all three categories.
+  const viewingAsManager = role === 'manager' && !!managedCelebrityId;
+  const viewId = viewingAsManager ? (managedCelebrityId as string) : user?.id;
+
   const fetchMessages = useCallback(async () => {
-    if (!user) return;
+    if (!user || !viewId) return;
     setIsLoadingMessages(true);
 
-    const { data } = await supabase
+    let query = supabase
       .from('messages')
       .select('*')
-      .or(`receiver_id.eq.${user.id},sender_id.eq.${user.id}`)
       .is('parent_id', null)
       .order('created_at', { ascending: false });
 
+    if (viewingAsManager) {
+      // Manager can only SELECT work-category messages received by their linked celebrity (per RLS).
+      query = query.eq('receiver_id', viewId).eq('category', 'work');
+    } else {
+      query = query.or(`receiver_id.eq.${viewId},sender_id.eq.${viewId}`);
+    }
+
+    const { data } = await query;
+
     if (data) {
-      const userIds = [...new Set(data.flatMap(m => [m.sender_id, m.receiver_id]).filter(id => id !== user.id))];
+      const userIds = [...new Set(data.flatMap(m => [m.sender_id, m.receiver_id]).filter(id => id !== viewId))];
       const { data: profiles } = userIds.length > 0
         ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds)
         : { data: [] };
 
       const withProfiles = await Promise.all(data.map(async (m) => {
-        const otherId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
-        // Decrypt preview content for inbox display (silent — user never sees encryption)
+        const otherId = m.sender_id === viewId ? m.receiver_id : m.sender_id;
         let displayContent = m.content;
         if (isEncryptedMessage(m.content)) {
-          const res = await decryptFromSender(m.content, m.sender_id === user.id ? m.receiver_id : m.sender_id);
-          displayContent = res.success ? res.plaintext : '🔒';
+          if (viewingAsManager) {
+            // Manager cannot decrypt the celebrity's E2E messages — show a locked placeholder.
+            displayContent = '🔒';
+          } else {
+            const res = await decryptFromSender(m.content, otherId);
+            displayContent = res.success ? res.plaintext : '🔒';
+          }
         }
         return {
           ...m,
@@ -224,48 +242,51 @@ export default function Dashboard() {
 
       setMessages({
         work: withProfiles.filter(m => m.category === 'work'),
-        audience: withProfiles.filter(m => m.category === 'audience'),
-        direct: withProfiles.filter(m => m.category === 'direct'),
+        audience: viewingAsManager ? [] : withProfiles.filter(m => m.category === 'audience'),
+        direct: viewingAsManager ? [] : withProfiles.filter(m => m.category === 'direct'),
       });
     }
 
-    const { data: limitsData } = await supabase
-      .from('message_limits')
-      .select('category, inbox_mode')
-      .eq('user_id', user.id);
+    if (!viewingAsManager) {
+      const { data: limitsData } = await supabase
+        .from('message_limits')
+        .select('category, inbox_mode')
+        .eq('user_id', user.id);
 
-    if (limitsData) {
-      const newModes = { work: 'unlimited', audience: 'unlimited', direct: 'unlimited' } as const;
-      const modes: { work: 'unlimited' | 'closed'; audience: 'unlimited' | 'closed'; direct: 'unlimited' | 'closed' } = { ...newModes };
-      (limitsData as any[]).forEach(l => {
-        modes[l.category as MessageCategory] = l.inbox_mode === 'closed' ? 'closed' : 'unlimited';
-      });
-      setInboxModes(modes);
+      if (limitsData) {
+        const newModes = { work: 'unlimited', audience: 'unlimited', direct: 'unlimited' } as const;
+        const modes: { work: 'unlimited' | 'closed'; audience: 'unlimited' | 'closed'; direct: 'unlimited' | 'closed' } = { ...newModes };
+        (limitsData as any[]).forEach(l => {
+          modes[l.category as MessageCategory] = l.inbox_mode === 'closed' ? 'closed' : 'unlimited';
+        });
+        setInboxModes(modes);
+      }
     }
-
 
     setIsLoadingMessages(false);
-  }, [user]);
+  }, [user, viewId, viewingAsManager]);
 
   useEffect(() => { if (user) fetchMessages(); }, [user, fetchMessages]);
 
-  // Realtime: category-specific notifications
+  // Realtime: category-specific notifications. Manager subscribes to their linked celebrity's work inbox.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !viewId) return;
+    const channelName = viewingAsManager ? `messages-realtime-manager-${viewId}` : `messages-realtime-${viewId}`;
     const channel = supabase
-      .channel('messages-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, async (payload) => {
+      .channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${viewId}` }, async (payload) => {
+        const msg = payload.new as any;
+        // Manager view is scoped to work-category only.
+        if (viewingAsManager && msg?.category !== 'work') return;
         fetchMessages();
         playNotificationSound();
-        const msg = payload.new as any;
         if (msg) {
           const categoryLabel = msg.category === 'work' ? '💼' : msg.category === 'direct' ? '⭐' : '👥';
           showInAppNotification(
             `${categoryLabel} Sovereign`,
             msg.voice_url ? '🎤 Voice message' : msg.media_url ? '📷 Media' : msg.content?.substring(0, 50) || 'New message'
           );
-          // Classification banner
-          const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', msg.sender_id).single();
+          const { data: senderProfile } = await supabase.from('profiles').select('display_name').eq('id', msg.sender_id).maybeSingle();
           const totalMsgs = messages.work.length + messages.audience.length + messages.direct.length;
           setClassificationBanner({
             name: senderProfile?.display_name || 'Someone',
@@ -276,7 +297,7 @@ export default function Dashboard() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchMessages]);
+  }, [user, viewId, viewingAsManager, fetchMessages]);
 
   // Search for users
   useEffect(() => {
@@ -330,6 +351,8 @@ export default function Dashboard() {
 
   const handleSetMode = async (category: MessageCategory, mode: 'unlimited' | 'closed') => {
     if (!user) return;
+    // Managers cannot change the celebrity's inbox modes — the toggle is hidden below.
+    if (viewingAsManager) return;
     await supabase.from('message_limits').upsert({
       user_id: user.id, category, inbox_mode: mode,
     }, { onConflict: 'user_id,category' });
