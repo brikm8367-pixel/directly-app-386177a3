@@ -64,8 +64,8 @@ export async function initE2EKeys(userId: string): Promise<void> {
       .from('profiles')
       .select('public_key')
       .eq('id', userId)
-      .single();
-    if (!profile?.public_key) {
+      .maybeSingle();
+    if (profile && !profile.public_key) {
       await supabase.from('profiles').update({ public_key: keys.publicKey }).eq('id', userId);
     }
   } catch (e) {
